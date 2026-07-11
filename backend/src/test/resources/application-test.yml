@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:dailyforge;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-auth.sql
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+
+logging:
+  level:
+    root: warn
+    com.dailyforge: debug
+
+dailyforge:
+  security:
+    jwt:
+      issuer: dailyforge-test
+      secret: dailyforge-test-jwt-secret-key-change-me-1234567890
+      access-token-ttl: PT2H
+      refresh-token-ttl: P14D

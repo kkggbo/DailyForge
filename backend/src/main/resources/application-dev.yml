@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/dailyforge_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: dailyforge
+    password: change_me_app
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+
+logging:
+  level:
+    root: info
+    com.dailyforge: debug
+
+dailyforge:
+  security:
+    jwt:
+      secret: ${DAILYFORGE_JWT_SECRET:dailyforge-dev-jwt-secret-key-change-me-1234567890}

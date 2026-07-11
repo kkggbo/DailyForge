@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: dailyforge-backend
+  profiles:
+    active: dev
+  jackson:
+    time-zone: Asia/Shanghai
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/dailyforge_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: dailyforge
+    password: change_me_app
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+springdoc:
+  api-docs:
+    path: /docs/api
+  swagger-ui:
+    path: /docs/swagger
+
+dailyforge:
+  security:
+    jwt:
+      issuer: dailyforge-backend
+      secret: ${DAILYFORGE_JWT_SECRET:dailyforge-local-jwt-secret-key-change-me-1234567890}
+      access-token-ttl: PT2H
+      refresh-token-ttl: P14D
