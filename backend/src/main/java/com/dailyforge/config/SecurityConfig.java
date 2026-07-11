@@ -47,10 +47,8 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/auth/**",
                                 "/docs/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
                                 "/actuator/health",
                                 "/error")
                         .permitAll()

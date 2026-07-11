@@ -33,6 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -74,7 +75,7 @@ class AuthIntegrationTest {
     void registerShouldCreateUserAndProfile() throws Exception {
         insertInviteCode("DAILYFORGE-AI-001", "account_tier", "invited_ai", 3, 0, "active", LocalDateTime.now().plusDays(1));
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(apiPost("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(
                                 "user@example.com",
@@ -97,7 +98,7 @@ class AuthIntegrationTest {
 
     @Test
     void registerShouldRollbackWhenInviteCodeInvalid() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(apiPost("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(
                                 "user@example.com",
@@ -116,7 +117,7 @@ class AuthIntegrationTest {
     void loginShouldReturnTokens() throws Exception {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(apiPost("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("user@example.com", "PlainTextPassword123"))))
                 .andExpect(status().isOk())
@@ -129,7 +130,7 @@ class AuthIntegrationTest {
     void loginShouldReturnInvalidCredentialsWhenPasswordMismatch() throws Exception {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(apiPost("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("user@example.com", "WrongPassword"))))
                 .andExpect(status().isUnauthorized())
@@ -141,7 +142,7 @@ class AuthIntegrationTest {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
         String accessToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "accessToken");
 
-        mockMvc.perform(get("/api/auth/me")
+        mockMvc.perform(apiGet("/auth/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.email").value("user@example.com"))
@@ -153,7 +154,7 @@ class AuthIntegrationTest {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
         String refreshToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "refreshToken");
 
-        mockMvc.perform(post("/api/auth/refresh-token")
+        mockMvc.perform(apiPost("/auth/refresh-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isOk())
@@ -167,7 +168,7 @@ class AuthIntegrationTest {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
         String accessToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "accessToken");
 
-        mockMvc.perform(post("/api/auth/refresh-token")
+        mockMvc.perform(apiPost("/auth/refresh-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshTokenRequest(accessToken))))
                 .andExpect(status().isUnauthorized())
@@ -180,13 +181,13 @@ class AuthIntegrationTest {
         insertInviteCode("DAILYFORGE-AI-001", "account_tier", "invited_ai", 3, 0, "active", LocalDateTime.now().plusDays(1));
         String accessToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "accessToken");
 
-        mockMvc.perform(post("/api/auth/redeem-invite-code")
+        mockMvc.perform(apiPost("/auth/redeem-invite-code")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RedeemInviteCodeRequest("DAILYFORGE-AI-001"))))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/auth/redeem-invite-code")
+        mockMvc.perform(apiPost("/auth/redeem-invite-code")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RedeemInviteCodeRequest("DAILYFORGE-AI-001"))))
@@ -200,7 +201,7 @@ class AuthIntegrationTest {
         insertInviteCode("DAILYFORGE-AI-001", "account_tier", "invited_ai", 1, 1, "active", LocalDateTime.now().plusDays(1));
         String accessToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "accessToken");
 
-        mockMvc.perform(post("/api/auth/redeem-invite-code")
+        mockMvc.perform(apiPost("/auth/redeem-invite-code")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RedeemInviteCodeRequest("DAILYFORGE-AI-001"))))
@@ -210,15 +211,15 @@ class AuthIntegrationTest {
 
     @Test
     void protectedEndpointsShouldRequireAuthentication() throws Exception {
-        mockMvc.perform(get("/api/auth/me"))
+        mockMvc.perform(apiGet("/auth/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(apiPost("/auth/logout"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
-        mockMvc.perform(post("/api/auth/redeem-invite-code")
+        mockMvc.perform(apiPost("/auth/redeem-invite-code")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RedeemInviteCodeRequest("DAILYFORGE-AI-001"))))
                 .andExpect(status().isUnauthorized())
@@ -271,7 +272,7 @@ class AuthIntegrationTest {
     }
 
     private String loginAndGetToken(String email, String password, String fieldName) throws Exception {
-        MvcResult mvcResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult mvcResult = mockMvc.perform(apiPost("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest(email, password))))
                 .andExpect(status().isOk())
@@ -311,5 +312,13 @@ class AuthIntegrationTest {
                 usedCount,
                 Timestamp.valueOf(expiresAt),
                 status);
+    }
+
+    private MockHttpServletRequestBuilder apiPost(String path) {
+        return post("/api" + path).contextPath("/api");
+    }
+
+    private MockHttpServletRequestBuilder apiGet(String path) {
+        return get("/api" + path).contextPath("/api");
     }
 }

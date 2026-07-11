@@ -166,10 +166,42 @@ mvn spring-boot:run
 
 ### 4. 常用访问地址
 
-- 后端接口基路径：`http://localhost:8080/api`
+- 业务接口当前前缀：`http://localhost:8080/api`
 - Swagger UI：`http://localhost:8080/api/docs/swagger`
 - OpenAPI 文档：`http://localhost:8080/api/docs/api`
 - phpMyAdmin：`http://localhost:8081`
+
+### 5. 当前接口路径规则
+
+当前项目的接口前缀策略已经统一，实际情况如下：
+
+- 已配置全局 `server.servlet.context-path=/api`
+- 当前业务接口由 Controller 只声明资源路径，例如 `@RequestMapping("/auth")`
+- 当前 Swagger 相关地址通过 `springdoc` 配置为 `/docs/swagger` 和 `/docs/api`，对外访问时会自动带上 `/api`
+
+因此当前对外访问结果是：
+
+- 业务接口走 `/api/...`
+- Swagger 走 `/api/docs/...`
+
+因此当前正确的 Swagger 地址就是 `http://localhost:8080/api/docs/swagger`。
+
+### 6. 当前统一方案
+
+当前后端已经统一为“全局前缀负责 API 命名空间，Controller 只写资源路径”的模式：
+
+1. 启用全局配置：`server.servlet.context-path=/api`
+2. Controller 只保留资源路径，例如 `@RequestMapping("/auth")`
+3. 业务接口统一收敛到 `/api/...`
+4. Swagger 与 OpenAPI 统一挂到 `/api/docs/swagger`、`/api/docs/api`
+5. Spring Security 放行规则与内部资源路径保持一致
+
+采用这套方案后，路径会更稳定：
+
+- 业务接口：`/api/auth/...`
+- Swagger UI：`/api/docs/swagger`
+- OpenAPI：`/api/docs/api`
+- 后续新增模块也按同一规则组织
 
 ## 测试情况
 

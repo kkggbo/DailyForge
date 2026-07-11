@@ -5,7 +5,8 @@
 本文档描述 DailyForge 后端 `auth` 模块当前已经落地的接口行为，面向前后端联调、测试编写和后续模块开发。
 
 - 模块归属：`backend` 单体应用
-- Controller 基础路径：`/api/auth`
+- Controller 内部基础路径：`/auth`
+- 对外接口前缀：`/api/auth`
 - 统一返回包装：`ApiResponse`
 - 当前实现状态：已完成并通过测试
 
@@ -37,7 +38,8 @@
 
 `/api/auth`
 
-当前不存在全局 `server.servlet.context-path=/api` 配置，因此外部真实路径就是文档中写明的 `/api/auth/...`，不会出现 `/api/api/auth/...`。
+当前已启用全局 `server.servlet.context-path=/api` 配置，Controller 内部基础路径为 `/auth`。
+因此外部真实路径统一为文档中写明的 `/api/auth/...`，不会出现 `/api/api/auth/...`。
 
 ### 2.2 认证约定
 

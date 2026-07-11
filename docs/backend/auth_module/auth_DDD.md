@@ -68,17 +68,15 @@
 
 ### 2.1 路由决策
 
-- 保留 Controller 基础路径：`/api/auth`
-- 删除全局 `server.servlet.context-path: /api`
+- 启用全局 `server.servlet.context-path: /api`
+- Controller 基础路径仅保留资源语义：`/auth`
 - 最终外部路径统一为 `/api/auth/...`
 
 ### 2.2 安全决策
 
-- `SecurityConfig` 放行 `/api/auth/**`
+- `SecurityConfig` 放行 `/auth/**`
 - 保留放行：
   - `/docs/**`
-  - `/swagger-ui/**`
-  - `/v3/api-docs/**`
   - `/actuator/health`
   - `/error`
 - 会话策略固定为 `STATELESS`
@@ -741,7 +739,7 @@ com.dailyforge.infrastructure.security
 `AuthController` 已按以下规范落地：
 
 - `@RestController`
-- `@RequestMapping("/api/auth")`
+- `@RequestMapping("/auth")`
 - `@Tag(name = "Auth")`
 - `@Operation`
 - `@ApiResponses`
