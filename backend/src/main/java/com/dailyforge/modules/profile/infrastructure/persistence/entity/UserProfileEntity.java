@@ -1,4 +1,4 @@
-package com.dailyforge.modules.auth.infrastructure.persistence.entity;
+package com.dailyforge.modules.profile.infrastructure.persistence.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;

@@ -1,6 +1,9 @@
 # Java / Maven
 backend/target/
 backend/.mvn/repository/
+frontend/node_modules/
+frontend/dist/
+.pnpm-store/
 
 # Local environment files
 deploy/.env

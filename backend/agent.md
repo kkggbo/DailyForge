@@ -8,6 +8,19 @@ This file defines long-term working conventions for the `backend` directory.
 
 When a new backend module is created or substantially expanded, documentation must be created or updated before or together with code changes.
 
+Product input documents should be treated as the upstream source of truth before drafting backend technical docs or writing code.
+
+Default source directories:
+
+1. Interface documents:
+   - `D:\Computer Science\DailyForge\docs\interfaces`
+   - naming: `<module_name>_接口文档.md`
+2. PRD documents:
+   - `D:\Computer Science\DailyForge\docs\prd`
+   - naming: `<module_name>_PRD.md`
+3. If a module has a dedicated database change proposal, read it together with the PRD and interface doc before implementation:
+   - common naming: `D:\Computer Science\DailyForge\docs\<module_name>_数据库改造清单.md`
+
 Required documentation workflow:
 
 1. Create a corresponding module documentation directory under:
@@ -34,6 +47,35 @@ Required documentation workflow:
 5. Prefer using the global skill `backend-ddd-writer` to draft the DDD first, then tailor it to the actual module and repository context.
 6. If the module changes existing shared behavior, also update relevant shared docs under:
    - `D:\Computer Science\DailyForge\docs`
+
+## Implementation Plan Before Coding
+
+Before writing backend module code, produce a detailed implementation plan from the latest PRD, interface doc, DDD, migration SQL, and current codebase state.
+
+Prefer using the global skill `backend-impl-planner` to generate this implementation plan before coding.
+
+The implementation plan should be detailed enough that another engineer or agent can implement directly without making product or architecture decisions on their own.
+
+At minimum, the plan should cover:
+
+- implementation scope and locked assumptions
+- module boundaries and cross-module dependency changes
+- public API coverage and request / response contract implications
+- entity / mapper / DTO / VO / assembler / service / controller changes
+- transaction boundaries and data consistency rules
+- validation rules and error code additions
+- debug logging expectations and sensitive-data logging constraints
+- method comments / Javadoc expectations for controller, service, and custom mapper methods
+- unit tests, integration tests, and acceptance checks
+- documentation sync tasks if docs need to move with the code change
+
+If the user requests code implementation directly for a backend module, the preferred workflow is:
+
+1. verify or refresh the upstream docs if needed
+2. generate the detailed implementation plan
+3. implement the code
+4. run verification
+5. summarize code and documentation impact
 
 ## Module Documentation Naming
 

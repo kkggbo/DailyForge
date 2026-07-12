@@ -25,6 +25,12 @@ public enum ErrorCode {
             HttpStatus.CONFLICT),
     INVITE_CODE_GRANT_CONFLICT("INVITE_CODE_GRANT_CONFLICT",
             "invite code grant conflicts with current account tier", HttpStatus.BAD_REQUEST),
+    PROFILE_UPDATE_EMPTY("PROFILE_UPDATE_EMPTY", "profile update payload is empty", HttpStatus.BAD_REQUEST),
+    BODY_METRIC_EMPTY_RECORD("BODY_METRIC_EMPTY_RECORD", "body metric record must contain at least one metric value",
+            HttpStatus.BAD_REQUEST),
+    BODY_METRIC_NOT_FOUND("BODY_METRIC_NOT_FOUND", "body metric record not found", HttpStatus.NOT_FOUND),
+    BODY_METRIC_LATEST_ALREADY_DELETED("BODY_METRIC_LATEST_ALREADY_DELETED",
+            "latest body metric record has already been deleted", HttpStatus.CONFLICT),
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;

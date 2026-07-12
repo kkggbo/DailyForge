@@ -1,7 +1,7 @@
-package com.dailyforge.modules.auth.infrastructure.persistence.mapper;
+package com.dailyforge.modules.profile.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.dailyforge.modules.auth.infrastructure.persistence.entity.UserProfileEntity;
+import com.dailyforge.modules.profile.infrastructure.persistence.entity.UserProfileEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
