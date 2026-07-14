@@ -1,16 +1,25 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type {
   BodyMetricFormValues,
+  BodyMetricSnapshotResponse,
   CreateBodyMetricPayload
 } from "../types/profile";
-import { createDefaultBodyMetricFormValues } from "../lib/profile-mappers";
+import {
+  createDefaultBodyMetricFormValues,
+  getLocalTodayDateString,
+  toBodyMetricFormValues
+} from "../lib/profile-mappers";
 
 type BodyMetricFormProps = {
   title?: string;
   description?: string;
+  initialValue?: BodyMetricSnapshotResponse | null;
   submitLabel: string;
   submitSuccessMessage?: string;
   isSubmitting: boolean;
+  allowEmptySubmit?: boolean;
+  showClearAction?: boolean;
+  onSubmitEmpty?: () => Promise<void> | void;
   onSubmit: (payload: CreateBodyMetricPayload) => Promise<void>;
 };
 
@@ -18,22 +27,32 @@ type FieldErrorMap = Partial<Record<keyof BodyMetricFormValues, string>>;
 
 export function BodyMetricForm({
   title = "录入身体指标",
-  description = "记录日期必填，其余字段按掌握情况填写即可，但不能只写备注而没有任何指标。",
+  description = "记录日期会自动使用你提交当天的本地日期，其余字段按掌握情况填写即可，但至少需要填写一个身体指标。",
+  initialValue,
   submitLabel,
   submitSuccessMessage = "身体指标已记录",
   isSubmitting,
+  allowEmptySubmit = false,
+  showClearAction = false,
+  onSubmitEmpty,
   onSubmit
 }: BodyMetricFormProps) {
   const [form, setForm] = useState<BodyMetricFormValues>(() =>
-    createDefaultBodyMetricFormValues()
+    initialValue ? toBodyMetricFormValues(initialValue) : createDefaultBodyMetricFormValues()
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const showNoteField = hasAtLeastOneMetric(form);
 
   useEffect(() => {
-    setForm(createDefaultBodyMetricFormValues());
-  }, []);
+    setForm(
+      initialValue ? toBodyMetricFormValues(initialValue) : createDefaultBodyMetricFormValues()
+    );
+    setFieldErrors({});
+    setFormError(null);
+    setSuccessMessage(null);
+  }, [initialValue]);
 
   function updateField<K extends keyof BodyMetricFormValues>(
     key: K,
@@ -51,12 +70,41 @@ export function BodyMetricForm({
     setSuccessMessage(null);
   }
 
+  function handleClear() {
+    setForm(createDefaultBodyMetricFormValues());
+    setFieldErrors({});
+    setFormError(null);
+    setSuccessMessage(null);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!hasAtLeastOneMetric(form)) {
+      if (allowEmptySubmit) {
+        setFieldErrors({});
+        setFormError(null);
+        setSuccessMessage(null);
+
+        try {
+          await onSubmitEmpty?.();
+        } catch (error) {
+          setFormError(error instanceof Error ? error.message : "提交失败，请稍后重试");
+        }
+        return;
+      }
+
+      setFieldErrors({});
+      setFormError("请至少填写一个身体指标后再提交");
+      setSuccessMessage(null);
+      return;
+    }
+
     const nextErrors = validateBodyMetricForm(form);
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
+      setFormError(null);
       return;
     }
 
@@ -66,11 +114,8 @@ export function BodyMetricForm({
     try {
       await onSubmit(toBodyMetricPayload(form));
       setSuccessMessage(submitSuccessMessage);
-      setForm(createDefaultBodyMetricFormValues(form.recordDate));
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "身体指标提交失败，请稍后重试"
-      );
+      setFormError(error instanceof Error ? error.message : "身体指标提交失败，请稍后重试");
     }
   }
 
@@ -82,21 +127,12 @@ export function BodyMetricForm({
       </div>
 
       <form className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleSubmit}>
-        <MetricField label="记录日期" error={fieldErrors.recordDate}>
-          <input
-            type="date"
-            value={form.recordDate}
-            onChange={(event) => updateField("recordDate", event.target.value)}
-            className={inputClassName}
-          />
-        </MetricField>
-
         <MetricField label="体重（kg）" error={fieldErrors.weightKg}>
           <input
             type="number"
-            min="0.01"
+            min="0"
             max="9999.99"
-            step="0.01"
+            step="0.1"
             value={form.weightKg}
             onChange={(event) => updateField("weightKg", event.target.value)}
             className={inputClassName}
@@ -108,7 +144,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="100"
-            step="0.01"
+            step="0.1"
             value={form.bodyFatPercent}
             onChange={(event) => updateField("bodyFatPercent", event.target.value)}
             className={inputClassName}
@@ -120,7 +156,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="999.99"
-            step="0.01"
+            step="0.1"
             value={form.bmi}
             onChange={(event) => updateField("bmi", event.target.value)}
             className={inputClassName}
@@ -132,7 +168,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="100"
-            step="0.01"
+            step="0.1"
             value={form.skeletalMusclePercent}
             onChange={(event) =>
               updateField("skeletalMusclePercent", event.target.value)
@@ -146,7 +182,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="100"
-            step="0.01"
+            step="0.1"
             value={form.bodyWaterPercent}
             onChange={(event) => updateField("bodyWaterPercent", event.target.value)}
             className={inputClassName}
@@ -161,7 +197,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="999999.99"
-            step="0.01"
+            step="0.1"
             value={form.basalMetabolicRateKcal}
             onChange={(event) =>
               updateField("basalMetabolicRateKcal", event.target.value)
@@ -175,7 +211,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="9999.99"
-            step="0.01"
+            step="0.1"
             value={form.waistCm}
             onChange={(event) => updateField("waistCm", event.target.value)}
             className={inputClassName}
@@ -187,7 +223,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="9999.99"
-            step="0.01"
+            step="0.1"
             value={form.hipCm}
             onChange={(event) => updateField("hipCm", event.target.value)}
             className={inputClassName}
@@ -199,7 +235,7 @@ export function BodyMetricForm({
             type="number"
             min="0"
             max="999.99"
-            step="0.01"
+            step="0.1"
             value={form.waistHipRatio}
             onChange={(event) => updateField("waistHipRatio", event.target.value)}
             className={inputClassName}
@@ -223,20 +259,22 @@ export function BodyMetricForm({
             type="text"
             value={form.bodyType}
             onChange={(event) => updateField("bodyType", event.target.value)}
-            placeholder="例如：健康、偏瘦、强壮"
+            placeholder="例如：健康、偏瘦、偏胖、强壮"
             className={inputClassName}
           />
         </MetricField>
 
-        <MetricField className="md:col-span-2 xl:col-span-3" label="备注" error={fieldErrors.note}>
-          <textarea
-            value={form.note}
-            onChange={(event) => updateField("note", event.target.value)}
-            rows={4}
-            placeholder="例如：健身房体测、状态一般、餐后测量等。"
-            className={`${inputClassName} resize-y`}
-          />
-        </MetricField>
+        {showNoteField ? (
+          <MetricField className="md:col-span-2 xl:col-span-3" label="备注" error={fieldErrors.note}>
+            <textarea
+              value={form.note}
+              onChange={(event) => updateField("note", event.target.value)}
+              rows={4}
+              placeholder="例如：健身房体测、状态一般、饭后测量等。"
+              className={`${inputClassName} resize-y`}
+            />
+          </MetricField>
+        ) : null}
 
         {successMessage ? (
           <div className="md:col-span-2 xl:col-span-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
@@ -250,7 +288,18 @@ export function BodyMetricForm({
           </div>
         ) : null}
 
-        <div className="md:col-span-2 xl:col-span-3">
+        <div className="md:col-span-2 xl:col-span-3 flex flex-wrap gap-3">
+          {showClearAction ? (
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={isSubmitting}
+              className="rounded-2xl border border-white/10 px-5 py-3 text-sm text-stone-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              清空
+            </button>
+          ) : null}
+
           <button
             type="submit"
             disabled={isSubmitting}
@@ -283,10 +332,6 @@ function MetricField({ label, error, className, children }: MetricFieldProps) {
 
 function validateBodyMetricForm(form: BodyMetricFormValues) {
   const errors: FieldErrorMap = {};
-
-  if (!form.recordDate) {
-    errors.recordDate = "记录日期不能为空";
-  }
 
   validatePositiveDecimal(errors, "weightKg", form.weightKg, 0.01, 9999.99, "体重");
   validateDecimal(errors, "bodyFatPercent", form.bodyFatPercent, 0, 100, "体脂率");
@@ -333,10 +378,6 @@ function validateBodyMetricForm(form: BodyMetricFormValues) {
 
   if (form.note.length > 1000) {
     errors.note = "备注不能超过 1000 个字符";
-  }
-
-  if (!hasAtLeastOneMetric(form)) {
-    errors.note = "请至少填写一个身体指标，不能只提交备注";
   }
 
   return errors;
@@ -400,7 +441,7 @@ function validateDecimal(
 
 function toBodyMetricPayload(form: BodyMetricFormValues): CreateBodyMetricPayload {
   return {
-    recordDate: form.recordDate,
+    recordDate: getLocalTodayDateString(),
     weightKg: toNullableNumber(form.weightKg),
     bodyFatPercent: toNullableNumber(form.bodyFatPercent),
     bmi: toNullableNumber(form.bmi),

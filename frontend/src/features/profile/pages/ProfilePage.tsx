@@ -44,6 +44,7 @@ export function ProfilePage() {
   const [isSubmittingMetric, setIsSubmittingMetric] = useState(false);
   const [isDeletingLatestMetric, setIsDeletingLatestMetric] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteDialogError, setDeleteDialogError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken) {
@@ -148,16 +149,18 @@ export function ProfilePage() {
     const token = requireAccessToken(accessToken);
     setIsDeletingLatestMetric(true);
     setPageError(null);
+    setDeleteDialogError(null);
 
     try {
       await deleteLatestBodyMetric(token);
       setIsDeleteDialogOpen(false);
+      setDeleteDialogError(null);
       await refreshAllWithCurrentPage(1);
       setPage(1);
     } catch (error) {
-      setPageError(
-        getErrorMessage(error, "删除最新记录失败，请刷新后重试")
-      );
+      const message = getDeleteLatestMetricErrorMessage(error);
+      setDeleteDialogError(message);
+      setPageError(message);
       await refreshAllWithCurrentPage(1);
       setPage(1);
     } finally {
@@ -212,9 +215,13 @@ export function ProfilePage() {
         <div className="space-y-6">
           <BodyMetricSummaryCard snapshot={snapshot} />
           <BodyMetricForm
+            title="录入身体指标"
+            description="默认已为你带入最新一次的身体指标，你可以直接微调变化的字段；如果想从头填写，可以先点清空。"
+            initialValue={snapshot}
             submitLabel="新增身体指标记录"
             submitSuccessMessage="身体指标记录已新增"
             isSubmitting={isSubmittingMetric}
+            showClearAction
             onSubmit={handleCreateBodyMetric}
           />
           <BodyMetricHistoryList
@@ -223,7 +230,10 @@ export function ProfilePage() {
             onPageChange={(nextPage) => {
               void loadHistoryPage({ page: nextPage, pageSize: history?.pageSize ?? 20 });
             }}
-            onDeleteLatestRequest={() => setIsDeleteDialogOpen(true)}
+            onDeleteLatestRequest={() => {
+              setDeleteDialogError(null);
+              setIsDeleteDialogOpen(true);
+            }}
           />
         </div>
       )}
@@ -231,7 +241,11 @@ export function ProfilePage() {
       <DeleteLatestMetricDialog
         open={isDeleteDialogOpen}
         isSubmitting={isDeletingLatestMetric}
-        onClose={() => setIsDeleteDialogOpen(false)}
+        errorMessage={deleteDialogError}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDeleteDialogError(null);
+        }}
         onConfirm={() => {
           void handleDeleteLatestMetric();
         }}
@@ -258,4 +272,26 @@ function getErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+function getDeleteLatestMetricErrorMessage(error: unknown) {
+  if (error instanceof ApiRequestError) {
+    if (error.code === "BODY_METRIC_LATEST_ALREADY_DELETED") {
+      return "最近一条身体指标记录已经被删除，请刷新列表后再试。";
+    }
+
+    if (error.code === "BODY_METRIC_NOT_FOUND") {
+      return "当前没有可删除的身体指标记录。";
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "删除最新记录失败，请刷新后重试。";
 }

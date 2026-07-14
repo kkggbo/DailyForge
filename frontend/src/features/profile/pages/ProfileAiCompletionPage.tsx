@@ -104,13 +104,8 @@ export function ProfileAiCompletionPage() {
 
     try {
       await updateBasicProfile(accessToken, payload);
-      const nextSummary = await refreshBasicAndSummary();
-
-      if (shouldStartFromMetricStep(getMissingFieldsForScene(nextSummary, scene))) {
-        setStep(2);
-      } else {
-        setStep(2);
-      }
+      await refreshBasicAndSummary();
+      setStep(2);
     } finally {
       setIsSavingBasic(false);
     }
@@ -162,7 +157,7 @@ export function ProfileAiCompletionPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
-          <p className="text-sm text-stone-400">当前场景缺少的关键资料</p>
+          <p className="text-sm text-stone-400">当前场景仍缺少的关键信息</p>
           {missingFieldLabels.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {missingFieldLabels.map((field) => (
@@ -176,7 +171,7 @@ export function ProfileAiCompletionPage() {
             </div>
           ) : (
             <p className="mt-3 text-sm text-emerald-200">
-              当前场景所需关键资料已齐备，你也可以继续补充更多数据。
+              当前场景所需的关键资料已经齐备，你也可以继续补充更多数据。
             </p>
           )}
         </div>

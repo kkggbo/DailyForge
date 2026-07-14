@@ -103,7 +103,7 @@ export function ProfileOnboardingPage() {
           Onboarding
         </p>
         <h1 className="mt-4 text-4xl font-semibold text-white sm:text-5xl">
-          先把你的基础资料补齐一点
+          先把你的基础资料补齐一点。
         </h1>
         <p className="mt-4 max-w-3xl leading-8 text-stone-300">
           这是注册后的轻量引导，不是使用门槛。你可以现在就补，也可以先跳过，后续再回到个人资料页继续完善。
@@ -123,28 +123,21 @@ export function ProfileOnboardingPage() {
 
       {step === 1 ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={completeOnboarding}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-stone-200 transition hover:bg-white/8"
-            >
-              跳过并进入应用
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="rounded-full border border-amber-300/20 px-4 py-2 text-sm text-amber-200 transition hover:bg-amber-400/10"
-            >
-              下一步，暂不保存
-            </button>
-          </div>
-
           <BasicProfileForm
             initialValue={basicProfile}
             submitLabel="保存并继续"
             submitSuccessMessage="基础档案已保存，继续填写身体指标"
             isSubmitting={isSavingBasic}
+            secondaryAction={
+              <button
+                type="button"
+                onClick={completeOnboarding}
+                className="rounded-2xl border border-white/10 px-5 py-3 text-sm text-stone-200 transition hover:bg-white/8"
+              >
+                跳过并进入应用
+              </button>
+            }
+            actionsAlign="end"
             onSubmit={handleSaveBasicProfile}
           />
         </div>
@@ -171,6 +164,8 @@ export function ProfileOnboardingPage() {
             submitLabel="保存并完成"
             submitSuccessMessage="身体指标已记录，正在进入应用"
             isSubmitting={isSubmittingMetric}
+            allowEmptySubmit
+            onSubmitEmpty={completeOnboarding}
             onSubmit={handleCreateBodyMetric}
           />
         </div>

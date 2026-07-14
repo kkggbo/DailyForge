@@ -2,18 +2,21 @@ import { getProfileFieldLabel } from "./profile-enums";
 import type {
   AiCompletionScene,
   BasicProfileFormValues,
+  BodyMetricSnapshotResponse,
   BodyMetricFormValues,
   ProfileBasicResponse,
   ProfileCompletionSummaryResponse,
   UpdateProfileBasicPayload
 } from "../types/profile";
 
+export const DEFAULT_BIRTH_DATE = "2000-01-01";
+
 export function toBasicProfileFormValues(
   profile?: ProfileBasicResponse | UpdateProfileBasicPayload | null
 ): BasicProfileFormValues {
   return {
     gender: profile?.gender ?? "",
-    birthDate: profile?.birthDate ?? "",
+    birthDate: profile?.birthDate ?? DEFAULT_BIRTH_DATE,
     heightCm:
       profile?.heightCm === null || profile?.heightCm === undefined
         ? ""
@@ -24,11 +27,8 @@ export function toBasicProfileFormValues(
   };
 }
 
-export function createDefaultBodyMetricFormValues(
-  recordDate = getTodayDateString()
-): BodyMetricFormValues {
+export function createDefaultBodyMetricFormValues(): BodyMetricFormValues {
   return {
-    recordDate,
     weightKg: "",
     bodyFatPercent: "",
     bmi: "",
@@ -40,6 +40,32 @@ export function createDefaultBodyMetricFormValues(
     waistHipRatio: "",
     bodyAge: "",
     bodyType: "",
+    note: ""
+  };
+}
+
+export function toBodyMetricFormValues(
+  snapshot?: BodyMetricSnapshotResponse | null
+): BodyMetricFormValues {
+  if (!snapshot) {
+    return createDefaultBodyMetricFormValues();
+  }
+
+  return {
+    weightKg: toOptionalNumberString(snapshot.currentWeightKg),
+    bodyFatPercent: toOptionalNumberString(snapshot.currentBodyFatPercent),
+    bmi: toOptionalNumberString(snapshot.currentBmi),
+    skeletalMusclePercent: toOptionalNumberString(snapshot.currentSkeletalMusclePercent),
+    bodyWaterPercent: toOptionalNumberString(snapshot.currentBodyWaterPercent),
+    basalMetabolicRateKcal: toOptionalNumberString(snapshot.currentBasalMetabolicRateKcal),
+    waistCm: toOptionalNumberString(snapshot.currentWaistCm),
+    hipCm: toOptionalNumberString(snapshot.currentHipCm),
+    waistHipRatio: toOptionalNumberString(snapshot.currentWaistHipRatio),
+    bodyAge:
+      snapshot.currentBodyAge === null || snapshot.currentBodyAge === undefined
+        ? ""
+        : String(snapshot.currentBodyAge),
+    bodyType: snapshot.currentBodyType ?? "",
     note: ""
   };
 }
@@ -104,6 +130,14 @@ export function normalizeRedirectPath(redirect: string | null) {
   return redirect;
 }
 
-function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10);
+export function getLocalTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toOptionalNumberString(value: number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value);
 }

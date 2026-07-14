@@ -1,32 +1,33 @@
 # DailyForge Frontend Profile 模块详细设计
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-07-14  
 > 模块归属：`frontend/src/features/profile`
 
 ---
 
 ## 1. 模块目标
 
-前端 `profile` 模块用于承接用户基础资料、身体指标记录以及 AI 场景前置资料检查的全部交互流程。
+前端 `profile` 模块负责承接用户基础档案、身体指标记录，以及 AI 场景下的资料补录引导。
 
-当前模块需要覆盖三类目标：
+当前版本的设计目标：
 
-1. 让用户可以随时维护基础档案。
-2. 让用户可以追加身体指标记录，并查看当前状态与最近历史。
-3. 在 AI 相关场景进入前，对资料是否足够做前端提示与补录引导。
+1. 让用户可以在任意时间维护基础档案。
+2. 让用户可以新增身体指标记录，并查看当前快照与历史记录。
+3. 让首次登录用户通过轻量引导补充资料，但不把资料填写变成使用门槛。
+4. 在 AI 相关场景前，给出明确的资料缺失提示与补录入口。
 
 ---
 
 ## 2. 设计输入
 
-本模块文档基于以下文档整理：
+本文档基于以下文档与当前已落地代码整理：
 
 - [profile_PRD.md](/D:/Computer%20Science/DailyForge/docs/prd/profile_PRD.md)
+- [profile_页面实现.md](/D:/Computer%20Science/DailyForge/docs/frontend/profile_module/profile_页面实现.md)
 - [profile_接口文档.md](/D:/Computer%20Science/DailyForge/docs/interfaces/profile_接口文档.md)
-- [profile_DDD.md](/D:/Computer%20Science/DailyForge/docs/backend/profile_module/profile_DDD.md)
 
-同时对齐当前后端真实实现：
+当前对接接口：
 
 - `GET /api/profile/basic`
 - `PUT /api/profile/basic`
@@ -38,23 +39,20 @@
 
 ---
 
-## 3. 前端模块定位
+## 3. 模块定位
 
-`profile` 模块不是一个单独的“设置页”，而是 DailyForge 用户画像输入层的一部分。
+`profile` 不是普通的“设置页”，而是 DailyForge 的用户画像输入层。
 
-它与其他模块的关系如下：
+它与其他模块的关系：
 
-- `auth`：依赖登录态与 Bearer Token
-- `home`：可以从控制台进入 `profile`
-- `ai`：依赖 `completion-summary` 判断资料是否足够
-- `plan`：AI 生成计划前可能需要跳转到资料补录引导
-- `stats`：后续趋势图和摘要统计会依赖身体指标历史
+- `auth`：依赖登录态和 Bearer Token。
+- `home`：登录后用户可从应用主导航进入 `profile`。
+- `ai`：依赖 `completion-summary` 判断资料是否满足 AI 场景输入条件。
+- `stats`：后续身体趋势分析依赖身体指标历史。
 
 ---
 
-## 4. 推荐目录结构
-
-建议前端按以下结构组织：
+## 4. 目录结构
 
 ```text
 src/features/profile
@@ -71,7 +69,8 @@ src/features/profile
 ├─ lib
 │  ├─ profile-enums.ts
 │  ├─ profile-formatters.ts
-│  └─ profile-mappers.ts
+│  ├─ profile-mappers.ts
+│  └─ onboarding-storage.ts
 ├─ pages
 │  ├─ ProfilePage.tsx
 │  ├─ ProfileOnboardingPage.tsx
@@ -80,88 +79,42 @@ src/features/profile
    └─ profile.ts
 ```
 
-### 4.1 分层说明
-
-#### `api`
-
-负责：
-
-- 封装后端 `profile` 接口
-- 定义请求与响应类型
-- 把后端契约整理成前端可直接消费的方法
-
-#### `components`
-
-负责：
-
-- `profile` 模块内部复用 UI
-- 避免 `ProfilePage` 过大
-- 隔离“表单区”“摘要区”“历史区”等版块
-
-#### `lib`
-
-负责：
-
-- 枚举项定义
-- 中文标签映射
-- 表单初始值与空值处理
-- 前端展示格式化
-
-#### `pages`
-
-负责：
-
-- 页面级路由入口
-- 请求时机
-- 页面整体布局
-- 模块内状态编排
-
 ---
 
-## 5. 页面与路由设计
-
-建议本模块至少设计三个页面入口。
+## 5. 当前页面与路由
 
 ### 5.1 `ProfilePage`
 
-建议路由：
-
-`/profile`
+路由：`/profile`
 
 作用：
 
-- 正常个人信息管理页
-- 包含“基础档案”和“身体指标”两个主要 Tab
+- 正常的个人资料管理主页面。
+- 包含 `基础档案` 和 `身体指标` 两个 Tab。
 
 ### 5.2 `ProfileOnboardingPage`
 
-建议路由：
-
-`/profile/onboarding`
+路由：`/profile/onboarding`
 
 作用：
 
-- 注册成功后的首次欢迎与资料引导页
-- 采用两步流
+- 首次登录后的资料引导页。
+- 为轻量引导，不是强制门槛。
 
 ### 5.3 `ProfileAiCompletionPage`
 
-建议路由：
-
-`/profile/ai-completion`
+路由：`/profile/ai-completion`
 
 作用：
 
-- 当用户进入 AI 计划、AI 饮食、AI 总结前资料不完整时，引导补录
-- 页面结构可以与首次 onboarding 共用，但文案需要不同
+- 在 AI 场景前做资料补录。
+- 支持 `scene` 和 `redirect` 查询参数。
 
 ---
 
-## 6. 数据模型设计
+## 6. 关键数据模型
 
-前端建议直接按后端契约定义类型。
-
-### 6.1 基础档案类型
+### 6.1 基础档案
 
 ```ts
 type ProfileBasicResponse = {
@@ -176,20 +129,7 @@ type ProfileBasicResponse = {
 };
 ```
 
-### 6.2 基础档案更新请求
-
-```ts
-type UpdateProfileBasicPayload = {
-  gender: "male" | "female" | null;
-  birthDate: string | null;
-  heightCm: number | null;
-  goalType: "fat_loss" | "muscle_gain" | "health_maintenance" | null;
-  trainingLevel: "beginner" | "experienced" | null;
-  injuryNotes: string | null;
-};
-```
-
-### 6.3 当前身体快照
+### 6.2 当前身体指标快照
 
 ```ts
 type BodyMetricSnapshotResponse = {
@@ -208,7 +148,7 @@ type BodyMetricSnapshotResponse = {
 };
 ```
 
-### 6.4 身体指标历史项
+### 6.3 身体指标历史
 
 ```ts
 type BodyMetricLogItemResponse = {
@@ -230,141 +170,62 @@ type BodyMetricLogItemResponse = {
 };
 ```
 
-### 6.5 身体指标分页结果
-
-```ts
-type BodyMetricsPageResponse = {
-  page: number;
-  pageSize: number;
-  total: number;
-  records: BodyMetricLogItemResponse[];
-};
-```
-
-### 6.6 资料完成度摘要
-
-```ts
-type ProfileCompletionSummaryResponse = {
-  basicProfileReady: boolean;
-  hasWeightRecord: boolean;
-  currentWeightKg: number | null;
-  missingBasicProfileFields: string[];
-  aiPlanReady: boolean;
-  aiPlanMissingFields: string[];
-  aiNutritionReady: boolean;
-  aiNutritionMissingFields: string[];
-  aiSummaryReady: boolean;
-  aiSummaryMissingFields: string[];
-};
-```
-
 ---
 
 ## 7. API 层设计
 
-建议新增：
-
-- `src/features/profile/api/profile.ts`
-
-对外暴露方法如下：
+`src/features/profile/api/profile.ts` 对外暴露：
 
 | 方法 | 接口 | 作用 |
 |------|------|------|
 | `getBasicProfile` | `GET /api/profile/basic` | 获取基础档案 |
-| `updateBasicProfile` | `PUT /api/profile/basic` | 保存基础档案 |
-| `getCurrentBodyMetricSnapshot` | `GET /api/profile/body-metrics/current` | 获取当前身体状态摘要 |
-| `getBodyMetricsPage` | `GET /api/profile/body-metrics` | 获取身体指标历史分页 |
-| `createBodyMetric` | `POST /api/profile/body-metrics` | 新增一条身体指标记录 |
-| `deleteLatestBodyMetric` | `DELETE /api/profile/body-metrics/latest` | 删除最新一条记录 |
+| `updateBasicProfile` | `PUT /api/profile/basic` | 更新基础档案 |
+| `getCurrentBodyMetricSnapshot` | `GET /api/profile/body-metrics/current` | 获取当前快照 |
+| `getBodyMetricsPage` | `GET /api/profile/body-metrics` | 获取身体指标分页 |
+| `createBodyMetric` | `POST /api/profile/body-metrics` | 新增身体指标记录 |
+| `deleteLatestBodyMetric` | `DELETE /api/profile/body-metrics/latest` | 删除最新记录 |
 | `getProfileCompletionSummary` | `GET /api/profile/completion-summary` | 获取资料完成度摘要 |
 
-### 7.1 查询参数约定
-
-`getBodyMetricsPage` 需要支持：
-
-```ts
-type BodyMetricPageQuery = {
-  page?: number;
-  pageSize?: number;
-};
-```
-
-建议默认：
+分页默认值：
 
 - `page = 1`
 - `pageSize = 20`
 
-### 7.2 请求封装建议
-
-当前项目已有 `shared/api/http.ts`，但它只适合简单路径请求。  
-如果继续沿用，建议为 `profile` 模块增加一个查询串拼接工具，例如：
-
-```ts
-getBodyMetricsPage(accessToken, { page, pageSize })
-```
-
-内部拼接成：
-
-`/profile/body-metrics?page=1&pageSize=20`
-
-### 7.3 错误码对接
-
-前端需要重点识别的 profile 模块错误码：
-
-- `INVALID_ARGUMENT`
-- `BODY_METRIC_EMPTY_RECORD`
-- `BODY_METRIC_NOT_FOUND`
-- `BODY_METRIC_LATEST_ALREADY_DELETED`
-- `UNAUTHORIZED`
-- `TOKEN_INVALID`
-- `TOKEN_EXPIRED`
-- `FORBIDDEN`
-
-建议前端保留 `code`，不要只显示 `message`。后续实现时建议扩展当前 `request` 封装，使其能向上抛出结构化错误对象。
-
 ---
 
-## 8. 页面状态设计
+## 8. 共享表单设计
 
-### 8.1 `ProfilePage` 页面状态
+### 8.1 `BasicProfileForm`
 
-建议由页面持有以下状态：
+当前表单行为：
 
-| 状态 | 作用 |
-|------|------|
-| `activeTab` | 当前是基础档案还是身体指标 |
-| `basicProfile` | 基础档案详情 |
-| `completionSummary` | 完成度摘要 |
-| `snapshot` | 当前身体快照 |
-| `bodyMetricPage` | 身体指标分页数据 |
-| `isLoadingProfile` | 初次加载状态 |
-| `isSavingBasicProfile` | 保存基础档案状态 |
-| `isSubmittingMetric` | 新增身体指标状态 |
-| `isDeletingLatestMetric` | 删除最新记录状态 |
-| `page` / `pageSize` | 当前历史列表分页状态 |
+- 生日默认值为 `2000-01-01`。
+- 出生日期继续使用原生 `input[type="date"]`。
+- 下拉框使用深色背景方案，保证暗色主题下可读。
+- 身高仅允许输入整数，范围 `1 ~ 300`。
+- 身高输入隐藏浏览器默认 spinner。
+- 支持注入 `secondaryAction` 和 `actionsAlign`，用于 onboarding 和普通资料页复用不同按钮布局。
 
-### 8.2 基础档案表单状态
+前端校验：
 
-建议单独在 `BasicProfileForm` 内维护表单草稿，字段包括：
+- `heightCm`：必须为 `1 ~ 300` 的整数。
+- `injuryNotes.length <= 1000`
 
-- `gender`
-- `birthDate`
-- `heightCm`
-- `goalType`
-- `trainingLevel`
-- `injuryNotes`
+### 8.2 `BodyMetricForm`
 
-另外维护：
+当前表单行为：
 
-- `dirty`
-- `fieldErrors`
-- `formError`
+- 页面上不显示 `recordDate` 输入框。
+- 提交时自动把 `recordDate` 写为用户本地当天日期。
+- 小数字段步进统一为 `0.1`。
+- `bodyAge` 步进为 `1`。
+- 备注栏只有在任一指标字段有值时才显示。
+- 支持 `allowEmptySubmit`，只在 onboarding 第二步启用。
+- 支持 `initialValue`，用于把当前快照映射到表单默认值。
+- 支持 `showClearAction`，在资料页展示“清空”按钮。
 
-### 8.3 身体指标表单状态
+当前指标字段：
 
-建议单独在 `BodyMetricForm` 内维护：
-
-- `recordDate`
 - `weightKg`
 - `bodyFatPercent`
 - `bmi`
@@ -378,240 +239,217 @@ getBodyMetricsPage(accessToken, { page, pageSize })
 - `bodyType`
 - `note`
 
-并维护：
+前端校验：
 
-- `fieldErrors`
-- `formError`
-- `isDirty`
+- 普通模式下至少填写一个指标字段。
+- onboarding 第二步允许空提交直接完成引导。
+- `bodyFatPercent <= 100`
+- `bodyWaterPercent <= 100`
+- `bodyAge` 必须为 `0 ~ 150` 的整数
+- `bodyType.length <= 32`
+- `note.length <= 1000`
 
 ---
 
-## 9. 页面数据流设计
+## 9. 页面状态与数据流
 
-### 9.1 `ProfilePage` 初始化
+### 9.1 `ProfilePage` 初始加载
 
-页面进入时建议并行请求：
+并行请求：
 
 1. `GET /api/profile/basic`
 2. `GET /api/profile/completion-summary`
 3. `GET /api/profile/body-metrics/current`
 4. `GET /api/profile/body-metrics?page=1&pageSize=20`
 
-如果要控制首屏速度，也可以使用“两阶段加载”：
+### 9.2 基础档案保存后
 
-第一阶段：
-
-- `basic`
-- `completion-summary`
-- `body-metrics/current`
-
-第二阶段：
-
-- `body-metrics`
-
-### 9.2 保存基础档案后
-
-保存成功后建议同步刷新：
+刷新：
 
 1. `basicProfile`
 2. `completionSummary`
 
-快照不一定需要刷新，因为基础档案保存不会直接改变身体快照。
+### 9.3 身体指标新增后
 
-### 9.3 新增身体指标后
+刷新：
 
-新增成功后建议同步刷新：
+1. `basicProfile`
+2. `completionSummary`
+3. `snapshot`
+4. `history`
 
-1. `snapshot`
-2. `bodyMetricPage`
-3. `completionSummary`
-4. `basicProfile`
+### 9.4 删除最新记录后
 
-说明：
+刷新：
 
-- `basicProfile.currentWeightKg`
-- `basicProfile.latestBodyMetricRecordDate`
-
-都依赖身体指标记录，因此也要同步刷新。
-
-### 9.4 删除最新身体指标后
-
-删除成功后建议同步刷新：
-
-1. `snapshot`
-2. `bodyMetricPage`
-3. `completionSummary`
-4. `basicProfile`
+1. `basicProfile`
+2. `completionSummary`
+3. `snapshot`
+4. `history`
 
 ---
 
-## 10. 交互规则设计
+## 10. `ProfilePage` 当前实现规则
 
-### 10.1 基础档案 Tab
+### 10.1 顶部信息区
 
-前端应体现以下规则：
+显示：
 
-- 字段允许为空
-- 不要把“AI 需要这些字段”误写成“必须填写”
-- 重点是提示，而不是阻塞
+- 页面标题
+- 资料说明文案
+- `ProfileTabNav`
+- `CompletionSummaryBanner`
 
-建议在表单顶部放一条说明：
+### 10.2 基础档案 Tab
 
-“这些资料会帮助系统生成更贴合你的训练与饮食建议，当前不强制填写完整。”
+使用 `BasicProfileForm`。
 
-### 10.2 身体指标 Tab
+提交按钮文案：
 
-当前页面建议分三块：
+- `保存基础档案`
 
-1. 当前身体状态摘要
-2. 身体指标录入表单
-3. 最近历史记录
+### 10.3 身体指标 Tab
 
-### 10.3 新增身体指标规则
+由三部分组成：
 
-前端要提前提示两件事：
+1. `BodyMetricSummaryCard`
+2. `BodyMetricForm`
+3. `BodyMetricHistoryList`
 
-1. `recordDate` 必填
-2. 至少填写一个有效身体指标，只有备注不能提交
+当前实现新增的细节：
 
-即使后端也会校验，前端仍然应该在提交前做一次轻量校验，降低往返成本。
+- 表单默认回填当前快照中的指标值，减少重复输入。
+- 用户可通过“清空”按钮改为从空表单重新填写。
+- 回填只发生在 `/profile` 资料页，不影响 onboarding 和 AI 补录页。
 
-### 10.4 删除最新一条记录
+### 10.4 删除最新记录交互
 
-前端必须有二次确认，建议文案类似：
+使用 `DeleteLatestMetricDialog` 二次确认。
 
-“只允许删除最新一条身体指标记录。删除后将重新计算当前身体状态摘要，是否继续？”
+当前实现规则：
 
-如果后端返回：
-
-- `BODY_METRIC_NOT_FOUND`
-- `BODY_METRIC_LATEST_ALREADY_DELETED`
-
-前端应展示明确提示，并刷新列表，避免页面继续停留在旧状态。
+- 删除失败时，不只写页面级错误。
+- 弹窗内部也会显示错误提示，避免被遮罩层挡住。
+- 对以下错误码做了中文业务提示映射：
+  - `BODY_METRIC_LATEST_ALREADY_DELETED`
+  - `BODY_METRIC_NOT_FOUND`
 
 ---
 
-## 11. Onboarding 与 AI 补录流设计
+## 11. `ProfileOnboardingPage` 当前实现规则
 
-### 11.1 `ProfileOnboardingPage`
-
-建议做成两步流程：
+当前为两步流程：
 
 1. 欢迎说明 + 基础档案
 2. 身体指标录入
 
-页面需要支持：
+第一步按钮区：
 
-- 下一步
-- 上一步
-- 跳过并进入应用
-- 保存并继续
+- 不再提供“下一步，暂不保存”
+- 只保留：
+  - `跳过并进入应用`
+  - `保存并继续`
 
-### 11.2 `ProfileAiCompletionPage`
+布局规则：
 
-此页面建议与 onboarding 共用大部分布局与表单组件，但差异在于：
+- 两个按钮右对齐
+- `跳过并进入应用` 在左
+- `保存并继续` 在右
 
-- 标题更强调“为生成更准确结果补充资料”
-- 顶部展示当前缺失字段清单
-- 页面完成后返回触发来源页
+第二步规则：
 
-### 11.3 AI 场景缺失字段展示
-
-建议把后端返回的：
-
-- `aiPlanMissingFields`
-- `aiNutritionMissingFields`
-- `aiSummaryMissingFields`
-
-映射成中文标签，例如：
-
-- `gender` -> `性别`
-- `birthDate` -> `出生日期`
-- `heightCm` -> `身高`
-- `goalType` -> `训练目标`
-- `weightKg` -> `体重`
+- 提供 `上一步`
+- 提供 `跳过并进入应用`
+- 允许身体指标全空直接完成引导
 
 ---
 
-## 12. 枚举与展示映射建议
+## 12. `ProfileAiCompletionPage` 当前实现规则
 
-建议在 `profile-enums.ts` 中统一定义。
+页面目标：
 
-### 12.1 性别
+- 在 `ai-plan` / `ai-nutrition` / `ai-summary` 场景下补齐资料。
 
-```ts
-male   -> 男
-female -> 女
-```
+顶部展示：
 
-### 12.2 训练目标
+- 当前场景标题和说明
+- 当前场景仍缺少的关键字段列表
+- 当前场景是否已满足输入条件
 
-```ts
-fat_loss            -> 减脂
-muscle_gain         -> 增肌
-health_maintenance  -> 维持体态 / 保持健康
-```
+交互规则：
 
-### 12.3 训练经验
+- 第一步可“稍后补充”或切到第二步先看身体指标
+- 第二步可返回上一步或“稍后补充”
+- 完成后优先跳转 `redirect`
+- 如果没有 `redirect`，回到 `/profile`
 
-```ts
-beginner    -> 新手
-experienced -> 有经验
-```
+注意：
 
-### 12.4 体型
-
-当前后端 `bodyType` 是字符串，并未做枚举约束。前端第一版建议先按自由文本输入，不强行下拉枚举化，以免与后端实际值不一致。
+- AI 补录页仍保留“至少填写一个指标字段”校验。
+- 允许空提交只在 onboarding 第二步启用。
 
 ---
 
-## 13. 表单校验建议
+## 13. 枚举与映射
 
-### 13.1 基础档案表单
+统一定义在 `profile-enums.ts`：
 
-前端建议校验：
+- `gender`
+  - `male -> 男`
+  - `female -> 女`
+- `goalType`
+  - `fat_loss -> 减脂`
+  - `muscle_gain -> 增肌`
+  - `health_maintenance -> 保持健康 / 维持状态`
+- `trainingLevel`
+  - `beginner -> 新手`
+  - `experienced -> 有经验`
 
-- `gender` 只能是 `male | female`
-- `heightCm > 0 且 <= 300`
-- `injuryNotes.length <= 1000`
+字段标签映射同时用于：
 
-### 13.2 身体指标表单
-
-前端建议校验：
-
-- `recordDate` 必填
-- 所有数字字段不得小于 0
-- `bodyFatPercent <= 100`
-- `bodyWaterPercent <= 100`
-- `bodyAge <= 150`
-- `bodyType.length <= 32`
-- `note.length <= 1000`
-- 至少一个有效指标字段非空
+- 完成度缺失字段中文显示
+- AI 补录页面缺失项展示
 
 ---
 
-## 14. 推荐开发顺序
+## 14. 错误处理
 
-前端建议按以下顺序开发：
+前端通过 `ApiRequestError` 识别结构化错误。
 
-1. 先完成 `profile.ts` API 层与类型定义
-2. 搭建 `ProfilePage` 页面骨架和 Tab
-3. 实现基础档案读取与保存
-4. 实现当前身体快照展示
-5. 实现身体指标新增表单
-6. 实现历史记录列表与分页
-7. 实现删除最新记录
-8. 实现 `completion-summary` 展示
-9. 最后再实现 onboarding 与 AI 补录流程
+当前重点错误码：
+
+- `INVALID_ARGUMENT`
+- `BODY_METRIC_EMPTY_RECORD`
+- `BODY_METRIC_NOT_FOUND`
+- `BODY_METRIC_LATEST_ALREADY_DELETED`
+- `UNAUTHORIZED`
+- `TOKEN_INVALID`
+- `TOKEN_EXPIRED`
+- `FORBIDDEN`
+
+当前特殊处理：
+
+- 删除最新记录失败时，弹窗内直接展示业务文案。
 
 ---
 
-## 15. 当前前端实现注意点
+## 15. 与注册登录链路的衔接
 
-结合项目现状，建议特别注意：
+虽然不属于 `profile` 目录本身，但当前实现与 `profile` 引导强相关：
 
-1. 继续沿用模块化结构，不要把 profile 逻辑塞进 `app` 或 `home`。
-2. 当前 `shared/api/http.ts` 需要增强 query 参数和结构化错误支持。
-3. 当前项目没有 React Query，profile 第一版可以先用页面级请求编排，但如果数据联动变复杂，应尽快引入数据请求缓存层。
-4. 当前前端文案已经清洗过乱码，新模块新增文件时要继续保持 UTF-8。
+- 注册成功后，前端会立即复用现有登录接口自动登录。
+- 自动登录成功后进入 `/app`。
+- 用户首次登录时，如果本地未记录 onboarding 已完成，则继续进入 `/profile/onboarding`。
 
+因此，`profile` onboarding 的真实入口已经从“注册后跳登录页”调整为“注册成功后自动登录，再进入首次引导”。
+
+---
+
+## 16. 当前版本开发结论
+
+当前 `profile` 模块已经从最初的“基础 CRUD”收敛成一套更完整的资料录入体验：
+
+1. onboarding 不再打断主流程，但体验更顺滑。
+2. 资料页身体指标录入支持复用上次数据并手动清空。
+3. 删除最新记录的失败提示已经回到当前操作上下文。
+4. AI 补录、首次引导、普通资料页三条入口共用一套主要表单组件，但各自保留必要的行为差异。

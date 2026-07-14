@@ -1,13 +1,21 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
+
+type LoginLocationState = {
+  email?: string;
+  message?: string;
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const locationState = (location.state as LoginLocationState | null) ?? null;
+  const [email, setEmail] = useState(locationState?.email ?? "");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessage] = useState<string | null>(locationState?.message ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -32,15 +40,21 @@ export function LoginPage() {
           Welcome Back
         </p>
         <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-          登录 DailyForge，继续管理你的训练节奏
+          登录 DailyForge，继续管理你的训练节奏。
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-stone-300">
-          当前这版前端已经接上真实鉴权接口。登录后你可以先验证账号状态、邀请码兑换和基础路由守卫，接着进入个人资料模块开始补齐训练画像。
+          当前前端已经接通真实鉴权链路。登录后你可以继续完成资料引导、邀请码兑换和后续训练相关功能。
         </p>
       </div>
 
       <div className="rounded-[32px] border border-amber-300/20 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         <form className="space-y-5" onSubmit={handleSubmit}>
+          {statusMessage ? (
+            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+              {statusMessage}
+            </div>
+          ) : null}
+
           <div>
             <label className="mb-2 block text-sm text-stone-300" htmlFor="email">
               邮箱

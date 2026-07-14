@@ -18,16 +18,20 @@ type BasicProfileFormProps = {
   submitLabel: string;
   submitSuccessMessage?: string;
   isSubmitting: boolean;
+  secondaryAction?: ReactNode;
+  actionsAlign?: "start" | "end";
   onSubmit: (payload: UpdateProfileBasicPayload) => Promise<void>;
 };
 
 export function BasicProfileForm({
   initialValue,
   title = "基础档案",
-  description = "这些资料会帮助系统生成更贴合你的训练与饮食建议，当前不强制一次填满。",
+  description = "这些资料会帮助系统生成更贴合你的训练与饮食建议，当前不是使用门槛，可以逐步完善。",
   submitLabel,
   submitSuccessMessage = "基础档案已保存",
   isSubmitting,
+  secondaryAction,
+  actionsAlign = "start",
   onSubmit
 }: BasicProfileFormProps) {
   const [form, setForm] = useState<BasicProfileFormValues>(() =>
@@ -43,6 +47,7 @@ export function BasicProfileForm({
     setForm(toBasicProfileFormValues(initialValue));
     setFieldErrors({});
     setFormError(null);
+    setSuccessMessage(null);
   }, [initialValue]);
 
   function updateField<K extends keyof BasicProfileFormValues>(
@@ -77,9 +82,7 @@ export function BasicProfileForm({
       await onSubmit(toBasicProfilePayload(form));
       setSuccessMessage(submitSuccessMessage);
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "基础档案保存失败，请稍后重试"
-      );
+      setFormError(error instanceof Error ? error.message : "基础档案保存失败，请稍后重试");
     }
   }
 
@@ -97,7 +100,7 @@ export function BasicProfileForm({
           <select
             value={form.gender}
             onChange={(event) => updateField("gender", event.target.value)}
-            className={inputClassName}
+            className={`${inputClassName} df-select-input`}
           >
             <option value="">暂不填写</option>
             {genderOptions.map((option) => (
@@ -113,20 +116,20 @@ export function BasicProfileForm({
             type="date"
             value={form.birthDate}
             onChange={(event) => updateField("birthDate", event.target.value)}
-            className={inputClassName}
+            className={`${inputClassName} df-date-input`}
           />
         </FormField>
 
         <FormField label="身高（cm）" error={fieldErrors.heightCm}>
           <input
             type="number"
-            min="0.01"
+            min="1"
             max="300"
-            step="0.01"
+            step="1"
             value={form.heightCm}
             onChange={(event) => updateField("heightCm", event.target.value)}
             placeholder="例如 178"
-            className={inputClassName}
+            className={`${inputClassName} df-no-spinner`}
           />
         </FormField>
 
@@ -134,7 +137,7 @@ export function BasicProfileForm({
           <select
             value={form.goalType}
             onChange={(event) => updateField("goalType", event.target.value)}
-            className={inputClassName}
+            className={`${inputClassName} df-select-input`}
           >
             <option value="">暂不填写</option>
             {goalTypeOptions.map((option) => (
@@ -149,7 +152,7 @@ export function BasicProfileForm({
           <select
             value={form.trainingLevel}
             onChange={(event) => updateField("trainingLevel", event.target.value)}
-            className={inputClassName}
+            className={`${inputClassName} df-select-input`}
           >
             <option value="">暂不填写</option>
             {trainingLevelOptions.map((option) => (
@@ -170,7 +173,7 @@ export function BasicProfileForm({
           <textarea
             value={form.injuryNotes}
             onChange={(event) => updateField("injuryNotes", event.target.value)}
-            placeholder="例如：左膝旧伤，深蹲和跑跳类动作需要控制负荷。"
+            placeholder="例如：左膝有旧伤，深蹲和跑跳类动作需要控制负荷。"
             rows={5}
             className={`${inputClassName} resize-y`}
           />
@@ -188,7 +191,13 @@ export function BasicProfileForm({
           </div>
         ) : null}
 
-        <div className="md:col-span-2">
+        <div
+          className={[
+            "md:col-span-2 flex flex-wrap gap-3",
+            actionsAlign === "end" ? "justify-end" : "justify-start"
+          ].join(" ")}
+        >
+          {secondaryAction}
           <button
             type="submit"
             disabled={isSubmitting}
@@ -225,8 +234,8 @@ function validateBasicProfileForm(form: BasicProfileFormValues) {
   if (form.heightCm) {
     const value = Number(form.heightCm);
 
-    if (!Number.isFinite(value) || value <= 0 || value > 300) {
-      errors.heightCm = "身高必须大于 0 且不超过 300 cm";
+    if (!Number.isInteger(value) || value <= 0 || value > 300) {
+      errors.heightCm = "身高必须是 1 到 300 之间的整数";
     }
   }
 

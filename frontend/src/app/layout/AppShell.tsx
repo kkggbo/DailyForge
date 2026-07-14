@@ -13,9 +13,13 @@ export function AppShell() {
   const { currentUser, isAuthenticated, logout } = useAuth();
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.24),_transparent_36%),linear-gradient(160deg,_#17120f_0%,_#231814_50%,_#0f0a09_100%)] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-25" />
-      <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-6 pb-10 pt-6 sm:px-8 lg:px-10">
+    <div className="relative min-h-screen overflow-x-hidden bg-stone-950 text-white">
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(160deg,_#17120f_0%,_#231814_50%,_#0f0a09_100%)]" />
+      <div className="pointer-events-none fixed inset-x-0 top-[-10rem] z-0 h-[30rem] bg-[radial-gradient(circle_at_center,_rgba(251,191,36,0.34),_rgba(251,191,36,0.16)_34%,_transparent_72%)] blur-3xl" />
+      <div className="pointer-events-none fixed left-1/2 top-[-3rem] z-0 h-[24rem] w-[56rem] -translate-x-1/2 rounded-full bg-amber-300/12 blur-[160px]" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-25" />
+
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 pb-10 pt-6 sm:px-8 lg:px-10">
         <header className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-black/20 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
             <Link to="/" className="inline-flex items-center gap-3">
@@ -23,7 +27,7 @@ export function AppShell() {
                 DF
               </span>
               <div>
-                <p className="text-lg font-semibold tracking-[0.18em] text-amber-300 uppercase">
+                <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
                   DailyForge
                 </p>
                 <p className="text-sm text-stone-400">
@@ -42,6 +46,9 @@ export function AppShell() {
                 <>
                   <NavLink to="/app" className={navLinkClass}>
                     控制台
+                  </NavLink>
+                  <NavLink to="/cycle-templates" className={navLinkClass}>
+                    训练模板
                   </NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
                     个人资料

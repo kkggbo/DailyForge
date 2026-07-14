@@ -244,7 +244,7 @@ CREATE TABLE cycle_templates (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     user_id BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
     name VARCHAR(128) NOT NULL COMMENT '循环模板名称',
-    cycle_length TINYINT UNSIGNED NOT NULL COMMENT '循环天数(1-7)',
+    cycle_length TINYINT UNSIGNED NULL COMMENT '循环天数(1-7)',
     goal_type VARCHAR(32) NULL COMMENT '目标类型',
     status VARCHAR(32) NOT NULL DEFAULT 'draft' COMMENT '模板状态',
     current_version_id BIGINT UNSIGNED NULL COMMENT '当前生效版本ID',

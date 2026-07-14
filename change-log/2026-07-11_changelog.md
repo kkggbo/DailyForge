@@ -153,6 +153,29 @@
 
 这是一个正确的阶段性取舍。因为当前首要目标是先让项目能稳定启动，而不是为了迁移工具继续在版本兼容上消耗时间。
 
+### 8.1 修复接口路径不统一问题
+
+在这一天的收尾阶段，还补做了一次非常必要的整理：统一后端接口路径与 Swagger 文档路径。
+
+对应提交：
+- `54c00b817ed59426e85f149d1bc825b7ad04571a`
+
+这次修复涉及：
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/java/com/dailyforge/config/SecurityConfig.java`
+- `backend/src/main/java/com/dailyforge/modules/auth/interfaces/rest/AuthController.java`
+- `backend/src/test/java/com/dailyforge/modules/auth/AuthIntegrationTest.java`
+- `README.md`
+
+完成后的统一规则是：
+- 全局启用 `server.servlet.context-path=/api`
+- Controller 只声明资源路径，例如 `/auth`
+- 对外业务接口统一为 `/api/...`
+- Swagger UI 统一为 `/api/docs/swagger`
+- OpenAPI 文档统一为 `/api/docs/api`
+
+这次改动的价值不只是“路径修了一下”，而是把后端对外暴露接口的命名空间策略正式定住了。这个动作很重要，因为如果路径策略在项目早期一直摇摆，后面前端联调、接口文档、测试用例和安全放行规则都会一起反复改。
+
 ### 9. 增加仓库忽略规则
 
 新增：

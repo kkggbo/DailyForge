@@ -38,6 +38,36 @@ select {
   font: inherit;
 }
 
+.df-select-input {
+  background-color: rgba(28, 25, 23, 0.92);
+  color: #fafaf9;
+}
+
+.df-select-input option {
+  background-color: #1c1917;
+  color: #fafaf9;
+}
+
+.df-date-input {
+  color-scheme: light;
+}
+
+.df-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.15);
+  opacity: 0.95;
+  cursor: pointer;
+}
+
+.df-no-spinner::-webkit-outer-spin-button,
+.df-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.df-no-spinner[type="number"] {
+  -moz-appearance: textfield;
+}
+
 ::selection {
   background: rgba(251, 191, 36, 0.28);
   color: #fff7ed;

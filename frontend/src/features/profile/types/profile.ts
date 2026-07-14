@@ -118,7 +118,6 @@ export type BasicProfileFormValues = {
 };
 
 export type BodyMetricFormValues = {
-  recordDate: string;
   weightKg: string;
   bodyFatPercent: string;
   bmi: string;

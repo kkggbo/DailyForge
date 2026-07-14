@@ -1,4 +1,9 @@
-import { formatDate, formatNullableInteger, formatNullableNumber, formatNullableText } from "../lib/profile-formatters";
+import {
+  formatDate,
+  formatNullableInteger,
+  formatNullableNumber,
+  formatNullableText
+} from "../lib/profile-formatters";
 import type { BodyMetricsPageResponse } from "../types/profile";
 
 type BodyMetricHistoryListProps = {
@@ -25,9 +30,7 @@ export function BodyMetricHistoryList({
             第一版先保留简洁分页，趋势图和更复杂的分析后续再接到统计模块。
           </p>
         </div>
-        <p className="text-sm text-stone-400">
-          共 {data?.total ?? 0} 条记录
-        </p>
+        <p className="text-sm text-stone-400">共 {data?.total ?? 0} 条记录</p>
       </div>
 
       {isLoading ? (
@@ -54,9 +57,7 @@ export function BodyMetricHistoryList({
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-2 text-sm text-stone-400">
-                      ID: {record.id}
-                    </p>
+                    <p className="mt-2 text-sm text-stone-400">ID: {record.id}</p>
                   </div>
 
                   {record.isLatest ? (

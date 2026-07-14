@@ -36,22 +36,22 @@ export function CompletionSummaryBanner({
         <StatusCard
           title="基础档案"
           ready={summary.basicProfileReady}
-          description="是否具备生成 AI 建议所需的核心档案"
+          description="是否具备生成 AI 建议所需的核心档案。"
         />
         <StatusCard
           title="体重记录"
           ready={summary.hasWeightRecord}
-          description="是否已有可用体重，用于估算基础消耗与建议"
+          description="是否已有可用体重，用于估算基础消耗与建议。"
         />
         <StatusCard
           title="AI 训练计划"
           ready={summary.aiPlanReady}
-          description="是否满足 AI 训练计划生成的最小输入"
+          description="是否满足 AI 训练计划生成的最小输入。"
         />
         <StatusCard
           title="AI 饮食建议"
           ready={summary.aiNutritionReady}
-          description="是否满足 AI 饮食建议生成的最小输入"
+          description="是否满足 AI 饮食建议生成的最小输入。"
         />
       </div>
 
@@ -88,7 +88,7 @@ function StatusCard({ title, description, ready }: StatusCardProps) {
               : "bg-amber-400/15 text-amber-200"
           ].join(" ")}
         >
-          {ready ? "已就绪" : "待补充"}
+          {ready ? "已就绪" : "待补全"}
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-stone-400">{description}</p>

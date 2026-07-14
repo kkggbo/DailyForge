@@ -1,4 +1,9 @@
-import { formatDateTime, formatNullableInteger, formatNullableNumber, formatNullableText } from "../lib/profile-formatters";
+import {
+  formatDateTime,
+  formatNullableInteger,
+  formatNullableNumber,
+  formatNullableText
+} from "../lib/profile-formatters";
 import type { BodyMetricSnapshotResponse } from "../types/profile";
 
 type BodyMetricSummaryCardProps = {
@@ -10,7 +15,10 @@ export function BodyMetricSummaryCard({
 }: BodyMetricSummaryCardProps) {
   const items = [
     { label: "体重", value: formatNullableNumber(snapshot?.currentWeightKg, { unit: "kg" }) },
-    { label: "体脂率", value: formatNullableNumber(snapshot?.currentBodyFatPercent, { unit: "%" }) },
+    {
+      label: "体脂率",
+      value: formatNullableNumber(snapshot?.currentBodyFatPercent, { unit: "%" })
+    },
     { label: "BMI", value: formatNullableNumber(snapshot?.currentBmi) },
     {
       label: "骨骼肌率",
@@ -41,7 +49,7 @@ export function BodyMetricSummaryCard({
         <div>
           <h3 className="text-2xl font-semibold text-white">当前身体状态</h3>
           <p className="mt-2 text-sm leading-6 text-stone-300">
-            这里展示的是当前已知快照，不要求所有字段来自同一次测量。
+            这里展示的是当前已知快照，不要求所有字段都来自同一次测量。
           </p>
         </div>
         <p className="text-sm text-stone-400">

@@ -4,6 +4,10 @@ import { useAuth } from "./providers/AuthProvider";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RedeemInviteCodePage } from "../features/auth/pages/RedeemInviteCodePage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { CycleTemplateCreatePage } from "../features/cycle-template/pages/CycleTemplateCreatePage";
+import { CycleTemplateDetailPage } from "../features/cycle-template/pages/CycleTemplateDetailPage";
+import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTemplateEditPage";
+import { CycleTemplatePage } from "../features/cycle-template/pages/CycleTemplatePage";
 import { HomePage } from "../features/home/pages/HomePage";
 import { LandingPage } from "../features/home/pages/LandingPage";
 import { hasCompletedProfileOnboarding } from "../features/profile/lib/onboarding-storage";
@@ -79,6 +83,22 @@ export const router = createBrowserRouter([
           {
             path: "/profile/ai-completion",
             element: <ProfileAiCompletionPage />
+          },
+          {
+            path: "/cycle-templates",
+            element: <CycleTemplatePage />
+          },
+          {
+            path: "/cycle-templates/create",
+            element: <CycleTemplateCreatePage />
+          },
+          {
+            path: "/cycle-templates/:templateId",
+            element: <CycleTemplateDetailPage />
+          },
+          {
+            path: "/cycle-templates/:templateId/edit",
+            element: <CycleTemplateEditPage />
           }
         ]
       }

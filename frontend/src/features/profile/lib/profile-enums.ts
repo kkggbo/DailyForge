@@ -19,7 +19,7 @@ export const genderOptions: Array<{ value: Gender; label: string }> = [
 export const goalTypeOptions: Array<{ value: GoalType; label: string }> = [
   { value: "fat_loss", label: "减脂" },
   { value: "muscle_gain", label: "增肌" },
-  { value: "health_maintenance", label: "维持体态 / 保持健康" }
+  { value: "health_maintenance", label: "保持健康 / 维持状态" }
 ];
 
 export const trainingLevelOptions: Array<{

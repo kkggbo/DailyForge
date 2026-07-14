@@ -1,6 +1,7 @@
 type DeleteLatestMetricDialogProps = {
   open: boolean;
   isSubmitting: boolean;
+  errorMessage?: string | null;
   onClose: () => void;
   onConfirm: () => void;
 };
@@ -8,6 +9,7 @@ type DeleteLatestMetricDialogProps = {
 export function DeleteLatestMetricDialog({
   open,
   isSubmitting,
+  errorMessage,
   onClose,
   onConfirm
 }: DeleteLatestMetricDialogProps) {
@@ -27,6 +29,12 @@ export function DeleteLatestMetricDialog({
         <p className="mt-3 leading-7 text-stone-300">
           只允许删除最新一条记录。删除后系统会重新计算当前身体状态快照，请确认这是你想执行的操作。
         </p>
+
+        {errorMessage ? (
+          <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+            {errorMessage}
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button
