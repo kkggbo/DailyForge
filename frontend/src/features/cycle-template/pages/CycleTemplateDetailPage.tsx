@@ -92,7 +92,7 @@ export function CycleTemplateDetailPage() {
         error.code === "CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED"
       ) {
         setRequiresSwitchConfirm(true);
-        setDialogError("当前已有启用模板，再次确认后会结束旧循环并从新模板 Day 1 开始。");
+        setDialogError("当前已有启用模板，再次确认后会结束旧循环，并从新模板 Day 1 开始。");
         return;
       }
 

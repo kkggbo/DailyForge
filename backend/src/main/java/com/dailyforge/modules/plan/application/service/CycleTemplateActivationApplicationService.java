@@ -2,9 +2,13 @@ package com.dailyforge.modules.plan.application.service;
 
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
+import com.dailyforge.modules.exercise.application.model.SystemExerciseLookupResult;
+import com.dailyforge.modules.exercise.application.service.SystemExerciseLookupService;
 import com.dailyforge.modules.plan.application.assembler.CycleTemplateAssembler;
 import com.dailyforge.modules.plan.domain.service.CycleActivationDomainService;
 import com.dailyforge.modules.plan.domain.service.CycleTemplatePolicyService;
+import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService;
+import com.dailyforge.modules.plan.domain.service.ExerciseStructurePolicyService;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleRunEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.UserActiveCycleEntity;
@@ -14,6 +18,11 @@ import com.dailyforge.modules.plan.infrastructure.persistence.mapper.UserActiveC
 import com.dailyforge.modules.plan.interfaces.dto.ActivateCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.vo.ActivateCycleTemplateResponse;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,7 +37,10 @@ public class CycleTemplateActivationApplicationService {
     private final CycleTemplateMapper cycleTemplateMapper;
     private final UserActiveCycleMapper userActiveCycleMapper;
     private final CycleRunMapper cycleRunMapper;
+    private final SystemExerciseLookupService systemExerciseLookupService;
     private final CycleTemplatePolicyService cycleTemplatePolicyService;
+    private final ExerciseStructurePolicyService exerciseStructurePolicyService;
+    private final CycleTemplateVersionDomainService cycleTemplateVersionDomainService;
     private final CycleActivationDomainService cycleActivationDomainService;
     private final CycleTemplateAssembler cycleTemplateAssembler;
 
@@ -37,14 +49,20 @@ public class CycleTemplateActivationApplicationService {
             CycleTemplateMapper cycleTemplateMapper,
             UserActiveCycleMapper userActiveCycleMapper,
             CycleRunMapper cycleRunMapper,
+            SystemExerciseLookupService systemExerciseLookupService,
             CycleTemplatePolicyService cycleTemplatePolicyService,
+            ExerciseStructurePolicyService exerciseStructurePolicyService,
+            CycleTemplateVersionDomainService cycleTemplateVersionDomainService,
             CycleActivationDomainService cycleActivationDomainService,
             CycleTemplateAssembler cycleTemplateAssembler) {
         this.planUserSupportService = planUserSupportService;
         this.cycleTemplateMapper = cycleTemplateMapper;
         this.userActiveCycleMapper = userActiveCycleMapper;
         this.cycleRunMapper = cycleRunMapper;
+        this.systemExerciseLookupService = systemExerciseLookupService;
         this.cycleTemplatePolicyService = cycleTemplatePolicyService;
+        this.exerciseStructurePolicyService = exerciseStructurePolicyService;
+        this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
         this.cycleActivationDomainService = cycleActivationDomainService;
         this.cycleTemplateAssembler = cycleTemplateAssembler;
     }
@@ -64,6 +82,7 @@ public class CycleTemplateActivationApplicationService {
         }
         cycleTemplatePolicyService.assertTemplateStatus(targetTemplate, "draft", "inactive");
         cycleTemplatePolicyService.assertCanActivate(targetTemplate);
+        validateCurrentVersionStructure(targetTemplate);
 
         UserActiveCycleEntity activeCycle = userActiveCycleMapper.selectByUserIdForUpdate(userId);
         Long previousActiveTemplateId = null;
@@ -92,8 +111,31 @@ public class CycleTemplateActivationApplicationService {
         return cycleTemplateAssembler.toActivateResponse(targetTemplate, 1, previousActiveTemplateId);
     }
 
+    private void validateCurrentVersionStructure(CycleTemplateEntity targetTemplate) {
+        var snapshot = cycleTemplateVersionDomainService.loadVersionSnapshot(targetTemplate.getCurrentVersionId());
+        Set<Long> exerciseIds = snapshot.days().stream()
+                .flatMap(day -> day.exercises().stream())
+                .map(CycleTemplateVersionDomainService.ExerciseSnapshot::exerciseId)
+                .collect(Collectors.toSet());
+        if (exerciseIds.isEmpty()) {
+            return;
+        }
+        Map<Long, SystemExerciseLookupResult> exerciseMap =
+                new LinkedHashMap<>(systemExerciseLookupService.loadExercisesByIds(exerciseIds));
+        if (exerciseMap.size() != exerciseIds.size()) {
+            throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_EXERCISE_NOT_FOUND);
+        }
+        for (SystemExerciseLookupResult exercise : exerciseMap.values()) {
+            if (exercise.ownerUserId() != null || exercise.isActive() == null || exercise.isActive() != 1) {
+                throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_SYSTEM_EXERCISE_REQUIRED);
+            }
+        }
+        exerciseStructurePolicyService.validateVersionSnapshot(snapshot, exerciseMap);
+    }
+
     private void closeCurrentActiveContext(Long userId, UserActiveCycleEntity activeCycle) {
-        CycleTemplateEntity oldTemplate = cycleTemplateMapper.selectByIdAndUserIdForUpdate(activeCycle.getTemplateId(), userId);
+        CycleTemplateEntity oldTemplate =
+                cycleTemplateMapper.selectByIdAndUserIdForUpdate(activeCycle.getTemplateId(), userId);
         if (oldTemplate != null) {
             oldTemplate.setStatus("inactive");
             cycleTemplateMapper.updateById(oldTemplate);

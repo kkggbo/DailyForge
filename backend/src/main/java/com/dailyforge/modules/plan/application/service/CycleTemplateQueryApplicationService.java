@@ -4,10 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
 import com.dailyforge.modules.plan.application.assembler.CycleTemplateAssembler;
+import com.dailyforge.modules.plan.domain.model.MetricKey;
 import com.dailyforge.modules.plan.domain.service.CycleTemplatePolicyService;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.DaySnapshot;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.ExerciseSnapshot;
+import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.ItemSnapshot;
+import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.MetricSnapshot;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.VersionSnapshot;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleRunEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
@@ -19,17 +22,16 @@ import com.dailyforge.modules.plan.infrastructure.persistence.mapper.UserActiveC
 import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateDayResponse;
 import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateDetailResponse;
 import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateExerciseResponse;
+import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateItemResponse;
+import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateMetricResponse;
 import com.dailyforge.modules.plan.interfaces.vo.CurrentActiveCycleTemplateResponse;
 import com.dailyforge.modules.plan.interfaces.vo.DraftCycleTemplateListResponse;
 import com.dailyforge.modules.plan.interfaces.vo.DraftCycleTemplateSummary;
 import com.dailyforge.modules.plan.interfaces.vo.FormalCycleTemplateListResponse;
 import com.dailyforge.modules.plan.interfaces.vo.FormalCycleTemplateSummary;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -47,7 +49,6 @@ public class CycleTemplateQueryApplicationService {
     private final CycleTemplateVersionDomainService cycleTemplateVersionDomainService;
     private final CycleTemplatePolicyService cycleTemplatePolicyService;
     private final CycleTemplateAssembler cycleTemplateAssembler;
-    private final ObjectMapper objectMapper;
 
     public CycleTemplateQueryApplicationService(
             PlanUserSupportService planUserSupportService,
@@ -57,8 +58,7 @@ public class CycleTemplateQueryApplicationService {
             CycleTemplateDayMapper cycleTemplateDayMapper,
             CycleTemplateVersionDomainService cycleTemplateVersionDomainService,
             CycleTemplatePolicyService cycleTemplatePolicyService,
-            CycleTemplateAssembler cycleTemplateAssembler,
-            ObjectMapper objectMapper) {
+            CycleTemplateAssembler cycleTemplateAssembler) {
         this.planUserSupportService = planUserSupportService;
         this.cycleTemplateMapper = cycleTemplateMapper;
         this.userActiveCycleMapper = userActiveCycleMapper;
@@ -67,7 +67,6 @@ public class CycleTemplateQueryApplicationService {
         this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
         this.cycleTemplatePolicyService = cycleTemplatePolicyService;
         this.cycleTemplateAssembler = cycleTemplateAssembler;
-        this.objectMapper = objectMapper;
     }
 
     /**
@@ -117,7 +116,7 @@ public class CycleTemplateQueryApplicationService {
     }
 
     /**
-     * Return one template detail with day locking and exercise targets.
+     * Return one template detail with nested v2 structure.
      */
     public CycleTemplateDetailResponse getTemplateDetail(Long templateId) {
         Long userId = planUserSupportService.requireActiveUserId();
@@ -141,8 +140,8 @@ public class CycleTemplateQueryApplicationService {
 
         boolean canActivate = cycleTemplatePolicyService.canActivate(template);
         boolean canDelete = "draft".equals(template.getStatus()) || "inactive".equals(template.getStatus());
-        log.debug("Template detail loaded. userId={}, templateId={}, status={}, editableFromDayIndex={}",
-                userId, templateId, template.getStatus(), editableFromDayIndex);
+        log.debug("Template detail loaded. userId={}, templateId={}, status={}, editableFromDayIndex={}, dayCount={}",
+                userId, templateId, template.getStatus(), editableFromDayIndex, dayResponses.size());
         return new CycleTemplateDetailResponse(
                 template.getId(),
                 template.getName(),
@@ -201,9 +200,7 @@ public class CycleTemplateQueryApplicationService {
             boolean isLocked = active && daySnapshot.dayIndex() < editableFromDayIndex;
             List<CycleTemplateExerciseResponse> exercises = new ArrayList<>();
             for (ExerciseSnapshot exerciseSnapshot : daySnapshot.exercises()) {
-                exercises.add(cycleTemplateAssembler.toExerciseResponse(
-                        toExerciseEntity(exerciseSnapshot),
-                        parseJson(exerciseSnapshot.targetExtraJson())));
+                exercises.add(toExerciseResponse(exerciseSnapshot));
             }
             responses.add(new CycleTemplateDayResponse(
                     daySnapshot.dayIndex(),
@@ -215,31 +212,39 @@ public class CycleTemplateQueryApplicationService {
         return responses;
     }
 
-    private com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleDayExerciseEntity toExerciseEntity(
-            ExerciseSnapshot snapshot) {
-        var entity = new com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleDayExerciseEntity();
-        entity.setSortOrder(snapshot.sortOrder());
-        entity.setExerciseId(snapshot.exerciseId());
-        entity.setExerciseNameSnapshot(snapshot.exerciseNameSnapshot());
-        entity.setTargetSets(snapshot.targetSets());
-        entity.setTargetRepsMin(snapshot.targetRepsMin());
-        entity.setTargetRepsMax(snapshot.targetRepsMax());
-        entity.setTargetWeightKg(snapshot.targetWeightKg());
-        entity.setTargetDurationSeconds(snapshot.targetDurationSeconds());
-        entity.setTargetRestSeconds(snapshot.targetRestSeconds());
-        entity.setTargetRpe(snapshot.targetRpe());
-        entity.setNotes(snapshot.notes());
-        return entity;
+    private CycleTemplateExerciseResponse toExerciseResponse(ExerciseSnapshot snapshot) {
+        List<CycleTemplateItemResponse> items = new ArrayList<>();
+        for (ItemSnapshot item : snapshot.items()) {
+            items.add(toItemResponse(item));
+        }
+        return new CycleTemplateExerciseResponse(
+                snapshot.sortOrder(),
+                snapshot.exerciseId(),
+                snapshot.exerciseNameSnapshot(),
+                snapshot.structureType(),
+                snapshot.note(),
+                items);
     }
 
-    private JsonNode parseJson(String rawJson) {
-        if (rawJson == null) {
-            return null;
+    private CycleTemplateItemResponse toItemResponse(ItemSnapshot snapshot) {
+        List<CycleTemplateMetricResponse> metrics = new ArrayList<>();
+        for (MetricSnapshot metric : snapshot.metrics()) {
+            metrics.add(new CycleTemplateMetricResponse(
+                    metric.sortOrder(),
+                    metric.metricKey(),
+                    metric.metricValueNumber(),
+                    resolveMetricUnit(metric.metricKey())));
         }
-        try {
-            return objectMapper.readTree(rawJson);
-        } catch (Exception exception) {
-            throw new IllegalStateException("failed to parse targetExtraJson", exception);
-        }
+        return new CycleTemplateItemResponse(
+                snapshot.itemIndex(),
+                snapshot.itemType(),
+                snapshot.itemName(),
+                snapshot.note(),
+                metrics);
+    }
+
+    private String resolveMetricUnit(String metricKeyValue) {
+        MetricKey metricKey = MetricKey.fromValue(metricKeyValue);
+        return metricKey == null ? null : metricKey.getUnit();
     }
 }

@@ -7,6 +7,7 @@ import com.dailyforge.common.BusinessException;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.UserActiveCycleEntity;
 import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateDayRequest;
+import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateExerciseRequest;
 import com.dailyforge.modules.plan.interfaces.dto.UpdateCycleTemplateRequest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,39 @@ class CycleTemplatePolicyServiceTest {
         assertThatThrownBy(() -> cycleTemplatePolicyService.assertFormalCycleLength(null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("cycle length is invalid");
+    }
+
+    @Test
+    void validateDayRequestsShouldRejectOutOfRangeDayIndex() {
+        assertThatThrownBy(() -> cycleTemplatePolicyService.validateDayRequests(
+                5,
+                List.of(new CycleTemplateDayRequest(6, "Legs", List.of()))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("cycle template day is out of range");
+    }
+
+    @Test
+    void validateDayRequestsShouldRejectDuplicateDayIndex() {
+        List<CycleTemplateDayRequest> days = List.of(
+                new CycleTemplateDayRequest(1, "Push", List.of()),
+                new CycleTemplateDayRequest(1, "Pull", List.of()));
+
+        assertThatThrownBy(() -> cycleTemplatePolicyService.validateDayRequests(5, days))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("duplicate dayIndex");
+    }
+
+    @Test
+    void validateDayRequestsShouldRejectDuplicateExerciseSortOrder() {
+        List<CycleTemplateExerciseRequest> exercises = List.of(
+                new CycleTemplateExerciseRequest(1, 1001L, "set_based", null, List.of()),
+                new CycleTemplateExerciseRequest(1, 1002L, "set_based", null, List.of()));
+
+        assertThatThrownBy(() -> cycleTemplatePolicyService.validateDayRequests(
+                5,
+                List.of(new CycleTemplateDayRequest(1, "Push", exercises))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("duplicate sortOrder");
     }
 
     @Test

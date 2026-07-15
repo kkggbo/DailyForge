@@ -14,6 +14,7 @@ import {
   detailToEditorForm,
   editorFormToPayload
 } from "../lib/cycle-template-mappers";
+import { getCycleTemplateFieldErrorSummaries } from "../lib/cycle-template-validators";
 import type { CycleTemplateDetailResponse } from "../types/cycle-template";
 
 export function CycleTemplateEditPage() {
@@ -22,9 +23,11 @@ export function CycleTemplateEditPage() {
   const params = useParams();
   const templateId = Number(params.templateId);
   const [detail, setDetail] = useState<CycleTemplateDetailResponse | null>(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [showValidationSummary, setShowValidationSummary] = useState(false);
 
   useEffect(() => {
     if (!accessToken || !Number.isFinite(templateId)) {
@@ -43,12 +46,28 @@ export function CycleTemplateEditPage() {
     allowEmptyCycleLength: detail?.status === "draft"
   });
 
+  const fieldErrorSummaries = getCycleTemplateFieldErrorSummaries(editor.fieldErrors);
+
+  useEffect(() => {
+    setSelectedDayIndex((previous) =>
+      editor.form.days.some((day) => day.dayIndex === previous)
+        ? previous
+        : editor.form.days[0]?.dayIndex ?? 1
+    );
+  }, [editor.form.days]);
+
   async function loadDetail(token: string, id: number) {
     setIsLoading(true);
     setPageError(null);
 
     try {
-      setDetail(await getCycleTemplateDetail(token, id));
+      const nextDetail = await getCycleTemplateDetail(token, id);
+      setDetail(nextDetail);
+      setSelectedDayIndex((previous) =>
+        nextDetail.days.some((day) => day.dayIndex === previous)
+          ? previous
+          : nextDetail.days[0]?.dayIndex ?? 1
+      );
     } catch (error) {
       setPageError(
         getCycleTemplateErrorMessage(error, "加载模板失败，请稍后再试。")
@@ -64,12 +83,14 @@ export function CycleTemplateEditPage() {
     }
 
     if (editor.hasErrors) {
+      setShowValidationSummary(true);
       setPageError("请先修正表单中的错误，再保存模板。");
       return;
     }
 
     setIsSubmitting(true);
     setPageError(null);
+    setShowValidationSummary(false);
 
     try {
       if (detail.status === "draft") {
@@ -162,6 +183,17 @@ export function CycleTemplateEditPage() {
         </div>
       ) : null}
 
+      {showValidationSummary && fieldErrorSummaries.length > 0 ? (
+        <div className="rounded-[24px] border border-rose-300/20 bg-rose-300/10 p-5">
+          <p className="text-sm font-semibold text-rose-100">还需要修正这些问题：</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-rose-50">
+            {fieldErrorSummaries.map((summary) => (
+              <li key={summary}>{summary}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <CycleTemplateEditor
         accessToken={accessToken}
         form={editor.form}
@@ -170,6 +202,8 @@ export function CycleTemplateEditPage() {
         canUndo={editor.canUndo}
         isSubmitting={isSubmitting}
         submitLabel={detail.status === "draft" ? "保存草稿" : "保存模板"}
+        selectedDayIndex={selectedDayIndex}
+        onSelectedDayIndexChange={setSelectedDayIndex}
         lockedBeforeDayIndex={lockedBeforeDayIndex}
         disableCycleLength={detail.status === "active"}
         cycleLengthMode="select"
@@ -177,10 +211,18 @@ export function CycleTemplateEditPage() {
         onRootFieldChange={editor.updateRootField}
         onDayChange={editor.updateDay}
         onAddExercise={editor.addExercise}
+        onSelectSystemExercise={editor.selectSystemExercise}
         onUpdateExercise={editor.updateExercise}
         onRemoveExercise={editor.removeExercise}
         onMoveExercise={editor.moveExercise}
-        onReorderExercise={editor.reorderExercise}
+        onAddItem={editor.addItem}
+        onUpdateItem={editor.updateItem}
+        onRemoveItem={editor.removeItem}
+        onMoveItem={editor.moveItem}
+        onAddMetric={editor.addMetric}
+        onUpdateMetric={editor.updateMetric}
+        onRemoveMetric={editor.removeMetric}
+        onMoveMetric={editor.moveMetric}
         onUndo={editor.undo}
         onReset={editor.resetToBaseline}
         onSubmit={() => {

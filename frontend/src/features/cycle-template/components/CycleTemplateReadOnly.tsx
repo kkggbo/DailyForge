@@ -1,8 +1,12 @@
+import type { ReactNode } from "react";
 import {
   formatCycleLength,
   formatGoalType,
-  formatNullableNumber,
-  formatStatus
+  formatItemType,
+  formatMetricKey,
+  formatMetricValue,
+  formatStatus,
+  formatStructureType
 } from "../lib/cycle-template-formatters";
 import type { CycleTemplateDetailResponse } from "../types/cycle-template";
 
@@ -23,8 +27,7 @@ export function CycleTemplateReadOnly({
               {detail.templateName}
             </h1>
             <p className="mt-3 text-stone-300">
-              {formatCycleLength(detail.cycleLength)} · 目标：
-              {formatGoalType(detail.goalType)}
+              {formatCycleLength(detail.cycleLength)} · 目标：{formatGoalType(detail.goalType)}
             </p>
           </div>
           {detail.isActive ? (
@@ -59,45 +62,65 @@ export function CycleTemplateReadOnly({
               休息日
             </div>
           ) : (
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 space-y-4">
               {day.exercises.map((exercise) => (
                 <article
                   key={`${day.dayIndex}-${exercise.sortOrder}-${exercise.exerciseId}`}
-                  className="rounded-2xl border border-white/10 bg-white/6 p-4"
+                  className="rounded-3xl border border-white/10 bg-white/6 p-5"
                 >
-                  <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-xs text-stone-400">
-                        #{exercise.sortOrder}
+                      <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
+                        动作 {exercise.sortOrder}
                       </p>
-                      <h3 className="text-xl font-semibold text-white">
+                      <h3 className="mt-1 text-xl font-semibold text-white">
                         {exercise.exerciseName}
                       </h3>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-stone-200">
-                      <Badge>组数 {formatNullableNumber(exercise.targetSets)}</Badge>
-                      <Badge>
-                        次数 {formatNullableNumber(exercise.targetRepsMin)}-
-                        {formatNullableNumber(exercise.targetRepsMax)}
-                      </Badge>
-                      <Badge>
-                        重量 {formatNullableNumber(exercise.targetWeightKg, "kg")}
-                      </Badge>
-                      <Badge>
-                        时长{" "}
-                        {formatNullableNumber(exercise.targetDurationSeconds, "秒")}
-                      </Badge>
-                      <Badge>
-                        休息 {formatNullableNumber(exercise.restSeconds, "秒")}
-                      </Badge>
-                      <Badge>RPE {formatNullableNumber(exercise.targetRpe)}</Badge>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge>{formatStructureType(exercise.structureType)}</Badge>
+                      <Badge>{exercise.items.length} 个执行项</Badge>
                     </div>
                   </div>
+
                   {exercise.note ? (
                     <p className="mt-3 text-sm leading-6 text-stone-300">
                       {exercise.note}
                     </p>
                   ) : null}
+
+                  <div className="mt-4 space-y-3">
+                    {exercise.items.map((item) => (
+                      <div
+                        key={`${exercise.exerciseId}-${item.itemIndex}`}
+                        className="rounded-2xl border border-white/10 bg-stone-950/45 p-4"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-white">
+                              {item.itemName || `${formatItemType(item.itemType)} ${item.itemIndex}`}
+                            </p>
+                            <p className="text-xs text-stone-400">
+                              {formatItemType(item.itemType)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs text-stone-200">
+                            {item.metrics.map((metric) => (
+                              <Badge key={`${item.itemIndex}-${metric.sortOrder}-${metric.metricKey}`}>
+                                {formatMetricKey(metric.metricKey)} {formatMetricValue(metric)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        {item.note ? (
+                          <p className="mt-3 text-sm leading-6 text-stone-300">
+                            {item.note}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
                 </article>
               ))}
             </div>
@@ -108,9 +131,9 @@ export function CycleTemplateReadOnly({
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1">
+    <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs">
       {children}
     </span>
   );

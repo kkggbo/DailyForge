@@ -1,7 +1,15 @@
+import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  createDefaultItemByStructureType,
+  createEmptyDay,
   createEmptyEditorForm,
   createEmptyExercise,
+  createEmptyMetric,
+  createExerciseFromSystemOption,
+  normalizeExerciseSortOrder,
+  normalizeItemIndexes,
+  normalizeMetricSortOrder,
   syncDaysWithCycleLength
 } from "../lib/cycle-template-mappers";
 import {
@@ -11,7 +19,9 @@ import {
 import type {
   CycleTemplateEditorForm,
   CycleTemplateFieldErrors,
-  EditorExerciseForm
+  EditorExerciseForm,
+  EditorItemForm,
+  EditorMetricForm
 } from "../types/cycle-template";
 
 type EditorOptions = {
@@ -145,6 +155,34 @@ export function useCycleTemplateEditor(
     }));
   }
 
+  function selectSystemExercise(
+    dayIndex: number,
+    localId: string,
+    option: SystemExerciseOption
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: normalizeExerciseSortOrder(
+                day.exercises.map((exercise) =>
+                  exercise.localId === localId
+                    ? {
+                        ...createExerciseFromSystemOption(option, exercise.sortOrder),
+                        localId: exercise.localId,
+                        note: exercise.note
+                      }
+                    : exercise
+                )
+              )
+            }
+          : day
+      )
+    }));
+  }
+
   function updateExercise(
     dayIndex: number,
     localId: string,
@@ -177,7 +215,7 @@ export function useCycleTemplateEditor(
         day.dayIndex === dayIndex
           ? {
               ...day,
-              exercises: normalizeSortOrder(
+              exercises: normalizeExerciseSortOrder(
                 day.exercises.filter((exercise) => exercise.localId !== localId)
               )
             }
@@ -194,30 +232,9 @@ export function useCycleTemplateEditor(
           return day;
         }
 
-        const nextExercises = [...day.exercises];
-        const currentIndex = nextExercises.findIndex(
-          (exercise) => exercise.localId === localId
-        );
-        const targetIndex = currentIndex + direction;
-
-        if (
-          currentIndex < 0 ||
-          targetIndex < 0 ||
-          targetIndex >= nextExercises.length
-        ) {
-          return day;
-        }
-
-        const [moved] = nextExercises.splice(currentIndex, 1);
-        if (!moved) {
-          return day;
-        }
-
-        nextExercises.splice(targetIndex, 0, moved);
-
         return {
           ...day,
-          exercises: normalizeSortOrder(nextExercises)
+          exercises: reorderArrayByLocalId(day.exercises, localId, direction)
         };
       })
     }));
@@ -235,30 +252,283 @@ export function useCycleTemplateEditor(
           return day;
         }
 
-        const fromIndex = day.exercises.findIndex(
-          (exercise) => exercise.localId === fromLocalId
-        );
-        const toIndex = day.exercises.findIndex(
-          (exercise) => exercise.localId === toLocalId
-        );
+        return {
+          ...day,
+          exercises: reorderArrayByDropTarget(day.exercises, fromLocalId, toLocalId)
+        };
+      })
+    }));
+  }
 
-        if (fromIndex < 0 || toIndex < 0) {
+  function addItem(dayIndex: number, exerciseLocalId: string) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) => {
+        if (day.dayIndex !== dayIndex) {
           return day;
         }
-
-        const nextExercises = [...day.exercises];
-        const [moved] = nextExercises.splice(fromIndex, 1);
-        if (!moved) {
-          return day;
-        }
-
-        nextExercises.splice(toIndex, 0, moved);
 
         return {
           ...day,
-          exercises: normalizeSortOrder(nextExercises)
+          exercises: day.exercises.map((exercise) => {
+            if (exercise.localId !== exerciseLocalId || !exercise.structureType) {
+              return exercise;
+            }
+
+            if (exercise.structureType === "single_segment") {
+              return exercise;
+            }
+
+            return {
+              ...exercise,
+              items: normalizeItemIndexes([
+                ...exercise.items,
+                createDefaultItemByStructureType(
+                  exercise.structureType,
+                  exercise.items.length + 1
+                )
+              ])
+            };
+          })
         };
       })
+    }));
+  }
+
+  function updateItem(
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    patch: Partial<EditorItemForm>
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) =>
+                exercise.localId === exerciseLocalId
+                  ? {
+                      ...exercise,
+                      items: exercise.items.map((item) =>
+                        item.localId === itemLocalId
+                          ? {
+                              ...item,
+                              ...patch
+                            }
+                          : item
+                      )
+                    }
+                  : exercise
+              )
+            }
+          : day
+      )
+    }));
+  }
+
+  function removeItem(dayIndex: number, exerciseLocalId: string, itemLocalId: string) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) => {
+                if (exercise.localId !== exerciseLocalId) {
+                  return exercise;
+                }
+
+                return {
+                  ...exercise,
+                  items: normalizeItemIndexes(
+                    exercise.items.filter((item) => item.localId !== itemLocalId)
+                  )
+                };
+              })
+            }
+          : day
+      )
+    }));
+  }
+
+  function moveItem(
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    direction: -1 | 1
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) => {
+                if (exercise.localId !== exerciseLocalId) {
+                  return exercise;
+                }
+
+                return {
+                  ...exercise,
+                  items: normalizeItemIndexes(
+                    reorderArrayByLocalId(exercise.items, itemLocalId, direction)
+                  )
+                };
+              })
+            }
+          : day
+      )
+    }));
+  }
+
+  function addMetric(dayIndex: number, exerciseLocalId: string, itemLocalId: string) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) =>
+                exercise.localId === exerciseLocalId
+                  ? {
+                      ...exercise,
+                      items: exercise.items.map((item) =>
+                        item.localId === itemLocalId
+                          ? {
+                              ...item,
+                              metrics: normalizeMetricSortOrder([
+                                ...item.metrics,
+                                createEmptyMetric(item.metrics.length + 1)
+                              ])
+                            }
+                          : item
+                      )
+                    }
+                  : exercise
+              )
+            }
+          : day
+      )
+    }));
+  }
+
+  function updateMetric(
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    patch: Partial<EditorMetricForm>
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) =>
+                exercise.localId === exerciseLocalId
+                  ? {
+                      ...exercise,
+                      items: exercise.items.map((item) =>
+                        item.localId === itemLocalId
+                          ? {
+                              ...item,
+                              metrics: item.metrics.map((metric) =>
+                                metric.localId === metricLocalId
+                                  ? {
+                                      ...metric,
+                                      ...patch
+                                    }
+                                  : metric
+                              )
+                            }
+                          : item
+                      )
+                    }
+                  : exercise
+              )
+            }
+          : day
+      )
+    }));
+  }
+
+  function removeMetric(
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) =>
+                exercise.localId === exerciseLocalId
+                  ? {
+                      ...exercise,
+                      items: exercise.items.map((item) =>
+                        item.localId === itemLocalId
+                          ? {
+                              ...item,
+                              metrics: normalizeMetricSortOrder(
+                                item.metrics.filter(
+                                  (metric) => metric.localId !== metricLocalId
+                                )
+                              )
+                            }
+                          : item
+                      )
+                    }
+                  : exercise
+              )
+            }
+          : day
+      )
+    }));
+  }
+
+  function moveMetric(
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    direction: -1 | 1
+  ) {
+    commit((current) => ({
+      ...current,
+      days: current.days.map((day) =>
+        day.dayIndex === dayIndex
+          ? {
+              ...day,
+              exercises: day.exercises.map((exercise) =>
+                exercise.localId === exerciseLocalId
+                  ? {
+                      ...exercise,
+                      items: exercise.items.map((item) =>
+                        item.localId === itemLocalId
+                          ? {
+                              ...item,
+                              metrics: normalizeMetricSortOrder(
+                                reorderArrayByLocalId(
+                                  item.metrics,
+                                  metricLocalId,
+                                  direction
+                                )
+                              )
+                            }
+                          : item
+                      )
+                    }
+                  : exercise
+              )
+            }
+          : day
+      )
     }));
   }
 
@@ -271,19 +541,65 @@ export function useCycleTemplateEditor(
     updateRootField,
     updateDay,
     addExercise,
+    selectSystemExercise,
     updateExercise,
     removeExercise,
     moveExercise,
     reorderExercise,
+    addItem,
+    updateItem,
+    removeItem,
+    moveItem,
+    addMetric,
+    updateMetric,
+    removeMetric,
+    moveMetric,
     undo,
     resetToBaseline,
     setBaselineToCurrent
   };
 }
 
-function normalizeSortOrder(exercises: EditorExerciseForm[]) {
-  return exercises.map((exercise, index) => ({
-    ...exercise,
-    sortOrder: index + 1
-  }));
+function reorderArrayByLocalId<T extends { localId: string }>(
+  items: T[],
+  localId: string,
+  direction: -1 | 1
+) {
+  const nextItems = [...items];
+  const currentIndex = nextItems.findIndex((item) => item.localId === localId);
+  const targetIndex = currentIndex + direction;
+
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= nextItems.length) {
+    return items;
+  }
+
+  const [moved] = nextItems.splice(currentIndex, 1);
+  if (!moved) {
+    return items;
+  }
+
+  nextItems.splice(targetIndex, 0, moved);
+  return nextItems;
+}
+
+function reorderArrayByDropTarget<T extends { localId: string }>(
+  items: T[],
+  fromLocalId: string,
+  toLocalId: string
+) {
+  const fromIndex = items.findIndex((item) => item.localId === fromLocalId);
+  const toIndex = items.findIndex((item) => item.localId === toLocalId);
+
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [moved] = nextItems.splice(fromIndex, 1);
+  if (!moved) {
+    return items;
+  }
+
+  nextItems.splice(toIndex, 0, moved);
+  return nextItems;
 }

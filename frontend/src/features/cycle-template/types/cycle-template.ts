@@ -2,6 +2,22 @@ export type CycleTemplateStatus = "draft" | "active" | "inactive" | "deleted";
 
 export type CycleTemplateTab = "formal" | "drafts";
 
+export type StructureType = "set_based" | "single_segment";
+
+export type ItemType = "set" | "segment";
+
+export type MetricKey =
+  | "weight_kg"
+  | "reps"
+  | "duration_seconds"
+  | "distance_km"
+  | "speed_kmh"
+  | "pace_seconds_per_km"
+  | "incline_percent"
+  | "rest_seconds"
+  | "rpe"
+  | "intensity_level";
+
 export type FormalTemplateListItem = {
   templateId: number;
   templateName: string;
@@ -31,19 +47,28 @@ export type DraftTemplateListResponse = {
   records: DraftTemplateListItem[];
 };
 
+export type CycleTemplateMetricResponse = {
+  sortOrder: number;
+  metricKey: MetricKey;
+  metricValueNumber: number;
+  metricUnit: string | null;
+};
+
+export type CycleTemplateItemResponse = {
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string | null;
+  note: string | null;
+  metrics: CycleTemplateMetricResponse[];
+};
+
 export type CycleTemplateExerciseResponse = {
   sortOrder: number;
   exerciseId: number;
   exerciseName: string;
-  targetSets: number | null;
-  targetRepsMin: number | null;
-  targetRepsMax: number | null;
-  targetWeightKg: number | null;
-  targetDurationSeconds: number | null;
-  restSeconds: number | null;
-  targetRpe: number | null;
+  structureType: StructureType;
   note: string | null;
-  targetExtraJson: Record<string, unknown> | null;
+  items: CycleTemplateItemResponse[];
 };
 
 export type CycleTemplateDayResponse = {
@@ -80,18 +105,26 @@ export type CurrentActiveTemplateResponse = {
   startedAt: string | null;
 };
 
+export type SaveCycleTemplateMetricPayload = {
+  sortOrder: number;
+  metricKey: MetricKey;
+  metricValueNumber: number;
+};
+
+export type SaveCycleTemplateItemPayload = {
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string | null;
+  note: string | null;
+  metrics: SaveCycleTemplateMetricPayload[];
+};
+
 export type SaveCycleTemplateExercisePayload = {
   sortOrder: number;
   exerciseId: number;
-  targetSets: number | null;
-  targetRepsMin: number | null;
-  targetRepsMax: number | null;
-  targetWeightKg: number | null;
-  targetDurationSeconds: number | null;
-  restSeconds: number | null;
-  targetRpe: number | null;
+  structureType: StructureType;
   note: string | null;
-  targetExtraJson: Record<string, unknown> | null;
+  items: SaveCycleTemplateItemPayload[];
 };
 
 export type SaveCycleTemplateDayPayload = {
@@ -135,21 +168,6 @@ export type AiGenerateCycleTemplatePayload = {
   useProfileData: boolean;
 };
 
-export type SystemExerciseOption = {
-  exerciseId: number;
-  exerciseName: string;
-  exerciseType: string;
-  movementType: string | null;
-  defaultUnit: string | null;
-};
-
-export type SystemExerciseSearchResponse = {
-  records: SystemExerciseOption[];
-  page?: number;
-  pageSize?: number;
-  total?: number;
-};
-
 export type CycleTemplateEditorForm = {
   templateName: string;
   goalType: string;
@@ -168,15 +186,25 @@ export type EditorExerciseForm = {
   sortOrder: number;
   exerciseId: number | null;
   exerciseName: string;
-  targetSets: string;
-  targetRepsMin: string;
-  targetRepsMax: string;
-  targetWeightKg: string;
-  targetDurationSeconds: string;
-  restSeconds: string;
-  targetRpe: string;
+  structureType: StructureType | null;
   note: string;
-  targetExtraJsonText: string;
+  items: EditorItemForm[];
+};
+
+export type EditorItemForm = {
+  localId: string;
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string;
+  note: string;
+  metrics: EditorMetricForm[];
+};
+
+export type EditorMetricForm = {
+  localId: string;
+  sortOrder: number;
+  metricKey: MetricKey | "";
+  metricValueNumberText: string;
 };
 
 export type CycleTemplateFieldErrors = Record<string, string>;

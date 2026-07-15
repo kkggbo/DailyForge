@@ -1,11 +1,17 @@
 DROP TABLE IF EXISTS user_active_cycles;
 DROP TABLE IF EXISTS training_sessions;
 DROP TABLE IF EXISTS cycle_runs;
+DROP TABLE IF EXISTS cycle_day_exercise_item_metrics;
+DROP TABLE IF EXISTS cycle_day_exercise_items;
 DROP TABLE IF EXISTS cycle_day_exercises;
 DROP TABLE IF EXISTS cycle_template_days;
 DROP TABLE IF EXISTS cycle_template_versions;
 DROP TABLE IF EXISTS cycle_templates;
+DROP TABLE IF EXISTS exercise_equipments;
+DROP TABLE IF EXISTS exercise_muscles;
 DROP TABLE IF EXISTS exercises;
+DROP TABLE IF EXISTS equipments;
+DROP TABLE IF EXISTS muscles;
 DROP TABLE IF EXISTS user_current_body_metrics;
 DROP TABLE IF EXISTS body_metric_logs;
 DROP TABLE IF EXISTS user_invite_code_usages;
@@ -116,12 +122,61 @@ CREATE TABLE exercises (
     movement_type VARCHAR(32) NULL,
     video_url VARCHAR(500) NULL,
     default_unit VARCHAR(32) NOT NULL,
+    default_structure_type VARCHAR(32) NOT NULL,
     calorie_burn_reference DECIMAL(8, 2) NULL,
     calorie_reference_unit VARCHAR(32) NULL,
     is_active TINYINT NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_exercises_owner_user_id FOREIGN KEY (owner_user_id) REFERENCES users(id)
+);
+
+CREATE TABLE muscles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
+    parent_id BIGINT NULL,
+    muscle_level VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_muscles_code UNIQUE (code),
+    CONSTRAINT uk_muscles_parent_name UNIQUE (parent_id, name),
+    CONSTRAINT fk_muscles_parent_id FOREIGN KEY (parent_id) REFERENCES muscles(id)
+);
+
+CREATE TABLE equipments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    scene_type VARCHAR(32) NOT NULL,
+    description VARCHAR(500) NULL,
+    is_active TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_equipments_name UNIQUE (name)
+);
+
+CREATE TABLE exercise_muscles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    exercise_id BIGINT NOT NULL,
+    muscle_id BIGINT NOT NULL,
+    relation_type VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT uk_exercise_muscles_pair UNIQUE (exercise_id, muscle_id, relation_type),
+    CONSTRAINT fk_exercise_muscles_exercise_id FOREIGN KEY (exercise_id) REFERENCES exercises(id),
+    CONSTRAINT fk_exercise_muscles_muscle_id FOREIGN KEY (muscle_id) REFERENCES muscles(id)
+);
+
+CREATE TABLE exercise_equipments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    exercise_id BIGINT NOT NULL,
+    equipment_id BIGINT NOT NULL,
+    requirement_type VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT uk_exercise_equipments_pair UNIQUE (exercise_id, equipment_id, requirement_type),
+    CONSTRAINT fk_exercise_equipments_exercise_id FOREIGN KEY (exercise_id) REFERENCES exercises(id),
+    CONSTRAINT fk_exercise_equipments_equipment_id FOREIGN KEY (equipment_id) REFERENCES equipments(id)
 );
 
 CREATE TABLE cycle_templates (
@@ -164,15 +219,8 @@ CREATE TABLE cycle_day_exercises (
     template_day_id BIGINT NOT NULL,
     exercise_id BIGINT NOT NULL,
     exercise_name_snapshot VARCHAR(128) NOT NULL,
-    target_sets SMALLINT NULL,
-    target_reps_min SMALLINT NULL,
-    target_reps_max SMALLINT NULL,
-    target_weight_kg DECIMAL(7, 2) NULL,
-    target_duration_seconds INT NULL,
-    target_rest_seconds INT NULL,
-    target_rpe DECIMAL(4, 2) NULL,
-    target_extra_json JSON NULL,
-    notes VARCHAR(500) NULL,
+    structure_type VARCHAR(32) NOT NULL,
+    note VARCHAR(500) NULL,
     sort_order INT NOT NULL DEFAULT 0,
     CONSTRAINT fk_cycle_day_exercises_template_day_id FOREIGN KEY (template_day_id) REFERENCES cycle_template_days(id),
     CONSTRAINT fk_cycle_day_exercises_exercise_id FOREIGN KEY (exercise_id) REFERENCES exercises(id)
@@ -180,6 +228,40 @@ CREATE TABLE cycle_day_exercises (
 
 CREATE INDEX idx_cycle_day_exercises_day_sort
     ON cycle_day_exercises(template_day_id, sort_order);
+
+CREATE TABLE cycle_day_exercise_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cycle_day_exercise_id BIGINT NOT NULL,
+    item_index SMALLINT NOT NULL,
+    item_type VARCHAR(32) NOT NULL,
+    item_name VARCHAR(64) NULL,
+    note VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_cycle_day_exercise_items_exercise_item UNIQUE (cycle_day_exercise_id, item_index),
+    CONSTRAINT fk_cycle_day_exercise_items_exercise_id
+        FOREIGN KEY (cycle_day_exercise_id) REFERENCES cycle_day_exercises(id)
+);
+
+CREATE INDEX idx_cycle_day_exercise_items_exercise_sort
+    ON cycle_day_exercise_items(cycle_day_exercise_id, sort_order);
+
+CREATE TABLE cycle_day_exercise_item_metrics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    exercise_item_id BIGINT NOT NULL,
+    metric_key VARCHAR(64) NOT NULL,
+    metric_value_number DECIMAL(12, 4) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_cycle_day_exercise_item_metrics_item_key UNIQUE (exercise_item_id, metric_key),
+    CONSTRAINT fk_cycle_day_exercise_item_metrics_item_id
+        FOREIGN KEY (exercise_item_id) REFERENCES cycle_day_exercise_items(id)
+);
+
+CREATE INDEX idx_cycle_day_exercise_item_metrics_item_sort
+    ON cycle_day_exercise_item_metrics(exercise_item_id, sort_order);
 
 CREATE TABLE cycle_runs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

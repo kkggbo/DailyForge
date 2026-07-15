@@ -9,8 +9,7 @@ import type {
   DeleteCycleTemplateResponse,
   DraftTemplateListResponse,
   FormalTemplateListResponse,
-  SaveCycleTemplatePayload,
-  SystemExerciseSearchResponse
+  SaveCycleTemplatePayload
 } from "../types/cycle-template";
 
 export function getFormalTemplates(accessToken: string) {
@@ -120,19 +119,5 @@ export function deleteCycleTemplate(accessToken: string, templateId: number) {
   return request<DeleteCycleTemplateResponse>(`/cycle-templates/${templateId}`, {
     method: "DELETE",
     accessToken
-  });
-}
-
-export function searchSystemExercises(
-  accessToken: string,
-  query: { keyword?: string; page?: number; pageSize?: number }
-) {
-  return request<SystemExerciseSearchResponse>("/exercises/system", {
-    accessToken,
-    query: {
-      keyword: query.keyword ?? "",
-      page: query.page ?? 1,
-      pageSize: query.pageSize ?? 20
-    }
   });
 }

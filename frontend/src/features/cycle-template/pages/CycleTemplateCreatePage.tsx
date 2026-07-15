@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { createDraftTemplate } from "../api/cycle-template";
@@ -18,11 +18,20 @@ export function CycleTemplateCreatePage() {
   const editor = useCycleTemplateEditor(initialForm, {
     allowEmptyCycleLength: false
   });
+  const [selectedDayIndex, setSelectedDayIndex] = useState(1);
   const [pageError, setPageError] = useState<string | null>(null);
   const [showValidationSummary, setShowValidationSummary] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fieldErrorSummaries = getCycleTemplateFieldErrorSummaries(editor.fieldErrors);
+
+  useEffect(() => {
+    setSelectedDayIndex((previous) =>
+      editor.form.days.some((day) => day.dayIndex === previous)
+        ? previous
+        : editor.form.days[0]?.dayIndex ?? 1
+    );
+  }, [editor.form.days]);
 
   async function handleSubmit() {
     if (!accessToken) {
@@ -114,14 +123,24 @@ export function CycleTemplateCreatePage() {
         canUndo={editor.canUndo}
         isSubmitting={isSubmitting}
         submitLabel="保存草稿"
+        selectedDayIndex={selectedDayIndex}
+        onSelectedDayIndexChange={setSelectedDayIndex}
         cycleLengthMode="select"
         onRootFieldChange={editor.updateRootField}
         onDayChange={editor.updateDay}
         onAddExercise={editor.addExercise}
+        onSelectSystemExercise={editor.selectSystemExercise}
         onUpdateExercise={editor.updateExercise}
         onRemoveExercise={editor.removeExercise}
         onMoveExercise={editor.moveExercise}
-        onReorderExercise={editor.reorderExercise}
+        onAddItem={editor.addItem}
+        onUpdateItem={editor.updateItem}
+        onRemoveItem={editor.removeItem}
+        onMoveItem={editor.moveItem}
+        onAddMetric={editor.addMetric}
+        onUpdateMetric={editor.updateMetric}
+        onRemoveMetric={editor.removeMetric}
+        onMoveMetric={editor.moveMetric}
         onUndo={editor.undo}
         onReset={editor.resetToBaseline}
         onSubmit={() => {

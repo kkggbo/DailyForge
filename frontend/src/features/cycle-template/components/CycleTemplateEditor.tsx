@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { searchSystemExercises } from "../api/cycle-template";
-import { goalTypeOptions } from "../lib/cycle-template-enums";
+import { ExerciseStructureEditor } from "./ExerciseStructureEditor";
+import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import type {
   CycleTemplateEditorForm,
   CycleTemplateFieldErrors,
   EditorExerciseForm,
-  SystemExerciseOption
+  EditorItemForm,
+  EditorMetricForm
 } from "../types/cycle-template";
 
 type CycleTemplateEditorProps = {
@@ -16,6 +16,8 @@ type CycleTemplateEditorProps = {
   canUndo: boolean;
   isSubmitting: boolean;
   submitLabel: string;
+  selectedDayIndex: number;
+  onSelectedDayIndexChange: (dayIndex: number) => void;
   lockedBeforeDayIndex?: number;
   disableCycleLength?: boolean;
   cycleLengthMode?: "input" | "select";
@@ -29,6 +31,11 @@ type CycleTemplateEditorProps = {
     patch: Partial<CycleTemplateEditorForm["days"][number]>
   ) => void;
   onAddExercise: (dayIndex: number) => void;
+  onSelectSystemExercise: (
+    dayIndex: number,
+    localId: string,
+    option: SystemExerciseOption
+  ) => void;
   onUpdateExercise: (
     dayIndex: number,
     localId: string,
@@ -36,7 +43,49 @@ type CycleTemplateEditorProps = {
   ) => void;
   onRemoveExercise: (dayIndex: number, localId: string) => void;
   onMoveExercise: (dayIndex: number, localId: string, direction: -1 | 1) => void;
-  onReorderExercise: (dayIndex: number, fromLocalId: string, toLocalId: string) => void;
+  onAddItem: (dayIndex: number, exerciseLocalId: string) => void;
+  onUpdateItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    patch: Partial<EditorItemForm>
+  ) => void;
+  onRemoveItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string
+  ) => void;
+  onMoveItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    direction: -1 | 1
+  ) => void;
+  onAddMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string
+  ) => void;
+  onUpdateMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    patch: Partial<EditorMetricForm>
+  ) => void;
+  onRemoveMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string
+  ) => void;
+  onMoveMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    direction: -1 | 1
+  ) => void;
   onUndo: () => void;
   onReset: () => void;
   onSubmit: () => void;
@@ -50,6 +99,8 @@ export function CycleTemplateEditor({
   canUndo,
   isSubmitting,
   submitLabel,
+  selectedDayIndex,
+  onSelectedDayIndexChange,
   lockedBeforeDayIndex = 1,
   disableCycleLength = false,
   cycleLengthMode = "input",
@@ -57,18 +108,24 @@ export function CycleTemplateEditor({
   onRootFieldChange,
   onDayChange,
   onAddExercise,
+  onSelectSystemExercise,
   onUpdateExercise,
   onRemoveExercise,
   onMoveExercise,
-  onReorderExercise,
+  onAddItem,
+  onUpdateItem,
+  onRemoveItem,
+  onMoveItem,
+  onAddMetric,
+  onUpdateMetric,
+  onRemoveMetric,
+  onMoveMetric,
   onUndo,
   onReset,
   onSubmit
 }: CycleTemplateEditorProps) {
-  const [activeDayIndex, setActiveDayIndex] = useState(1);
   const activeDay =
-    form.days.find((day) => day.dayIndex === activeDayIndex) ?? form.days[0];
-  const isDayLocked = activeDay ? activeDay.dayIndex < lockedBeforeDayIndex : false;
+    form.days.find((day) => day.dayIndex === selectedDayIndex) ?? form.days[0];
 
   return (
     <div className="space-y-6">
@@ -78,9 +135,7 @@ export function CycleTemplateEditor({
             <span className="text-sm text-stone-300">模板名称</span>
             <input
               value={form.templateName}
-              onChange={(event) =>
-                onRootFieldChange("templateName", event.target.value)
-              }
+              onChange={(event) => onRootFieldChange("templateName", event.target.value)}
               className={inputClass}
               placeholder="例如：Push Pull Legs"
             />
@@ -89,17 +144,12 @@ export function CycleTemplateEditor({
 
           <label className="space-y-2">
             <span className="text-sm text-stone-300">训练目标</span>
-            <select
+            <input
               value={form.goalType}
               onChange={(event) => onRootFieldChange("goalType", event.target.value)}
               className={inputClass}
-            >
-              {goalTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              placeholder="例如：muscle_gain"
+            />
             <FieldError message={fieldErrors.goalType} />
           </label>
 
@@ -109,19 +159,15 @@ export function CycleTemplateEditor({
               <select
                 value={form.cycleLength}
                 disabled={disableCycleLength}
-                onChange={(event) =>
-                  onRootFieldChange("cycleLength", event.target.value)
-                }
+                onChange={(event) => onRootFieldChange("cycleLength", event.target.value)}
                 className={inputClass}
               >
                 {allowEmptyCycleLengthOption ? <option value="">未设置</option> : null}
-                {Array.from({ length: 7 }, (_, index) => String(index + 1)).map(
-                  (value) => (
-                    <option key={value} value={value}>
-                      {value} 天
-                    </option>
-                  )
-                )}
+                {Array.from({ length: 7 }, (_, index) => String(index + 1)).map((value) => (
+                  <option key={value} value={value}>
+                    {value} 天
+                  </option>
+                ))}
               </select>
             ) : (
               <input
@@ -131,9 +177,7 @@ export function CycleTemplateEditor({
                 step={1}
                 value={form.cycleLength}
                 disabled={disableCycleLength}
-                onChange={(event) =>
-                  onRootFieldChange("cycleLength", event.target.value)
-                }
+                onChange={(event) => onRootFieldChange("cycleLength", event.target.value)}
                 className={inputClass}
                 placeholder="1-7"
               />
@@ -181,7 +225,7 @@ export function CycleTemplateEditor({
             <button
               key={day.dayIndex}
               type="button"
-              onClick={() => setActiveDayIndex(day.dayIndex)}
+              onClick={() => onSelectedDayIndexChange(day.dayIndex)}
               className={[
                 "rounded-full px-4 py-2 text-sm transition",
                 activeDay?.dayIndex === day.dayIndex
@@ -199,76 +243,66 @@ export function CycleTemplateEditor({
         </div>
 
         {activeDay ? (
-          <div className="mt-6 space-y-5">
-            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-              <label className="space-y-2">
-                <span className="text-sm text-stone-300">训练日名称</span>
-                <input
-                  value={activeDay.dayName}
-                  disabled={isDayLocked}
-                  onChange={(event) =>
-                    onDayChange(activeDay.dayIndex, { dayName: event.target.value })
-                  }
-                  className={inputClass}
-                  placeholder={`Day ${activeDay.dayIndex}`}
-                />
-                <FieldError
-                  message={fieldErrors[`day.${activeDay.dayIndex}.dayName`]}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={isDayLocked}
-                onClick={() => onAddExercise(activeDay.dayIndex)}
-                className={primaryButtonClass}
-              >
-                添加动作
-              </button>
-            </div>
-
-            {isDayLocked ? (
-              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-                这一天已经开始或完成打卡，当前版本不允许继续编辑。
-              </div>
-            ) : null}
-
-            {activeDay.exercises.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/12 bg-white/5 p-8 text-center text-stone-300">
-                当前训练日还没有动作，保存后会按休息日处理。
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activeDay.exercises.map((exercise, index) => (
-                  <ExerciseEditor
-                    key={exercise.localId}
-                    accessToken={accessToken}
-                    dayIndex={activeDay.dayIndex}
-                    index={index}
-                    exercise={exercise}
-                    locked={isDayLocked}
-                    fieldErrors={fieldErrors}
-                    onUpdateExercise={onUpdateExercise}
-                    onRemoveExercise={onRemoveExercise}
-                    onMoveExercise={onMoveExercise}
-                    onReorderExercise={onReorderExercise}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <CycleTemplateDayEditor
+            accessToken={accessToken}
+            day={activeDay}
+            lockedBeforeDayIndex={lockedBeforeDayIndex}
+            fieldErrors={fieldErrors}
+            onDayChange={onDayChange}
+            onAddExercise={onAddExercise}
+            onSelectSystemExercise={onSelectSystemExercise}
+            onUpdateExercise={onUpdateExercise}
+            onRemoveExercise={onRemoveExercise}
+            onMoveExercise={onMoveExercise}
+            onAddItem={onAddItem}
+            onUpdateItem={onUpdateItem}
+            onRemoveItem={onRemoveItem}
+            onMoveItem={onMoveItem}
+            onAddMetric={onAddMetric}
+            onUpdateMetric={onUpdateMetric}
+            onRemoveMetric={onRemoveMetric}
+            onMoveMetric={onMoveMetric}
+          />
         ) : null}
       </section>
     </div>
   );
 }
 
-type ExerciseEditorProps = {
+function CycleTemplateDayEditor({
+  accessToken,
+  day,
+  lockedBeforeDayIndex,
+  fieldErrors,
+  onDayChange,
+  onAddExercise,
+  onSelectSystemExercise,
+  onUpdateExercise,
+  onRemoveExercise,
+  onMoveExercise,
+  onAddItem,
+  onUpdateItem,
+  onRemoveItem,
+  onMoveItem,
+  onAddMetric,
+  onUpdateMetric,
+  onRemoveMetric,
+  onMoveMetric
+}: {
   accessToken: string;
-  dayIndex: number;
-  index: number;
-  exercise: EditorExerciseForm;
-  locked: boolean;
+  day: CycleTemplateEditorForm["days"][number];
+  lockedBeforeDayIndex: number;
   fieldErrors: CycleTemplateFieldErrors;
+  onDayChange: (
+    dayIndex: number,
+    patch: Partial<CycleTemplateEditorForm["days"][number]>
+  ) => void;
+  onAddExercise: (dayIndex: number) => void;
+  onSelectSystemExercise: (
+    dayIndex: number,
+    localId: string,
+    option: SystemExerciseOption
+  ) => void;
   onUpdateExercise: (
     dayIndex: number,
     localId: string,
@@ -276,270 +310,147 @@ type ExerciseEditorProps = {
   ) => void;
   onRemoveExercise: (dayIndex: number, localId: string) => void;
   onMoveExercise: (dayIndex: number, localId: string, direction: -1 | 1) => void;
-  onReorderExercise: (dayIndex: number, fromLocalId: string, toLocalId: string) => void;
-};
-
-function ExerciseEditor({
-  accessToken,
-  dayIndex,
-  index,
-  exercise,
-  locked,
-  fieldErrors,
-  onUpdateExercise,
-  onRemoveExercise,
-  onMoveExercise,
-  onReorderExercise
-}: ExerciseEditorProps) {
-  const [keyword, setKeyword] = useState(exercise.exerciseName);
-  const [options, setOptions] = useState<SystemExerciseOption[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const errorPrefix = `day.${dayIndex}.exercise.${exercise.localId}`;
-
-  async function handleSearch() {
-    setIsSearching(true);
-    setSearchError(null);
-
-    try {
-      const response = await searchSystemExercises(accessToken, {
-        keyword,
-        page: 1,
-        pageSize: 20
-      });
-      setOptions(response.records ?? []);
-    } catch {
-      setSearchError(
-        "动作搜索接口暂不可用，请确认后端已经提供 /api/exercises/system。"
-      );
-    } finally {
-      setIsSearching(false);
-    }
-  }
+  onAddItem: (dayIndex: number, exerciseLocalId: string) => void;
+  onUpdateItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    patch: Partial<EditorItemForm>
+  ) => void;
+  onRemoveItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string
+  ) => void;
+  onMoveItem: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    direction: -1 | 1
+  ) => void;
+  onAddMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string
+  ) => void;
+  onUpdateMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    patch: Partial<EditorMetricForm>
+  ) => void;
+  onRemoveMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string
+  ) => void;
+  onMoveMetric: (
+    dayIndex: number,
+    exerciseLocalId: string,
+    itemLocalId: string,
+    metricLocalId: string,
+    direction: -1 | 1
+  ) => void;
+}) {
+  const isDayLocked = day.dayIndex < lockedBeforeDayIndex;
 
   return (
-    <div
-      draggable={!locked}
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/plain", exercise.localId);
-      }}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        const fromLocalId = event.dataTransfer.getData("text/plain");
-        onReorderExercise(dayIndex, fromLocalId, exercise.localId);
-      }}
-      className="rounded-3xl border border-white/10 bg-stone-950/50 p-4"
-    >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-amber-300">
-            动作 {index + 1}
-          </p>
-          <p className="mt-1 text-lg font-semibold text-white">
-            {exercise.exerciseName || "还没有选择动作"}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={locked}
-            onClick={() => onMoveExercise(dayIndex, exercise.localId, -1)}
-            className={secondaryButtonClass}
-          >
-            上移
-          </button>
-          <button
-            type="button"
-            disabled={locked}
-            onClick={() => onMoveExercise(dayIndex, exercise.localId, 1)}
-            className={secondaryButtonClass}
-          >
-            下移
-          </button>
-          <button
-            type="button"
-            disabled={locked}
-            onClick={() => onRemoveExercise(dayIndex, exercise.localId)}
-            className="rounded-full border border-rose-300/25 px-3 py-2 text-sm text-rose-100 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            删除
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+    <div className="mt-6 space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
         <label className="space-y-2">
-          <span className="text-sm text-stone-300">搜索系统动作</span>
+          <span className="text-sm text-stone-300">训练日名称</span>
           <input
-            value={keyword}
-            disabled={locked}
-            onChange={(event) => setKeyword(event.target.value)}
+            value={day.dayName}
+            disabled={isDayLocked}
+            onChange={(event) => onDayChange(day.dayIndex, { dayName: event.target.value })}
             className={inputClass}
-            placeholder="输入卧推、深蹲、跑步等关键词"
+            placeholder={`Day ${day.dayIndex}`}
           />
+          <FieldError message={fieldErrors[`day.${day.dayIndex - 1}.dayName`]} />
         </label>
+
         <button
           type="button"
-          disabled={locked || isSearching}
-          onClick={() => {
-            void handleSearch();
-          }}
-          className={searchButtonClass}
+          disabled={isDayLocked}
+          onClick={() => onAddExercise(day.dayIndex)}
+          className={primaryButtonClass}
         >
-          {isSearching ? "搜索中..." : "搜索动作"}
+          添加动作
         </button>
       </div>
 
-      {searchError ? (
-        <div className="mt-2 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
-          {searchError}
+      {isDayLocked ? (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+          这一天已经开始或完成打卡，当前版本不允许继续编辑。
         </div>
       ) : null}
 
-      {options.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {options.map((option) => (
-            <button
-              key={option.exerciseId}
-              type="button"
-              disabled={locked}
-              onClick={() => {
-                onUpdateExercise(dayIndex, exercise.localId, {
-                  exerciseId: option.exerciseId,
-                  exerciseName: option.exerciseName
-                });
-                setKeyword(option.exerciseName);
-                setOptions([]);
-              }}
-              className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-sm text-stone-100 transition hover:bg-amber-400 hover:text-stone-950"
-            >
-              {option.exerciseName}
-            </button>
+      {day.exercises.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-white/12 bg-white/5 p-8 text-center text-stone-300">
+          当前训练日还没有动作，保存后会按休息日处理。
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {day.exercises.map((exercise, exerciseIndex) => (
+            <ExerciseStructureEditor
+              key={exercise.localId}
+              accessToken={accessToken}
+              dayIndex={day.dayIndex - 1}
+              exerciseIndex={exerciseIndex}
+              exercise={exercise}
+              locked={isDayLocked}
+              fieldErrors={fieldErrors}
+              onSelectSystemExercise={(option) =>
+                onSelectSystemExercise(day.dayIndex, exercise.localId, option)
+              }
+              onUpdateExercise={(patch) =>
+                onUpdateExercise(day.dayIndex, exercise.localId, patch)
+              }
+              onRemoveExercise={() => onRemoveExercise(day.dayIndex, exercise.localId)}
+              onMoveExercise={(direction) =>
+                onMoveExercise(day.dayIndex, exercise.localId, direction)
+              }
+              onAddItem={() => onAddItem(day.dayIndex, exercise.localId)}
+              onUpdateItem={(itemLocalId, patch) =>
+                onUpdateItem(day.dayIndex, exercise.localId, itemLocalId, patch)
+              }
+              onRemoveItem={(itemLocalId) =>
+                onRemoveItem(day.dayIndex, exercise.localId, itemLocalId)
+              }
+              onMoveItem={(itemLocalId, direction) =>
+                onMoveItem(day.dayIndex, exercise.localId, itemLocalId, direction)
+              }
+              onAddMetric={(itemLocalId) =>
+                onAddMetric(day.dayIndex, exercise.localId, itemLocalId)
+              }
+              onUpdateMetric={(itemLocalId, metricLocalId, patch) =>
+                onUpdateMetric(
+                  day.dayIndex,
+                  exercise.localId,
+                  itemLocalId,
+                  metricLocalId,
+                  patch
+                )
+              }
+              onRemoveMetric={(itemLocalId, metricLocalId) =>
+                onRemoveMetric(day.dayIndex, exercise.localId, itemLocalId, metricLocalId)
+              }
+              onMoveMetric={(itemLocalId, metricLocalId, direction) =>
+                onMoveMetric(
+                  day.dayIndex,
+                  exercise.localId,
+                  itemLocalId,
+                  metricLocalId,
+                  direction
+                )
+              }
+            />
           ))}
         </div>
-      ) : null}
-
-      <FieldError message={fieldErrors[`${errorPrefix}.exerciseId`]} />
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <NumberField
-          label="组数"
-          value={exercise.targetSets}
-          locked={locked}
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { targetSets: value })
-          }
-          error={fieldErrors[`${errorPrefix}.targetSets`]}
-        />
-        <NumberField
-          label="最小次数"
-          value={exercise.targetRepsMin}
-          locked={locked}
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { targetRepsMin: value })
-          }
-          error={fieldErrors[`${errorPrefix}.targetRepsMin`]}
-        />
-        <NumberField
-          label="最大次数"
-          value={exercise.targetRepsMax}
-          locked={locked}
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { targetRepsMax: value })
-          }
-          error={fieldErrors[`${errorPrefix}.targetRepsMax`]}
-        />
-        <NumberField
-          label="重量 kg"
-          value={exercise.targetWeightKg}
-          locked={locked}
-          step="0.1"
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { targetWeightKg: value })
-          }
-          error={fieldErrors[`${errorPrefix}.targetWeightKg`]}
-        />
-        <NumberField
-          label="时长 秒"
-          value={exercise.targetDurationSeconds}
-          locked={locked}
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, {
-              targetDurationSeconds: value
-            })
-          }
-          error={fieldErrors[`${errorPrefix}.targetDurationSeconds`]}
-        />
-        <NumberField
-          label="休息 秒"
-          value={exercise.restSeconds}
-          locked={locked}
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { restSeconds: value })
-          }
-          error={fieldErrors[`${errorPrefix}.restSeconds`]}
-        />
-        <NumberField
-          label="RPE"
-          value={exercise.targetRpe}
-          locked={locked}
-          step="0.5"
-          onChange={(value) =>
-            onUpdateExercise(dayIndex, exercise.localId, { targetRpe: value })
-          }
-          error={fieldErrors[`${errorPrefix}.targetRpe`]}
-        />
-      </div>
-
-      <div className="mt-4">
-        <label className="space-y-2">
-          <span className="text-sm text-stone-300">备注</span>
-          <textarea
-            value={exercise.note}
-            disabled={locked}
-            onChange={(event) =>
-              onUpdateExercise(dayIndex, exercise.localId, {
-                note: event.target.value
-              })
-            }
-            className={`${inputClass} min-h-28 resize-y`}
-            placeholder="例如：最后一组接近力竭"
-          />
-          <FieldError message={fieldErrors[`${errorPrefix}.note`]} />
-        </label>
-      </div>
+      )}
     </div>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  locked,
-  step = "1",
-  error,
-  onChange
-}: {
-  label: string;
-  value: string;
-  locked: boolean;
-  step?: string;
-  error?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="space-y-2">
-      <span className="text-sm text-stone-300">{label}</span>
-      <input
-        type="number"
-        value={value}
-        step={step}
-        disabled={locked}
-        onChange={(event) => onChange(event.target.value)}
-        className={inputClass}
-      />
-      <FieldError message={error} />
-    </label>
   );
 }
 
@@ -559,6 +470,3 @@ const primaryButtonClass =
 
 const secondaryButtonClass =
   "rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50";
-
-const searchButtonClass =
-  "rounded-2xl border border-amber-300/20 bg-amber-300/10 px-5 py-3 text-sm font-medium text-amber-100 transition hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-50";

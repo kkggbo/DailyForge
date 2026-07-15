@@ -2,22 +2,24 @@ package com.dailyforge.modules.plan.application.service;
 
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
+import com.dailyforge.modules.exercise.application.model.SystemExerciseLookupResult;
+import com.dailyforge.modules.exercise.application.service.SystemExerciseLookupService;
 import com.dailyforge.modules.plan.application.assembler.CycleTemplateAssembler;
 import com.dailyforge.modules.plan.domain.service.CycleTemplatePolicyService;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService;
+import com.dailyforge.modules.plan.domain.service.ExerciseStructurePolicyService;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleRunEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateVersionEntity;
-import com.dailyforge.modules.plan.infrastructure.persistence.entity.ExerciseReadEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.UserActiveCycleEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleRunMapper;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleTemplateMapper;
-import com.dailyforge.modules.plan.infrastructure.persistence.mapper.ExerciseReadMapper;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.UserActiveCycleMapper;
 import com.dailyforge.modules.plan.interfaces.dto.CopyCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.dto.CreateDraftCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateDayRequest;
 import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateExerciseRequest;
+import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateItemRequest;
 import com.dailyforge.modules.plan.interfaces.dto.UpdateCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.dto.UpdateDraftCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.vo.CopyCycleTemplateResponse;
@@ -44,7 +46,8 @@ public class CycleTemplateCommandApplicationService {
     private final CycleTemplateMapper cycleTemplateMapper;
     private final CycleTemplateVersionDomainService cycleTemplateVersionDomainService;
     private final CycleTemplatePolicyService cycleTemplatePolicyService;
-    private final ExerciseReadMapper exerciseReadMapper;
+    private final ExerciseStructurePolicyService exerciseStructurePolicyService;
+    private final SystemExerciseLookupService systemExerciseLookupService;
     private final UserActiveCycleMapper userActiveCycleMapper;
     private final CycleRunMapper cycleRunMapper;
     private final CycleTemplateAssembler cycleTemplateAssembler;
@@ -54,7 +57,8 @@ public class CycleTemplateCommandApplicationService {
             CycleTemplateMapper cycleTemplateMapper,
             CycleTemplateVersionDomainService cycleTemplateVersionDomainService,
             CycleTemplatePolicyService cycleTemplatePolicyService,
-            ExerciseReadMapper exerciseReadMapper,
+            ExerciseStructurePolicyService exerciseStructurePolicyService,
+            SystemExerciseLookupService systemExerciseLookupService,
             UserActiveCycleMapper userActiveCycleMapper,
             CycleRunMapper cycleRunMapper,
             CycleTemplateAssembler cycleTemplateAssembler) {
@@ -62,7 +66,8 @@ public class CycleTemplateCommandApplicationService {
         this.cycleTemplateMapper = cycleTemplateMapper;
         this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
         this.cycleTemplatePolicyService = cycleTemplatePolicyService;
-        this.exerciseReadMapper = exerciseReadMapper;
+        this.exerciseStructurePolicyService = exerciseStructurePolicyService;
+        this.systemExerciseLookupService = systemExerciseLookupService;
         this.userActiveCycleMapper = userActiveCycleMapper;
         this.cycleRunMapper = cycleRunMapper;
         this.cycleTemplateAssembler = cycleTemplateAssembler;
@@ -76,7 +81,8 @@ public class CycleTemplateCommandApplicationService {
         Long userId = planUserSupportService.requireActiveUserId();
         cycleTemplatePolicyService.validateDraftCycleLength(request.cycleLength());
         cycleTemplatePolicyService.validateDayRequests(request.cycleLength(), request.days());
-        Map<Long, ExerciseReadEntity> exerciseMap = loadAndValidateExercises(request.days());
+        Map<Long, SystemExerciseLookupResult> exerciseMap = loadAndValidateExercises(request.days());
+        exerciseStructurePolicyService.validateDayRequests(request.days(), exerciseMap);
 
         CycleTemplateEntity template = new CycleTemplateEntity();
         template.setUserId(userId);
@@ -92,9 +98,16 @@ public class CycleTemplateCommandApplicationService {
         template.setCurrentVersionId(version.getId());
         cycleTemplateMapper.updateById(template);
 
-        int configuredDayCount = request.days() == null ? 0 : request.days().size();
-        log.debug("Draft template created. userId={}, templateId={}, versionNo={}, cycleLength={}, configuredDayCount={}",
-                userId, template.getId(), version.getVersionNo(), template.getCycleLength(), configuredDayCount);
+        log.debug(
+                "Draft template created. userId={}, templateId={}, versionNo={}, cycleLength={}, dayCount={}, exerciseCount={}, itemCount={}, metricCount={}",
+                userId,
+                template.getId(),
+                version.getVersionNo(),
+                template.getCycleLength(),
+                countDays(request.days()),
+                countExercises(request.days()),
+                countItems(request.days()),
+                countMetrics(request.days()));
         return cycleTemplateAssembler.toCreateDraftResponse(template);
     }
 
@@ -111,7 +124,8 @@ public class CycleTemplateCommandApplicationService {
         cycleTemplatePolicyService.assertTemplateStatus(template, "draft");
         cycleTemplatePolicyService.validateDraftCycleLength(request.cycleLength());
         cycleTemplatePolicyService.validateDayRequests(request.cycleLength(), request.days());
-        Map<Long, ExerciseReadEntity> exerciseMap = loadAndValidateExercises(request.days());
+        Map<Long, SystemExerciseLookupResult> exerciseMap = loadAndValidateExercises(request.days());
+        exerciseStructurePolicyService.validateDayRequests(request.days(), exerciseMap);
 
         template.setName(request.templateName().trim());
         template.setCycleLength(request.cycleLength());
@@ -122,9 +136,16 @@ public class CycleTemplateCommandApplicationService {
         template.setCurrentVersionId(version.getId());
         cycleTemplateMapper.updateById(template);
 
-        int configuredDayCount = request.days() == null ? 0 : request.days().size();
-        log.debug("Draft template updated. userId={}, templateId={}, versionNo={}, cycleLength={}, configuredDayCount={}",
-                userId, template.getId(), version.getVersionNo(), template.getCycleLength(), configuredDayCount);
+        log.debug(
+                "Draft template updated. userId={}, templateId={}, versionNo={}, cycleLength={}, dayCount={}, exerciseCount={}, itemCount={}, metricCount={}",
+                userId,
+                template.getId(),
+                version.getVersionNo(),
+                template.getCycleLength(),
+                countDays(request.days()),
+                countExercises(request.days()),
+                countItems(request.days()),
+                countMetrics(request.days()));
         return cycleTemplateAssembler.toCreateDraftResponse(template);
     }
 
@@ -189,10 +210,11 @@ public class CycleTemplateCommandApplicationService {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_NOT_FOUND);
         }
         cycleTemplatePolicyService.assertCanDelete(template);
+        String previousStatus = template.getStatus();
         template.setStatus("deleted");
         cycleTemplateMapper.updateById(template);
         log.debug("Template deleted. userId={}, templateId={}, previousStatus={}",
-                userId, templateId, template.getStatus());
+                userId, templateId, previousStatus);
         return cycleTemplateAssembler.toDeleteResponse(template);
     }
 
@@ -203,7 +225,8 @@ public class CycleTemplateCommandApplicationService {
         Integer cycleLength = request.cycleLength() == null ? template.getCycleLength() : request.cycleLength();
         cycleTemplatePolicyService.assertFormalCycleLength(cycleLength);
         cycleTemplatePolicyService.validateDayRequests(cycleLength, request.days());
-        Map<Long, ExerciseReadEntity> exerciseMap = loadAndValidateExercises(request.days());
+        Map<Long, SystemExerciseLookupResult> exerciseMap = loadAndValidateExercises(request.days());
+        exerciseStructurePolicyService.validateDayRequests(request.days(), exerciseMap);
 
         template.setName(request.templateName().trim());
         template.setGoalType(request.goalType());
@@ -214,8 +237,16 @@ public class CycleTemplateCommandApplicationService {
         template.setCurrentVersionId(version.getId());
         cycleTemplateMapper.updateById(template);
 
-        log.debug("Inactive formal template updated. userId={}, templateId={}, versionNo={}, cycleLength={}",
-                userId, template.getId(), version.getVersionNo(), cycleLength);
+        log.debug(
+                "Inactive formal template updated. userId={}, templateId={}, versionNo={}, cycleLength={}, dayCount={}, exerciseCount={}, itemCount={}, metricCount={}",
+                userId,
+                template.getId(),
+                version.getVersionNo(),
+                cycleLength,
+                countDays(request.days()),
+                countExercises(request.days()),
+                countItems(request.days()),
+                countMetrics(request.days()));
         return cycleTemplateAssembler.toCreateDraftResponse(template);
     }
 
@@ -228,14 +259,16 @@ public class CycleTemplateCommandApplicationService {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_ACTIVE_NOT_FOUND);
         }
         cycleTemplatePolicyService.assertActiveUpdateAllowed(template, request, activeCycle);
-        Map<Long, ExerciseReadEntity> exerciseMap = loadAndValidateExercises(request.days());
+        Map<Long, SystemExerciseLookupResult> exerciseMap = loadAndValidateExercises(request.days());
+        exerciseStructurePolicyService.validateDayRequests(request.days(), exerciseMap);
 
         template.setName(request.templateName().trim());
         template.setGoalType(request.goalType());
+        Long oldVersionId = template.getCurrentVersionId();
         CycleTemplateVersionEntity version =
                 cycleTemplateVersionDomainService.createVersion(template.getId(), "active_patch", "active_future_patch");
         cycleTemplateVersionDomainService.cloneLockedDaysAndReplaceEditableDays(
-                template.getCurrentVersionId(),
+                oldVersionId,
                 version.getId(),
                 cycleTemplatePolicyService.resolveEditableFromDayIndex(activeCycle),
                 request.days(),
@@ -253,16 +286,21 @@ public class CycleTemplateCommandApplicationService {
             cycleRunMapper.updateById(currentRun);
         }
 
-        log.debug("Active formal template updated. userId={}, templateId={}, oldVersionId={}, newVersionId={}, editableFromDayIndex={}",
+        log.debug(
+                "Active formal template updated. userId={}, templateId={}, oldVersionId={}, newVersionId={}, editableFromDayIndex={}, submittedDayCount={}, submittedExerciseCount={}, submittedItemCount={}, submittedMetricCount={}",
                 userId,
                 template.getId(),
-                template.getCurrentVersionId(),
+                oldVersionId,
                 version.getId(),
-                cycleTemplatePolicyService.resolveEditableFromDayIndex(activeCycle));
+                cycleTemplatePolicyService.resolveEditableFromDayIndex(activeCycle),
+                countDays(request.days()),
+                countExercises(request.days()),
+                countItems(request.days()),
+                countMetrics(request.days()));
         return cycleTemplateAssembler.toCreateDraftResponse(template);
     }
 
-    private Map<Long, ExerciseReadEntity> loadAndValidateExercises(List<CycleTemplateDayRequest> days) {
+    private Map<Long, SystemExerciseLookupResult> loadAndValidateExercises(List<CycleTemplateDayRequest> days) {
         Set<Long> exerciseIds = new LinkedHashSet<>();
         if (days != null) {
             for (CycleTemplateDayRequest day : days) {
@@ -279,18 +317,68 @@ public class CycleTemplateCommandApplicationService {
             return Collections.emptyMap();
         }
 
-        List<ExerciseReadEntity> exerciseEntities = exerciseReadMapper.selectByIds(List.copyOf(exerciseIds));
-        if (exerciseEntities.size() != exerciseIds.size()) {
+        Map<Long, SystemExerciseLookupResult> exerciseMap =
+                new LinkedHashMap<>(systemExerciseLookupService.loadExercisesByIds(exerciseIds));
+        if (exerciseMap.size() != exerciseIds.size()) {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_EXERCISE_NOT_FOUND);
         }
-
-        Map<Long, ExerciseReadEntity> exerciseMap = new LinkedHashMap<>();
-        for (ExerciseReadEntity exercise : exerciseEntities) {
-            if (exercise.getOwnerUserId() != null || exercise.getIsActive() == null || exercise.getIsActive() != 1) {
+        for (SystemExerciseLookupResult exercise : exerciseMap.values()) {
+            if (exercise.ownerUserId() != null || exercise.isActive() == null || exercise.isActive() != 1) {
                 throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_SYSTEM_EXERCISE_REQUIRED);
             }
-            exerciseMap.put(exercise.getId(), exercise);
         }
         return exerciseMap;
+    }
+
+    private int countDays(List<CycleTemplateDayRequest> days) {
+        return days == null ? 0 : days.size();
+    }
+
+    private int countExercises(List<CycleTemplateDayRequest> days) {
+        int count = 0;
+        if (days == null) {
+            return 0;
+        }
+        for (CycleTemplateDayRequest day : days) {
+            count += day.exercises() == null ? 0 : day.exercises().size();
+        }
+        return count;
+    }
+
+    private int countItems(List<CycleTemplateDayRequest> days) {
+        int count = 0;
+        if (days == null) {
+            return 0;
+        }
+        for (CycleTemplateDayRequest day : days) {
+            if (day.exercises() == null) {
+                continue;
+            }
+            for (CycleTemplateExerciseRequest exercise : day.exercises()) {
+                count += exercise.items() == null ? 0 : exercise.items().size();
+            }
+        }
+        return count;
+    }
+
+    private int countMetrics(List<CycleTemplateDayRequest> days) {
+        int count = 0;
+        if (days == null) {
+            return 0;
+        }
+        for (CycleTemplateDayRequest day : days) {
+            if (day.exercises() == null) {
+                continue;
+            }
+            for (CycleTemplateExerciseRequest exercise : day.exercises()) {
+                if (exercise.items() == null) {
+                    continue;
+                }
+                for (CycleTemplateItemRequest item : exercise.items()) {
+                    count += item.metrics() == null ? 0 : item.metrics().size();
+                }
+            }
+        }
+        return count;
     }
 }

@@ -1,89 +1,231 @@
-# DailyForge Frontend Cycle Template 模块详细设计
+# DailyForge Frontend Cycle Template 模块详细设计 v2
 
-> 版本：v1.0  
-> 日期：2026-07-14  
+> 版本：v2.0  
+> 日期：2026-07-15  
 > 模块归属：`frontend/src/features/cycle-template`
 
 ---
 
 ## 1. 文档目标
 
-本文档用于定义 `cycle_template` 模块的前端技术实现方案，面向：
+本文档用于定义 `cycle_template` 模块在“动作参数模型重构”后的前端改造方案，面向以下工作：
 
-- 页面与路由设计
-- 前端状态模型
-- API 对接方式
-- 模板编辑器交互
-- 激活、切换、删除等关键业务动作的前端行为
+- 基于新版接口契约重构前端类型、API 和编辑器模型
+- 明确现有前端实现与后端 v2 能力之间的差距
+- 指导 `cycle-template` 模块下一轮前端开发与重构
+- 为后续 `training session` 模块复用三层动作结构提供前置约束
 
-这是一份“可直接指导前端开发”的技术文档，默认以后端已完成实现为前提。
+本文档优先级说明：
+
+1. 以 [cycle_template_接口文档_v2.md](/D:/Computer%20Science/DailyForge/docs/interfaces/cycle_template_%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3_v2.md) 为主，作为前端对接契约
+2. 以 [动作参数模型改造草案.md](/D:/Computer%20Science/DailyForge/docs/%E5%8A%A8%E4%BD%9C%E5%8F%82%E6%95%B0%E6%A8%A1%E5%9E%8B%E6%94%B9%E9%80%A0%E8%8D%89%E6%A1%88.md) 理解三层模型、交互抽象与扩展边界
+3. 以 [cycle_template_PRD.md](/D:/Computer%20Science/DailyForge/docs/prd/cycle_template_PRD.md) 保证页面流程与业务行为不跑偏
 
 ---
 
-## 2. 设计输入
+## 2. 现状与改造原因
 
-本方案基于以下文档整理：
+当前前端 `cycle-template` 模块已经完成 v1 版本，具备以下能力：
 
-- [cycle_template_PRD.md](/D:/Computer%20Science/DailyForge/docs/prd/cycle_template_PRD.md)
-- [cycle_template_接口文档.md](/D:/Computer%20Science/DailyForge/docs/interfaces/cycle_template_接口文档.md)
+- 模板首页、详情页、创建页、编辑页、启用/复制/删除流程
+- 草稿与正式模板的基础管理
+- 当前启用模板摘要展示
+- 运行中模板的“未来训练日可编辑”限制
 
-同时参考当前前端已有模式：
+但当前前端实现仍然基于 v1 固定动作字段模型，核心问题如下：
 
-- `profile` 模块的页面级请求编排
-- `shared/api/http.ts` 的统一请求封装
-- 现有 `auth` / `app` 的受保护路由结构
+1. 一个动作仍使用固定字段描述目标，例如 `targetSets`、`targetRepsMin`、`targetWeightKg`
+2. 无法表达“同一动作不同组参数不同”的真实训练结构
+3. 无法自然表达有氧动作、单段动作和未来多段动作
+4. 编辑器仍是“单层动作表单”，不是“动作 -> 执行项 -> 指标”的结构编辑器
+5. 系统动作搜索结果没有消费 `defaultStructureType`
+
+因此，v2 前端改造的本质不是“字段换名字”，而是把编辑器和数据模型整体升级为三层结构。
 
 ---
 
 ## 3. 模块定位
 
-`cycle_template` 是 DailyForge 训练计划层的核心模块。
+`cycle_template` 在前端中承担三层职责：
 
-它在前端中的职责不是“展示一个静态计划列表”，而是承接三类能力：
+1. 训练模板管理入口
+2. 三层动作结构编辑器承载层
+3. 与未来 `training session` 计划结构对齐的前置模块
 
-1. 草稿模板管理
-2. 正式模板管理
-3. 当前激活模板与后续训练打卡模块之间的衔接
+这意味着：
 
-它和其他模块的关系：
-
-- `profile`：训练目标等资料会影响 AI 生成草稿模板
-- `training-session`：依赖当前激活模板与 `currentDayIndex`
-- `ai`：AI 生成模板草稿后，最终仍回到本模块确认和启用
+- 本模块不只是普通 CRUD 页面
+- 本模块的编辑器结构设计会直接影响后续训练打卡模块
+- 本次重构应优先保证结构语义清晰，而不是追求表单实现最省事
 
 ---
 
-## 4. 推荐目录结构
+## 4. 本次改造范围
 
-建议新增目录：
+### 4.1 包含
+
+- 重构 `cycle-template` 类型定义
+- 重构 API 请求/响应结构
+- 重构编辑器本地表单模型
+- 重构动作编辑 UI 为三层结构
+- 支持 `set_based` 与 `single_segment`
+- 接入新版错误码
+- 接入系统动作返回的 `defaultStructureType`
+- 重写前端校验逻辑
+- 更新列表页、详情页、创建页、编辑页文档设计
+
+### 4.2 不包含
+
+- `training session` 模块开发
+- AI 真正生成模板
+- `interval_segment`、`dropset`、`superset` 等高阶结构
+- 用户自定义参数字典
+- 用户手工修改 `structureType`
+
+---
+
+## 5. 路由与页面结构
+
+本次改造不新增路由，继续沿用现有四条受保护路由：
+
+- `/cycle-templates`
+- `/cycle-templates/create`
+- `/cycle-templates/:templateId`
+- `/cycle-templates/:templateId/edit`
+
+页面职责保持不变，但编辑区语义升级：
+
+### 5.1 `CycleTemplatePage`
+
+作用：
+
+- 正式模板 / 草稿模板列表入口
+- 展示当前激活模板摘要
+- 提供“新建草稿”与“AI 生成草稿”入口
+
+本页受 v2 影响较小，主要变化在于：
+
+- 复制、详情、编辑后进入的新页面将展示三层动作结构
+- 列表页不需要感知动作层级细节
+
+### 5.2 `CycleTemplateDetailPage`
+
+作用：
+
+- 只读展示模板完整结构
+
+v2 变化：
+
+- `exercises` 不再展示固定目标字段
+- 改为展示：
+  - 动作
+  - 执行项列表
+  - 每个执行项的指标列表
+
+### 5.3 `CycleTemplateCreatePage`
+
+作用：
+
+- 创建手动草稿模板
+
+v2 变化：
+
+- 不再创建“固定字段动作卡”
+- 改为创建“三层结构动作卡”
+
+### 5.4 `CycleTemplateEditPage`
+
+作用：
+
+- 编辑草稿模板
+- 编辑未启用正式模板
+- 编辑运行中模板的当前天及未来天
+
+v2 变化最大，核心在于：
+
+- 支持动作结构初始化
+- 支持执行项增删
+- 支持指标增删
+- 支持根据结构类型限制编辑行为
+
+---
+
+## 6. 当前前端实现与 v2 的差距
+
+基于当前代码，主要差距如下：
+
+### 6.1 类型层
+
+当前 [`cycle-template.ts`](/D:/Computer%20Science/DailyForge/frontend/src/features/cycle-template/types/cycle-template.ts) 仍定义为：
+
+- `CycleTemplateExerciseResponse` 直接挂固定目标字段
+- `SaveCycleTemplateExercisePayload` 直接发固定目标字段
+- `EditorExerciseForm` 仍是固定字段输入模型
+
+这些类型需要整体替换。
+
+### 6.2 编辑器层
+
+当前 [`CycleTemplateEditor.tsx`](/D:/Computer%20Science/DailyForge/frontend/src/features/cycle-template/components/CycleTemplateEditor.tsx) 仍是：
+
+- 一个动作卡
+- 一组固定数值输入
+- 一个备注输入
+
+这与 v2 三层结构完全不匹配，需要重构为组合式编辑器。
+
+### 6.3 映射与校验层
+
+当前：
+
+- `detailToEditorForm` 基于固定字段映射
+- `editorFormToPayload` 基于固定字段组包
+- `cycle-template-validators.ts` 基于固定字段校验
+
+这些逻辑都需要替换。
+
+### 6.4 系统动作搜索层
+
+当前动作搜索结果只消费：
+
+- `exerciseId`
+- `exerciseName`
+
+而 v2 需要最少消费：
+
+- `exerciseId`
+- `exerciseName`
+- `defaultStructureType`
+
+否则前端无法根据动作元数据正确初始化编辑结构。
+
+---
+
+## 7. 推荐目录结构
+
+继续复用现有目录，不做模块拆散，但内部职责重组为：
 
 ```text
 src/features/cycle-template
 ├─ api
 │  └─ cycle-template.ts
 ├─ components
-│  ├─ CycleTemplateTabNav.tsx
-│  ├─ FormalTemplateList.tsx
-│  ├─ DraftTemplateList.tsx
-│  ├─ TemplateCard.tsx
-│  ├─ ActiveTemplateBanner.tsx
-│  ├─ TemplateDetailHeader.tsx
-│  ├─ TemplateDayTabs.tsx
-│  ├─ TemplateDayEditor.tsx
-│  ├─ TemplateExerciseEditor.tsx
-│  ├─ TemplateReadOnlyDayList.tsx
-│  ├─ ActivateTemplateDialog.tsx
-│  ├─ DeleteTemplateDialog.tsx
-│  └─ LeaveEditorConfirmDialog.tsx
+│  ├─ CycleTemplateCards.tsx
+│  ├─ CycleTemplateDialogs.tsx
+│  ├─ CycleTemplateReadOnly.tsx
+│  ├─ CycleTemplateEditor.tsx
+│  ├─ ExerciseStructureEditor.tsx
+│  ├─ ExerciseItemEditor.tsx
+│  ├─ MetricEditor.tsx
+│  └─ AiGenerateButton.tsx
 ├─ hooks
-│  ├─ useCycleTemplateEditor.ts
-│  └─ useLeaveConfirm.ts
+│  └─ useCycleTemplateEditor.ts
 ├─ lib
 │  ├─ cycle-template-enums.ts
-│  ├─ cycle-template-mappers.ts
 │  ├─ cycle-template-formatters.ts
-│  ├─ cycle-template-validators.ts
-│  └─ cycle-template-history.ts
+│  ├─ cycle-template-mappers.ts
+│  ├─ cycle-template-metric-config.ts
+│  └─ cycle-template-validators.ts
 ├─ pages
 │  ├─ CycleTemplatePage.tsx
 │  ├─ CycleTemplateDetailPage.tsx
@@ -95,245 +237,125 @@ src/features/cycle-template
 
 说明：
 
-- `CycleTemplatePage` 负责正式模板 / 草稿模板两大入口页。
-- `DetailPage` 与 `EditPage` 分离，避免一个页面同时承担只读与重编辑逻辑。
-- 编辑器复杂度较高，建议单独抽 `useCycleTemplateEditor` 管理本地草稿态、撤销、重置和离开确认。
+- 可以保留现有文件名，避免路由与导入大面积波动
+- 但建议新增结构化子组件，否则 `CycleTemplateEditor.tsx` 会过大
+- `cycle-template-metric-config.ts` 用于维护前端指标字典和结构类型规则
 
 ---
 
-## 5. 路由设计
+## 8. v2 数据模型设计
 
-建议新增受保护路由：
+## 8.1 后端响应模型
 
-- `/cycle-templates`
-- `/cycle-templates/create`
-- `/cycle-templates/:templateId`
-- `/cycle-templates/:templateId/edit`
-
-路由语义：
-
-- `/cycle-templates`
-  训练模板首页，默认展示“正式模板”Tab。
-- `/cycle-templates/create`
-  创建新的草稿模板。
-- `/cycle-templates/:templateId`
-  模板详情页，只读。
-- `/cycle-templates/:templateId/edit`
-  模板编辑页。
-
-导航建议：
-
-- 在已登录应用导航中新增“训练模板”入口。
-- 这是训练主流程核心模块，优先级应和“个人资料”同级。
-
----
-
-## 6. 页面设计
-
-## 6.1 `CycleTemplatePage`
-
-作用：
-
-- 模板管理主入口
-- 承接正式模板 / 草稿模板两类列表
-- 展示当前激活模板摘要
-
-页面结构：
-
-1. 页面标题区
-2. 当前激活模板横幅 `ActiveTemplateBanner`
-3. Tab 切换 `正式模板` / `草稿模板`
-4. 对应列表区域
-
-首屏请求建议并行加载：
-
-1. `GET /api/cycle-templates/formal`
-2. `GET /api/cycle-templates/drafts`
-3. `GET /api/cycle-templates/active/current`
-
-说明：
-
-- 即使 `formal` 返回里已经有 `activeTemplateId`，仍建议保留 `active/current` 请求。
-- 因为后续训练打卡模块也会依赖它，前端模型保持统一更好。
-
-## 6.2 `CycleTemplateDetailPage`
-
-作用：
-
-- 查看模板完整结构
-- 提供进入编辑、激活、复制、删除等动作入口
-
-页面结构：
-
-1. 模板头部信息
-2. 状态标签与动作按钮区
-3. Day 列表只读展示
-
-请求：
-
-- `GET /api/cycle-templates/{templateId}`
-
-## 6.3 `CycleTemplateCreatePage`
-
-作用：
-
-- 新建手动草稿模板
-
-页面结构：
-
-1. 基础信息区
-2. Day Tab 区
-3. 当前 Day 编辑区
-4. 页面底部操作区
-
-## 6.4 `CycleTemplateEditPage`
-
-作用：
-
-- 编辑草稿模板
-- 编辑正式模板
-- 编辑运行中模板的可编辑未来部分
-
-请求：
-
-- `GET /api/cycle-templates/{templateId}`
-
-同一套编辑器页面要根据 `status` 切换行为：
-
-- `draft`
-- `inactive`
-- `active`
-
----
-
-## 7. 数据模型设计
-
-以下类型建议直接按接口文档定义，减少转换成本。
-
-## 7.1 模板状态
+前端应以三层结构定义响应类型。
 
 ```ts
-export type CycleTemplateStatus = "draft" | "active" | "inactive" | "deleted";
+export type StructureType = "set_based" | "single_segment";
+
+export type ItemType = "set" | "segment";
+
+export type MetricKey =
+  | "weight_kg"
+  | "reps"
+  | "duration_seconds"
+  | "distance_km"
+  | "speed_kmh"
+  | "pace_seconds_per_km"
+  | "incline_percent"
+  | "rest_seconds"
+  | "rpe"
+  | "intensity_level";
 ```
 
-## 7.2 正式模板列表项
-
 ```ts
-export type FormalTemplateListItem = {
-  templateId: number;
-  templateName: string;
-  cycleLength: number | null;
-  goalType: string | null;
-  status: "active" | "inactive";
-  isActive: boolean;
-  currentDayIndex: number | null;
-  updatedAt: string;
-};
-```
-
-## 7.3 草稿模板列表项
-
-```ts
-export type DraftTemplateListItem = {
-  templateId: number;
-  templateName: string;
-  cycleLength: number | null;
-  configuredDayCount: number;
-  createdAt: string;
-  updatedAt: string;
-};
-```
-
-## 7.4 当前激活模板摘要
-
-```ts
-export type ActiveTemplateSummaryResponse = {
-  templateId: number;
-  templateName: string;
-  cycleLength: number;
-  currentDayIndex: number;
-  currentDayName: string | null;
-  editableFromDayIndex: number;
-  startedAt: string;
-};
-```
-
-## 7.5 模板详情
-
-```ts
-export type CycleTemplateDetailResponse = {
-  templateId: number;
-  templateName: string;
-  goalType: string | null;
-  status: CycleTemplateStatus;
-  cycleLength: number | null;
-  isActive: boolean;
-  currentDayIndex: number | null;
-  editableFromDayIndex: number;
-  canActivate: boolean;
-  canDelete: boolean;
-  createdAt: string;
-  updatedAt: string;
-  days: CycleTemplateDayDetail[];
+export type CycleTemplateMetricResponse = {
+  sortOrder: number;
+  metricKey: MetricKey;
+  metricValueNumber: number;
+  metricUnit: string | null;
 };
 ```
 
 ```ts
-export type CycleTemplateDayDetail = {
-  dayIndex: number;
-  dayName: string;
-  isRestDay: boolean;
-  isLocked: boolean;
-  exercises: CycleTemplateExerciseDetail[];
+export type CycleTemplateItemResponse = {
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string | null;
+  note: string | null;
+  metrics: CycleTemplateMetricResponse[];
 };
 ```
 
 ```ts
-export type CycleTemplateExerciseDetail = {
+export type CycleTemplateExerciseResponse = {
   sortOrder: number;
   exerciseId: number;
   exerciseName: string;
-  targetSets: number | null;
-  targetRepsMin: number | null;
-  targetRepsMax: number | null;
-  targetWeightKg: number | null;
-  targetDurationSeconds: number | null;
-  restSeconds: number | null;
-  targetRpe: number | null;
+  structureType: StructureType;
   note: string | null;
-  targetExtraJson: Record<string, unknown> | null;
+  items: CycleTemplateItemResponse[];
 };
 ```
 
+### 8.2 后端请求模型
+
+请求体中不再出现固定目标字段。
+
+```ts
+export type SaveCycleTemplateMetricPayload = {
+  sortOrder: number;
+  metricKey: MetricKey;
+  metricValueNumber: number;
+};
+```
+
+```ts
+export type SaveCycleTemplateItemPayload = {
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string | null;
+  note: string | null;
+  metrics: SaveCycleTemplateMetricPayload[];
+};
+```
+
+```ts
+export type SaveCycleTemplateExercisePayload = {
+  sortOrder: number;
+  exerciseId: number;
+  structureType: StructureType;
+  note: string | null;
+  items: SaveCycleTemplateItemPayload[];
+};
+```
+
+### 8.3 系统动作搜索模型
+
+v2 必须升级：
+
+```ts
+export type SystemExerciseOption = {
+  exerciseId: number;
+  exerciseName: string;
+  defaultStructureType: StructureType;
+};
+```
+
+前端不应再依赖：
+
+- `exerciseType`
+- `movementType`
+- `defaultUnit`
+
+来推测结构类型。
+
 ---
 
-## 8. API 层设计
+## 9. 前端编辑器表单模型
 
-建议文件：
+前端编辑器应维护独立于接口 DTO 的本地表单结构，继续全部使用字符串承接输入态。
 
-- `src/features/cycle-template/api/cycle-template.ts`
-
-建议封装以下方法：
-
-| 方法 | 接口 | 用途 |
-|------|------|------|
-| `getFormalTemplates` | `GET /api/cycle-templates/formal` | 获取正式模板列表 |
-| `getDraftTemplates` | `GET /api/cycle-templates/drafts` | 获取草稿模板列表 |
-| `getCycleTemplateDetail` | `GET /api/cycle-templates/{templateId}` | 获取模板详情 |
-| `createDraftTemplate` | `POST /api/cycle-templates/drafts` | 新建手动草稿 |
-| `generateDraftTemplateByAi` | `POST /api/cycle-templates/drafts/ai-generate` | AI 生成草稿占位 |
-| `updateDraftTemplate` | `PUT /api/cycle-templates/drafts/{templateId}` | 更新草稿模板 |
-| `updateFormalTemplate` | `PUT /api/cycle-templates/{templateId}` | 更新正式模板 |
-| `copyCycleTemplate` | `POST /api/cycle-templates/{templateId}/copy` | 复制模板为草稿 |
-| `activateCycleTemplate` | `POST /api/cycle-templates/{templateId}/activate` | 启用模板 |
-| `getCurrentActiveTemplate` | `GET /api/cycle-templates/active/current` | 获取当前激活摘要 |
-| `deleteCycleTemplate` | `DELETE /api/cycle-templates/{templateId}` | 删除模板 |
-
----
-
-## 9. 编辑器表单模型
-
-建议编辑器内部统一维护一个前端草稿态，而不是直接拿接口详情对象就地改。
+### 9.1 顶层表单
 
 ```ts
 export type CycleTemplateEditorForm = {
@@ -344,6 +366,8 @@ export type CycleTemplateEditorForm = {
 };
 ```
 
+### 9.2 Day 表单
+
 ```ts
 export type EditorDayForm = {
   dayIndex: number;
@@ -352,319 +376,516 @@ export type EditorDayForm = {
 };
 ```
 
+### 9.3 动作表单
+
 ```ts
 export type EditorExerciseForm = {
   localId: string;
   sortOrder: number;
   exerciseId: number | null;
   exerciseName: string;
-  targetSets: string;
-  targetRepsMin: string;
-  targetRepsMax: string;
-  targetWeightKg: string;
-  targetDurationSeconds: string;
-  restSeconds: string;
-  targetRpe: string;
+  structureType: StructureType | null;
   note: string;
-  targetExtraJsonText: string;
+  items: EditorItemForm[];
+};
+```
+
+### 9.4 执行项表单
+
+```ts
+export type EditorItemForm = {
+  localId: string;
+  itemIndex: number;
+  itemType: ItemType;
+  itemName: string;
+  note: string;
+  metrics: EditorMetricForm[];
+};
+```
+
+### 9.5 指标表单
+
+```ts
+export type EditorMetricForm = {
+  localId: string;
+  sortOrder: number;
+  metricKey: MetricKey | "";
+  metricValueNumberText: string;
 };
 ```
 
 说明：
 
-- 输入组件统一维护字符串，避免用户在中间输入态被数字转换打断。
-- `targetExtraJson` 建议先以前端 `textarea + JSON 文本` 形式落地。
-- `localId` 用于拖拽排序和本地未保存项渲染。
+- `metricUnit` 不进入表单提交模型
+- 单位由 `metricKey` 推导显示
+- 数值输入保留字符串态，避免输入中间态被强转中断
 
 ---
 
-## 10. 本地状态与编辑历史
+## 10. 结构规则与前端约束
 
-## 10.1 页面级状态
+## 10.1 `structureType` 规则
 
-`CycleTemplatePage` 建议维护：
+前端不允许用户手动修改 `structureType`。
 
-- `activeTab`
-- `formalList`
-- `draftList`
-- `activeSummary`
-- `isLoadingPage`
-- `pageError`
-- `activateDialogState`
-- `deleteDialogState`
+来源规则：
 
-`CycleTemplateEditPage` 建议维护：
+- 用户选择系统动作
+- 系统动作返回 `defaultStructureType`
+- 前端用该值初始化动作结构
+- 提交时原样带上 `structureType`
 
-- `detail`
-- `form`
-- `selectedDayIndex`
-- `fieldErrors`
-- `pageError`
-- `isLoadingDetail`
-- `isSaving`
-- `isDirty`
-- `historyStack`
-- `hasUnsavedChanges`
+### 10.2 `set_based` 规则
 
-## 10.2 撤销与重置
+前端约束：
 
-根据 PRD，草稿编辑页需要：
+- `itemType` 只能为 `set`
+- 至少 1 个执行项
+- 允许多个执行项
+- 每个执行项至少 1 个指标
 
-- 撤销上一步本地操作
-- 撤销本次全部修改，恢复为最近一次已保存状态
+默认初始化建议：
 
-建议实现：
+- 新增动作后自动创建 1 个 `set`
+- 默认 `itemName = "第1组"`
 
-- `historyStack: CycleTemplateEditorForm[]`
-- 每次关键编辑动作 push 一份浅/深拷贝后的表单快照
-- `resetToLastSaved` 直接回到 `detail -> form` 的初始映射结果
+### 10.3 `single_segment` 规则
 
-注意：
+前端约束：
 
-- 这是前端本地交互能力，不涉及后端撤销接口。
+- `itemType` 只能为 `segment`
+- 只能有 1 个执行项
+- 不允许新增第 2 个执行项
+- 默认 `itemIndex = 1`
 
-## 10.3 离开未保存提示
+默认初始化建议：
 
-编辑页在以下场景需要提示：
+- 新增动作后自动创建 1 个 `segment`
+- 默认 `itemName = "主训练段"`
 
-- 路由跳转
-- 关闭标签页
-- 刷新页面
+### 10.4 指标规则
 
-提示语义：
+前端约束：
 
-- “当前修改尚未保存，离开后将丢失。”
+- 同一执行项下 `metricKey` 不允许重复
+- 每个执行项至少保留 1 个指标
+- 当前 MVP 所有指标都必须提交 `metricValueNumber`
 
 ---
 
-## 11. 页面交互规则
+## 11. 指标字典配置设计
 
-## 11.1 模板首页 Tab
+建议新增 `lib/cycle-template-metric-config.ts`，统一维护以下信息：
 
-Tab 固定两个：
+```ts
+type MetricMeta = {
+  key: MetricKey;
+  label: string;
+  unitLabel: string | null;
+  step: string;
+  min?: number;
+  max?: number;
+  allowedStructureTypes: StructureType[];
+};
+```
 
-- `正式模板`
-- `草稿模板`
+推荐首批配置：
 
-默认进入：
+- `weight_kg`
+- `reps`
+- `duration_seconds`
+- `distance_km`
+- `speed_kmh`
+- `pace_seconds_per_km`
+- `incline_percent`
+- `rest_seconds`
+- `rpe`
+- `intensity_level`
 
-- `正式模板`
+前端用途：
 
-## 11.2 正式模板卡片行为
+1. 指标下拉选项
+2. 单位显示
+3. 数值步进控制
+4. 范围校验
+5. 根据结构类型过滤可选项
 
-对于 `inactive` 模板：
+建议第一版过滤策略：
 
-- 查看详情
-- 编辑
-- 复制
-- 启用
-- 删除
+- `set_based` 默认优先展示：`weight_kg`、`reps`、`duration_seconds`、`rest_seconds`、`rpe`
+- `single_segment` 默认优先展示：`duration_seconds`、`distance_km`、`speed_kmh`、`pace_seconds_per_km`、`incline_percent`、`intensity_level`
 
-对于 `active` 模板：
+---
 
-- 查看详情
-- 编辑
-- 复制
-- 不提供直接删除
+## 12. 映射层设计
 
-## 11.3 草稿模板卡片行为
+`cycle-template-mappers.ts` 需要整体重写。
 
-- 继续编辑
-- 查看详情
-- 复制
-- 删除
-- 确认启用
+## 12.1 详情转表单
 
-## 11.4 Day Tab 编辑器
+新增：
 
-采用：
+- `detailToEditorForm(detail)`
+- `exerciseResponseToEditorForm(exercise)`
+- `itemResponseToEditorForm(item)`
+- `metricResponseToEditorForm(metric)`
 
-- 顶部 Day Tab
-- 中部单日内容编辑
+### 12.2 表单转请求
+
+新增：
+
+- `editorFormToPayload(form, options)`
+- `mapExerciseToPayload(exercise, index)`
+- `mapItemToPayload(item, index)`
+- `mapMetricToPayload(metric, index)`
 
 规则：
 
-- `cycleLength` 非空时，只展示 `1 ~ cycleLength` 的 Day Tab
-- 空白天允许存在
-- 空白天默认视为休息日，不强制额外勾选
+- `sortOrder`、`itemIndex` 前端在提交前统一重排
+- `metricValueNumberText` 转为 `number`
+- `itemName`、`note`、`dayName` 空串转 `null`
 
-## 11.5 运行中模板编辑限制
+### 12.3 选择动作后的初始化
 
-当模板为 `active` 时：
+新增：
 
-- `cycleLength` 不允许编辑
-- `dayIndex < editableFromDayIndex` 的 Day Tab 只读
-- `dayIndex >= editableFromDayIndex` 的 Day Tab 可编辑
+- `createExerciseFromSystemOption(option, sortOrder)`
+- `createDefaultItemByStructureType(structureType)`
 
-UI 上必须明显区分：
+行为：
 
-- 已锁定天
-- 可编辑天
-
-建议：
-
-- 锁定天标签显示锁图标或“已完成”标记
-- 锁定天编辑区直接只读展示，而不是允许进入再报错
+- 选中 `set_based` 动作时自动生成 1 个 `set`
+- 选中 `single_segment` 动作时自动生成 1 个 `segment`
 
 ---
 
-## 12. 激活与切换流程
+## 13. 校验层设计
 
-## 12.1 激活入口
+`cycle-template-validators.ts` 需要从“固定字段校验”切换到“结构校验”。
 
-触发点：
+### 13.1 顶层校验
 
-- 正式模板卡片
-- 草稿模板卡片
-- 详情页操作区
+- `templateName` 必填，最长 128
+- `goalType` 最长 32
+- `cycleLength` 草稿可空，非空时必须在 1 到 7
 
-## 12.2 激活确认弹窗
+### 13.2 Day 校验
 
-当前端检测到存在已激活模板，或用户点击启用动作时，需要弹出确认弹窗。
+- `dayName` 最长 64
+- `dayIndex` 不得超出 `cycleLength`
 
-弹窗需展示：
+### 13.3 动作校验
 
-- 即将启用的模板名称
-- 周期长度
-- 是否会结束当前循环
-- 是否会从 Day 1 开始新 run
+- `exerciseId` 必填
+- `structureType` 必填
+- `note` 最长 500
+- `items` 至少 1 个
 
-如果后端返回：
+### 13.4 执行项校验
 
-- `CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED`
+- `itemType` 必须与 `structureType` 匹配
+- `itemName` 最长 64
+- `note` 最长 500
+- `metrics` 至少 1 个
+- `single_segment` 下执行项数量必须等于 1
 
-前端策略：
+### 13.5 指标校验
 
-- 保持弹窗打开
-- 在弹窗内显示错误说明
-- 用户确认后再发带 `confirmSwitch=true` 的请求
+- `metricKey` 必填
+- 同 item 下不得重复
+- `metricValueNumberText` 必须可转为数值
+- 按配置检查最小值、最大值、步进语义
 
-## 12.3 激活成功后前端行为
+### 13.6 错误摘要
 
-刷新：
+继续保留当前“顶部错误摘要”能力，但映射路径要升级，例如：
 
-1. 正式模板列表
-2. 草稿模板列表
-3. 当前激活模板摘要
+- `templateName`
+- `day.3.dayName`
+- `day.2.exercise.xxx.structureType`
+- `day.2.exercise.xxx.item.yyy.metrics.zzz.metricKey`
 
-并建议：
+建议把错误摘要描述成人能读懂的路径：
 
-- 弹出成功提示
-- 可选择跳回模板首页
-
----
-
-## 13. 删除流程
-
-## 13.1 删除弹窗
-
-适用对象：
-
-- `draft`
-- `inactive`
-
-不允许：
-
-- `active`
-
-## 13.2 删除成功后前端行为
-
-刷新：
-
-1. 对应列表
-2. 如当前在详情页，则返回 `/cycle-templates`
-
-## 13.3 删除失败处理
-
-重点识别：
-
-- `CYCLE_TEMPLATE_DELETE_FORBIDDEN`
-- `CYCLE_TEMPLATE_NOT_FOUND`
-- `CYCLE_TEMPLATE_STATUS_INVALID`
-
-建议和 `profile` 模块保持一致：
-
-- 页面级错误区展示一次
-- 弹窗内部也展示当前动作错误，避免提示被遮挡或脱离上下文
+- `Day 2 · 动作 1 · 第1组 · 重量`
+- `Day 4 · 动作 2 · 主训练段 · 时长`
 
 ---
 
-## 14. AI 生成草稿占位流程
+## 14. 编辑器交互设计
 
-虽然后端当前返回 `501 CYCLE_TEMPLATE_AI_NOT_IMPLEMENTED`，前端仍应先把入口和错误处理设计好。
+## 14.1 顶层布局
 
-建议：
+编辑页继续保持：
 
-- 在创建页或模板首页提供“AI 生成草稿”入口
-- 当前点下后：
-  - 调用接口
-  - 如果返回 `CYCLE_TEMPLATE_AI_NOT_IMPLEMENTED`
-  - 明确提示“AI 生成模板功能暂未开放”
+1. 基础信息区
+2. Day Tab 区
+3. 当前 Day 内容编辑区
+4. 底部操作区
 
-不要做成静默失败。
+### 14.2 动作卡布局
 
----
+每个动作卡建议包含：
 
-## 15. 错误处理设计
+- 动作标题区
+- 搜索/重新选择动作区
+- 结构类型说明标签
+- 动作备注
+- 执行项列表
+- “新增执行项”按钮
 
-前端需要重点识别以下错误码：
+说明：
 
-- `INVALID_ARGUMENT`
-- `CYCLE_TEMPLATE_NOT_FOUND`
-- `CYCLE_TEMPLATE_ACTIVE_NOT_FOUND`
-- `CYCLE_TEMPLATE_CYCLE_LENGTH_INVALID`
-- `CYCLE_TEMPLATE_DAY_OUT_OF_RANGE`
-- `CYCLE_TEMPLATE_EXERCISE_NOT_FOUND`
-- `CYCLE_TEMPLATE_SYSTEM_EXERCISE_REQUIRED`
-- `CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED`
-- `CYCLE_TEMPLATE_EDIT_FORBIDDEN`
-- `CYCLE_TEMPLATE_DELETE_FORBIDDEN`
-- `CYCLE_TEMPLATE_STATUS_INVALID`
-- `CYCLE_TEMPLATE_ACTIVATE_INVALID`
-- `CYCLE_TEMPLATE_AI_NOT_IMPLEMENTED`
+- `single_segment` 动作隐藏“新增执行项”按钮
+- `set_based` 动作显示“新增一组”按钮
 
-建议按场景映射为更易理解的前端文案。
+### 14.3 执行项编辑区
 
-例如：
+每个执行项卡建议包含：
 
-- `CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED`
-  - “当前已有激活模板，确认后将结束当前循环并切换到新模板。”
-- `CYCLE_TEMPLATE_EDIT_FORBIDDEN`
-  - “已完成的训练日不能修改，请只编辑当前天及之后的内容。”
-- `CYCLE_TEMPLATE_SYSTEM_EXERCISE_REQUIRED`
-  - “当前版本只能选择系统动作库中的动作。”
+- 执行项名称
+- 执行项备注
+- 指标列表
+- “新增指标”按钮
+- 上移 / 下移 / 删除
 
----
+### 14.4 指标编辑区
 
-## 16. 推荐实现顺序
+每个指标行建议包含：
 
-1. 完成 `types` 与 `api` 层。
-2. 搭建 `/cycle-templates` 首页与两个 Tab 列表。
-3. 接入 `active/current` 横幅摘要。
-4. 完成详情页只读展示。
-5. 完成创建草稿页。
-6. 完成草稿编辑页。
-7. 完成正式模板编辑限制逻辑。
-8. 完成启用、复制、删除弹窗链路。
-9. 最后补 AI 生成占位入口与错误处理。
+- 指标类型下拉
+- 数值输入框
+- 单位展示
+- 删除按钮
+
+不建议：
+
+- 让用户手填 `metricKey`
+- 让用户手填 `metricUnit`
 
 ---
 
-## 17. 当前方案结论
+## 15. 页面级行为设计
 
-前端 `cycle_template` 模块的难点不在简单 CRUD，而在：
+## 15.1 首页
 
-1. 草稿态与正式态的行为差异
-2. 运行中模板的部分可编辑限制
-3. 激活切换的确认与刷新链路
-4. 编辑器本地状态、撤销、未保存离开提示
+首页请求保持：
 
-因此，技术实现上不建议把它做成一个“单页大表单 + 一堆 if 判断”。
+- `GET /api/cycle-templates/formal`
+- `GET /api/cycle-templates/drafts`
+- `GET /api/cycle-templates/active/current`
 
-更合理的方式是：
+本页仅做轻量调整：
 
-- 首页、详情页、编辑页分离
-- 业务弹窗独立组件化
-- 编辑器单独抽 hook 管理本地草稿态与历史栈
+- “AI 生成草稿”继续只是按钮入口
+- 不在首页承载三层结构编辑
 
-这样后续再衔接 `training-session` 模块时，代价会小很多。
+## 15.2 详情页
+
+详情页要从“固定字段卡片”改成“结构树”展示：
+
+- Day
+- 动作
+- 执行项
+- 指标
+
+### 15.3 创建页
+
+创建页流程：
+
+1. 先填模板基础信息
+2. 切换 Day
+3. 在 Day 下新增动作
+4. 选择动作后自动生成默认结构
+5. 完善执行项和指标
+6. 保存草稿
+
+### 15.4 编辑页
+
+编辑页流程与创建页一致，但要额外处理：
+
+- `active` 模板的锁定日只读
+- `inactive` 和 `draft` 可完整编辑
+
+---
+
+## 16. `useCycleTemplateEditor` 重构设计
+
+当前 hook 只支持：
+
+- 动作增删
+- 固定字段更新
+- 简单排序
+
+v2 需要扩展为：
+
+### 16.1 顶层能力
+
+- 更新基础字段
+- 更新 day 名称
+- 新增动作
+- 删除动作
+- 选择系统动作并初始化结构
+
+### 16.2 执行项能力
+
+- 新增执行项
+- 删除执行项
+- 更新执行项
+- 执行项排序
+
+### 16.3 指标能力
+
+- 新增指标
+- 删除指标
+- 更新指标
+- 指标排序
+
+### 16.4 历史能力
+
+- `undo`
+- `resetToBaseline`
+- `setBaselineToCurrent`
+- `isDirty`
+- `beforeunload` 提示
+
+说明：
+
+- 仍然不引入 React Query
+- 仍然使用页面级请求编排
+- 不新增全局状态库
+
+---
+
+## 17. API 层改造设计
+
+`api/cycle-template.ts` 需要按 v2 契约重写请求和响应类型。
+
+### 17.1 保持不变的方法
+
+- `getFormalTemplates`
+- `getDraftTemplates`
+- `getCycleTemplateDetail`
+- `createDraftTemplate`
+- `generateDraftTemplateByAi`
+- `updateDraftTemplate`
+- `updateFormalTemplate`
+- `copyCycleTemplate`
+- `activateCycleTemplate`
+- `getCurrentActiveTemplate`
+- `deleteCycleTemplate`
+
+### 17.2 必须变化的点
+
+#### `searchSystemExercises`
+
+返回值改造为：
+
+```ts
+type SystemExerciseOption = {
+  exerciseId: number;
+  exerciseName: string;
+  defaultStructureType: StructureType;
+};
+```
+
+#### 保存相关接口
+
+提交体中的动作对象必须改为：
+
+- `structureType`
+- `note`
+- `items`
+
+不再包含：
+
+- `targetSets`
+- `targetRepsMin`
+- `targetRepsMax`
+- `targetWeightKg`
+- `targetDurationSeconds`
+- `restSeconds`
+- `targetRpe`
+- `targetExtraJson`
+
+---
+
+## 18. 错误码适配
+
+在保留 v1 错误码基础上，前端需新增处理：
+
+- `CYCLE_TEMPLATE_STRUCTURE_TYPE_INVALID`
+- `CYCLE_TEMPLATE_ITEM_INVALID`
+- `CYCLE_TEMPLATE_ITEM_COUNT_INVALID`
+- `CYCLE_TEMPLATE_METRIC_KEY_INVALID`
+- `CYCLE_TEMPLATE_METRIC_DUPLICATE`
+- `CYCLE_TEMPLATE_METRIC_VALUE_INVALID`
+
+建议映射文案：
+
+- `CYCLE_TEMPLATE_STRUCTURE_TYPE_INVALID`
+  - 当前动作结构类型不合法，或与系统动作默认结构不一致。
+- `CYCLE_TEMPLATE_ITEM_INVALID`
+  - 执行项结构不合法，请检查组/段设置。
+- `CYCLE_TEMPLATE_ITEM_COUNT_INVALID`
+  - 当前动作的执行项数量不符合结构要求。
+- `CYCLE_TEMPLATE_METRIC_KEY_INVALID`
+  - 存在不支持的训练参数。
+- `CYCLE_TEMPLATE_METRIC_DUPLICATE`
+  - 同一执行项下不能重复添加同一种参数。
+- `CYCLE_TEMPLATE_METRIC_VALUE_INVALID`
+  - 训练参数的数值格式不合法。
+
+---
+
+## 19. 列表页、详情页、编辑页的迁移策略
+
+建议迁移顺序如下：
+
+1. 先替换 `types/cycle-template.ts`
+2. 再替换 `api/cycle-template.ts`
+3. 重写 `cycle-template-mappers.ts`
+4. 重写 `cycle-template-validators.ts`
+5. 升级 `useCycleTemplateEditor.ts`
+6. 重写 `CycleTemplateEditor.tsx`
+7. 调整详情页只读展示
+8. 最后收尾列表页和错误文案
+
+原因：
+
+- 页面 UI 最依赖底层类型和映射
+- 如果先改页面，后改类型，开发过程中会反复返工
+
+---
+
+## 20. 对未来 `training session` 的前端价值
+
+这次重构最大的长期收益是：
+
+- `cycle_template` 和未来 `training session` 将共享相同的计划结构语义
+- 后续打卡页可以直接复用：
+  - 动作卡
+  - 执行项卡
+  - 指标渲染器
+  - 指标格式化与单位显示
+
+因此本次前端 DDD 明确建议：
+
+- 不把三层结构写死在某一个页面组件里
+- 尽量抽出可复用的结构型组件和配置型元数据
+
+---
+
+## 21. 本次设计结论
+
+`cycle_template` 前端 v2 改造不是局部补丁，而是一次围绕“动作结构模型升级”的模块级重构。
+
+结论如下：
+
+1. 现有固定字段动作模型必须整体下线
+2. 前端要升级为“动作 -> 执行项 -> 指标”的三层编辑器
+3. `structureType` 必须来自系统动作元数据，不能由前端猜测或由用户自由输入
+4. 指标字典必须前端配置化，避免页面里散落硬编码
+5. 本次重构应优先服务后端 v2 契约和未来训练打卡模块复用
+
+如果后续直接进入实现阶段，本文档可以作为前端改造的执行基线。

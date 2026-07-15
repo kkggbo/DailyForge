@@ -1,11 +1,18 @@
+import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import type {
   CycleTemplateDetailResponse,
   CycleTemplateEditorForm,
   EditorDayForm,
   EditorExerciseForm,
+  EditorItemForm,
+  EditorMetricForm,
+  MetricKey,
   SaveCycleTemplateDayPayload,
   SaveCycleTemplateExercisePayload,
-  SaveCycleTemplatePayload
+  SaveCycleTemplateItemPayload,
+  SaveCycleTemplateMetricPayload,
+  SaveCycleTemplatePayload,
+  StructureType
 } from "../types/cycle-template";
 
 export function createEmptyEditorForm(): CycleTemplateEditorForm {
@@ -46,17 +53,27 @@ export function detailToEditorForm(
             sortOrder: exercise.sortOrder,
             exerciseId: exercise.exerciseId,
             exerciseName: exercise.exerciseName,
-            targetSets: toText(exercise.targetSets),
-            targetRepsMin: toText(exercise.targetRepsMin),
-            targetRepsMax: toText(exercise.targetRepsMax),
-            targetWeightKg: toText(exercise.targetWeightKg),
-            targetDurationSeconds: toText(exercise.targetDurationSeconds),
-            restSeconds: toText(exercise.restSeconds),
-            targetRpe: toText(exercise.targetRpe),
+            structureType: exercise.structureType,
             note: exercise.note ?? "",
-            targetExtraJsonText: exercise.targetExtraJson
-              ? JSON.stringify(exercise.targetExtraJson, null, 2)
-              : ""
+            items: exercise.items
+              .slice()
+              .sort((left, right) => left.itemIndex - right.itemIndex)
+              .map((item) => ({
+                localId: createLocalId(),
+                itemIndex: item.itemIndex,
+                itemType: item.itemType,
+                itemName: item.itemName ?? "",
+                note: item.note ?? "",
+                metrics: item.metrics
+                  .slice()
+                  .sort((left, right) => left.sortOrder - right.sortOrder)
+                  .map((metric) => ({
+                    localId: createLocalId(),
+                    sortOrder: metric.sortOrder,
+                    metricKey: metric.metricKey,
+                    metricValueNumberText: String(metric.metricValueNumber)
+                  }))
+              }))
           }))
       };
     })
@@ -77,15 +94,47 @@ export function createEmptyExercise(sortOrder: number): EditorExerciseForm {
     sortOrder,
     exerciseId: null,
     exerciseName: "",
-    targetSets: "",
-    targetRepsMin: "",
-    targetRepsMax: "",
-    targetWeightKg: "",
-    targetDurationSeconds: "",
-    restSeconds: "",
-    targetRpe: "",
+    structureType: null,
     note: "",
-    targetExtraJsonText: ""
+    items: []
+  };
+}
+
+export function createExerciseFromSystemOption(
+  option: SystemExerciseOption,
+  sortOrder: number
+): EditorExerciseForm {
+  return {
+    localId: createLocalId(),
+    sortOrder,
+    exerciseId: option.exerciseId,
+    exerciseName: option.exerciseName,
+    structureType: option.defaultStructureType,
+    note: "",
+    items: [createDefaultItemByStructureType(option.defaultStructureType, 1)]
+  };
+}
+
+export function createDefaultItemByStructureType(
+  structureType: StructureType,
+  itemIndex: number
+): EditorItemForm {
+  return {
+    localId: createLocalId(),
+    itemIndex,
+    itemType: structureType === "set_based" ? "set" : "segment",
+    itemName: structureType === "set_based" ? `第${itemIndex}组` : "主训练段",
+    note: "",
+    metrics: []
+  };
+}
+
+export function createEmptyMetric(sortOrder: number): EditorMetricForm {
+  return {
+    localId: createLocalId(),
+    sortOrder,
+    metricKey: "",
+    metricValueNumberText: ""
   };
 }
 
@@ -102,15 +151,13 @@ export function syncDaysWithCycleLength(
     };
   }
 
-  const days = Array.from({ length: nextLength }, (_, index) => {
-    const dayIndex = index + 1;
-    return form.days.find((day) => day.dayIndex === dayIndex) ?? createEmptyDay(dayIndex);
-  });
-
   return {
     ...form,
     cycleLength: nextCycleLengthText,
-    days
+    days: Array.from({ length: nextLength }, (_, index) => {
+      const dayIndex = index + 1;
+      return form.days.find((day) => day.dayIndex === dayIndex) ?? createEmptyDay(dayIndex);
+    })
   };
 }
 
@@ -118,20 +165,17 @@ export function editorFormToPayload(
   form: CycleTemplateEditorForm,
   options: { includeOnlyEditableFromDay?: number } = {}
 ): SaveCycleTemplatePayload {
-  const cycleLength = parseOptionalInteger(form.cycleLength);
-  const days = form.days
-    .filter((day) =>
-      options.includeOnlyEditableFromDay
-        ? day.dayIndex >= options.includeOnlyEditableFromDay
-        : true
-    )
-    .map(mapDayToPayload);
-
   return {
     templateName: form.templateName.trim(),
-    cycleLength,
+    cycleLength: parseOptionalInteger(form.cycleLength),
     goalType: toNullableText(form.goalType),
-    days
+    days: form.days
+      .filter((day) =>
+        options.includeOnlyEditableFromDay
+          ? day.dayIndex >= options.includeOnlyEditableFromDay
+          : true
+      )
+      .map(mapDayToPayload)
   };
 }
 
@@ -139,31 +183,86 @@ function mapDayToPayload(day: EditorDayForm): SaveCycleTemplateDayPayload {
   return {
     dayIndex: day.dayIndex,
     dayName: toNullableText(day.dayName),
-    exercises: day.exercises.map((exercise, index) => mapExerciseToPayload(exercise, index))
+    exercises: normalizeExerciseSortOrder(day.exercises).map((exercise, exerciseIndex) =>
+      mapExerciseToPayload(exercise, exerciseIndex + 1)
+    )
   };
 }
 
 function mapExerciseToPayload(
   exercise: EditorExerciseForm,
-  index: number
+  sortOrder: number
 ): SaveCycleTemplateExercisePayload {
   return {
-    sortOrder: index + 1,
+    sortOrder,
     exerciseId: exercise.exerciseId ?? 0,
-    targetSets: parseOptionalInteger(exercise.targetSets),
-    targetRepsMin: parseOptionalInteger(exercise.targetRepsMin),
-    targetRepsMax: parseOptionalInteger(exercise.targetRepsMax),
-    targetWeightKg: parseOptionalNumber(exercise.targetWeightKg),
-    targetDurationSeconds: parseOptionalInteger(exercise.targetDurationSeconds),
-    restSeconds: parseOptionalInteger(exercise.restSeconds),
-    targetRpe: parseOptionalNumber(exercise.targetRpe),
+    structureType: exercise.structureType ?? "set_based",
     note: toNullableText(exercise.note),
-    targetExtraJson: parseOptionalJson(exercise.targetExtraJsonText)
+    items: normalizeItemIndexes(exercise.items).map((item, itemIndex) =>
+      mapItemToPayload(item, itemIndex + 1)
+    )
   };
 }
 
-function toText(value: number | null | undefined) {
-  return value === null || value === undefined ? "" : String(value);
+function mapItemToPayload(
+  item: EditorItemForm,
+  itemIndex: number
+): SaveCycleTemplateItemPayload {
+  return {
+    itemIndex,
+    itemType: item.itemType,
+    itemName: toNullableText(item.itemName),
+    note: toNullableText(item.note),
+    metrics: normalizeMetricSortOrder(item.metrics).map((metric, metricIndex) =>
+      mapMetricToPayload(metric, metricIndex + 1)
+    )
+  };
+}
+
+function mapMetricToPayload(
+  metric: EditorMetricForm,
+  sortOrder: number
+): SaveCycleTemplateMetricPayload {
+  return {
+    sortOrder,
+    metricKey: metric.metricKey as MetricKey,
+    metricValueNumber: Number(metric.metricValueNumberText)
+  };
+}
+
+export function normalizeExerciseSortOrder(exercises: EditorExerciseForm[]) {
+  return exercises.map((exercise, index) => ({
+    ...exercise,
+    sortOrder: index + 1
+  }));
+}
+
+export function normalizeItemIndexes(items: EditorItemForm[]) {
+  return items.map((item, index) => ({
+    ...item,
+    itemIndex: index + 1,
+    itemName: deriveDefaultItemName(item.itemType, index + 1, item.itemName)
+  }));
+}
+
+export function normalizeMetricSortOrder(metrics: EditorMetricForm[]) {
+  return metrics.map((metric, index) => ({
+    ...metric,
+    sortOrder: index + 1
+  }));
+}
+
+function deriveDefaultItemName(
+  itemType: EditorItemForm["itemType"],
+  itemIndex: number,
+  currentValue: string
+) {
+  const trimmed = currentValue.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+
+  return itemType === "set" ? `第${itemIndex}组` : "主训练段";
 }
 
 function toNullableText(value: string) {
@@ -174,16 +273,6 @@ function toNullableText(value: string) {
 function parseOptionalInteger(value: string) {
   const trimmed = value.trim();
   return trimmed ? Number.parseInt(trimmed, 10) : null;
-}
-
-function parseOptionalNumber(value: string) {
-  const trimmed = value.trim();
-  return trimmed ? Number(trimmed) : null;
-}
-
-function parseOptionalJson(value: string) {
-  const trimmed = value.trim();
-  return trimmed ? (JSON.parse(trimmed) as Record<string, unknown>) : null;
 }
 
 function createLocalId() {

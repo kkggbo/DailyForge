@@ -1,6 +1,5 @@
 package com.dailyforge.modules.plan.application.assembler;
 
-import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleDayExerciseEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleRunEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateDayEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
@@ -11,7 +10,6 @@ import com.dailyforge.modules.plan.interfaces.vo.CurrentActiveCycleTemplateRespo
 import com.dailyforge.modules.plan.interfaces.vo.DeleteCycleTemplateResponse;
 import com.dailyforge.modules.plan.interfaces.vo.DraftCycleTemplateSummary;
 import com.dailyforge.modules.plan.interfaces.vo.FormalCycleTemplateSummary;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
@@ -75,23 +73,5 @@ public interface CycleTemplateAssembler {
                 currentDay == null ? null : currentDay.getDayName(),
                 currentDayIndex,
                 currentRun == null ? null : currentRun.getStartedAt());
-    }
-
-    default com.dailyforge.modules.plan.interfaces.vo.CycleTemplateExerciseResponse toExerciseResponse(
-            CycleDayExerciseEntity entity,
-            JsonNode targetExtraJson) {
-        return new com.dailyforge.modules.plan.interfaces.vo.CycleTemplateExerciseResponse(
-                entity.getSortOrder(),
-                entity.getExerciseId(),
-                entity.getExerciseNameSnapshot(),
-                entity.getTargetSets(),
-                entity.getTargetRepsMin(),
-                entity.getTargetRepsMax(),
-                entity.getTargetWeightKg(),
-                entity.getTargetDurationSeconds(),
-                entity.getTargetRestSeconds(),
-                entity.getTargetRpe(),
-                entity.getNotes(),
-                targetExtraJson);
     }
 }

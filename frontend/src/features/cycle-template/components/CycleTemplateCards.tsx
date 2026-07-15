@@ -155,9 +155,7 @@ function FormalTemplateCard({
         <span>{formatCycleLength(template.cycleLength)}</span>
         <span>目标：{formatGoalType(template.goalType)}</span>
         <span>
-          {template.currentDayIndex
-            ? `运行到 Day ${template.currentDayIndex}`
-            : "未运行"}
+          {template.currentDayIndex ? `运行到 Day ${template.currentDayIndex}` : "未运行"}
         </span>
         <span>更新：{formatDateTime(template.updatedAt)}</span>
       </div>

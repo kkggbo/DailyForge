@@ -1,5 +1,17 @@
-import { cycleTemplateStatusLabels, goalTypeOptions } from "./cycle-template-enums";
-import type { CycleTemplateStatus } from "../types/cycle-template";
+import {
+  cycleTemplateStatusLabels,
+  goalTypeOptions,
+  itemTypeLabels,
+  structureTypeLabels
+} from "./cycle-template-enums";
+import { getMetricMeta } from "./cycle-template-metric-config";
+import type {
+  CycleTemplateMetricResponse,
+  CycleTemplateStatus,
+  ItemType,
+  MetricKey,
+  StructureType
+} from "../types/cycle-template";
 
 export function formatDateTime(value: string | null | undefined) {
   if (!value) {
@@ -30,10 +42,25 @@ export function formatStatus(value: CycleTemplateStatus) {
   return cycleTemplateStatusLabels[value] ?? value;
 }
 
-export function formatNullableNumber(value: number | null | undefined, suffix = "") {
-  if (value === null || value === undefined) {
-    return "-";
+export function formatStructureType(value: StructureType) {
+  return structureTypeLabels[value] ?? value;
+}
+
+export function formatItemType(value: ItemType) {
+  return itemTypeLabels[value] ?? value;
+}
+
+export function formatMetricKey(metricKey: MetricKey) {
+  return getMetricMeta(metricKey)?.label ?? metricKey;
+}
+
+export function formatMetricValue(metric: CycleTemplateMetricResponse) {
+  const meta = getMetricMeta(metric.metricKey);
+  const unitLabel = metric.metricUnit ?? meta?.unitLabel;
+
+  if (unitLabel) {
+    return `${metric.metricValueNumber} ${unitLabel}`;
   }
 
-  return `${value}${suffix}`;
+  return String(metric.metricValueNumber);
 }

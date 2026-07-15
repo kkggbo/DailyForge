@@ -1,10 +1,24 @@
-import type { CycleTemplateStatus } from "../types/cycle-template";
+import type {
+  CycleTemplateStatus,
+  ItemType,
+  StructureType
+} from "../types/cycle-template";
 
 export const cycleTemplateStatusLabels: Record<CycleTemplateStatus, string> = {
   draft: "草稿",
   active: "已启用",
   inactive: "未启用",
   deleted: "已删除"
+};
+
+export const structureTypeLabels: Record<StructureType, string> = {
+  set_based: "按组动作",
+  single_segment: "单段动作"
+};
+
+export const itemTypeLabels: Record<ItemType, string> = {
+  set: "组",
+  segment: "段"
 };
 
 export const goalTypeOptions = [
@@ -30,6 +44,13 @@ export const cycleTemplateErrorMessages: Record<string, string> = {
   CYCLE_TEMPLATE_NOT_FOUND: "模板不存在或已被删除。",
   CYCLE_TEMPLATE_STATUS_INVALID: "当前模板状态不允许执行该操作。",
   CYCLE_TEMPLATE_EXERCISE_NOT_FOUND: "动作不存在或不可用。",
+  CYCLE_TEMPLATE_STRUCTURE_TYPE_INVALID:
+    "动作结构类型不合法，或与系统动作默认结构不一致。",
+  CYCLE_TEMPLATE_ITEM_INVALID: "执行项结构不合法，请检查组或段的设置。",
+  CYCLE_TEMPLATE_ITEM_COUNT_INVALID: "当前动作的执行项数量不符合结构要求。",
+  CYCLE_TEMPLATE_METRIC_KEY_INVALID: "存在不支持的训练参数。",
+  CYCLE_TEMPLATE_METRIC_DUPLICATE: "同一执行项下不能重复添加同一种参数。",
+  CYCLE_TEMPLATE_METRIC_VALUE_INVALID: "训练参数的数值格式不合法。",
   INVALID_ARGUMENT: "提交参数不合法，请检查后再试。",
   UNAUTHORIZED: "登录状态已失效，请重新登录。",
   TOKEN_INVALID: "登录状态已失效，请重新登录。",
