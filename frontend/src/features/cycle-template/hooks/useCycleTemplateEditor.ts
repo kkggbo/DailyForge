@@ -1,10 +1,9 @@
-import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import {
+  cloneItemForNextIndex,
   createDefaultItemByStructureType,
-  createEmptyDay,
   createEmptyEditorForm,
-  createEmptyExercise,
   createEmptyMetric,
   createExerciseFromSystemOption,
   normalizeExerciseSortOrder,
@@ -138,48 +137,46 @@ export function useCycleTemplateEditor(
     }));
   }
 
-  function addExercise(dayIndex: number) {
+  function appendExerciseFromSystemOption(dayIndex: number, option: SystemExerciseOption) {
     commit((current) => ({
       ...current,
       days: current.days.map((day) =>
         day.dayIndex === dayIndex
           ? {
               ...day,
-              exercises: [
+              exercises: normalizeExerciseSortOrder([
                 ...day.exercises,
-                createEmptyExercise(day.exercises.length + 1)
-              ]
+                createExerciseFromSystemOption(option, day.exercises.length + 1)
+              ])
             }
           : day
       )
     }));
   }
 
-  function selectSystemExercise(
+  function replaceExerciseFromSystemOption(
     dayIndex: number,
-    localId: string,
+    exerciseLocalId: string,
     option: SystemExerciseOption
   ) {
     commit((current) => ({
       ...current,
-      days: current.days.map((day) =>
-        day.dayIndex === dayIndex
-          ? {
-              ...day,
-              exercises: normalizeExerciseSortOrder(
-                day.exercises.map((exercise) =>
-                  exercise.localId === localId
-                    ? {
-                        ...createExerciseFromSystemOption(option, exercise.sortOrder),
-                        localId: exercise.localId,
-                        note: exercise.note
-                      }
-                    : exercise
-                )
-              )
-            }
-          : day
-      )
+      days: current.days.map((day) => {
+        if (day.dayIndex !== dayIndex) {
+          return day;
+        }
+
+        return {
+          ...day,
+          exercises: normalizeExerciseSortOrder(
+            day.exercises.map((exercise) =>
+              exercise.localId === exerciseLocalId
+                ? createExerciseFromSystemOption(option, exercise.sortOrder)
+                : exercise
+            )
+          )
+        };
+      })
     }));
   }
 
@@ -234,27 +231,9 @@ export function useCycleTemplateEditor(
 
         return {
           ...day,
-          exercises: reorderArrayByLocalId(day.exercises, localId, direction)
-        };
-      })
-    }));
-  }
-
-  function reorderExercise(dayIndex: number, fromLocalId: string, toLocalId: string) {
-    if (fromLocalId === toLocalId) {
-      return;
-    }
-
-    commit((current) => ({
-      ...current,
-      days: current.days.map((day) => {
-        if (day.dayIndex !== dayIndex) {
-          return day;
-        }
-
-        return {
-          ...day,
-          exercises: reorderArrayByDropTarget(day.exercises, fromLocalId, toLocalId)
+          exercises: normalizeExerciseSortOrder(
+            reorderArrayByLocalId(day.exercises, localId, direction)
+          )
         };
       })
     }));
@@ -279,15 +258,15 @@ export function useCycleTemplateEditor(
               return exercise;
             }
 
+            const nextItemIndex = exercise.items.length + 1;
+            const previousItem = exercise.items.at(-1);
+            const nextItem = previousItem
+              ? cloneItemForNextIndex(previousItem, nextItemIndex)
+              : createDefaultItemByStructureType(exercise.structureType, nextItemIndex);
+
             return {
               ...exercise,
-              items: normalizeItemIndexes([
-                ...exercise.items,
-                createDefaultItemByStructureType(
-                  exercise.structureType,
-                  exercise.items.length + 1
-                )
-              ])
+              items: normalizeItemIndexes([...exercise.items, nextItem])
             };
           })
         };
@@ -540,12 +519,11 @@ export function useCycleTemplateEditor(
     canUndo: history.length > 0,
     updateRootField,
     updateDay,
-    addExercise,
-    selectSystemExercise,
+    appendExerciseFromSystemOption,
+    replaceExerciseFromSystemOption,
     updateExercise,
     removeExercise,
     moveExercise,
-    reorderExercise,
     addItem,
     updateItem,
     removeItem,
@@ -579,27 +557,5 @@ function reorderArrayByLocalId<T extends { localId: string }>(
   }
 
   nextItems.splice(targetIndex, 0, moved);
-  return nextItems;
-}
-
-function reorderArrayByDropTarget<T extends { localId: string }>(
-  items: T[],
-  fromLocalId: string,
-  toLocalId: string
-) {
-  const fromIndex = items.findIndex((item) => item.localId === fromLocalId);
-  const toIndex = items.findIndex((item) => item.localId === toLocalId);
-
-  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-    return items;
-  }
-
-  const nextItems = [...items];
-  const [moved] = nextItems.splice(fromIndex, 1);
-  if (!moved) {
-    return items;
-  }
-
-  nextItems.splice(toIndex, 0, moved);
   return nextItems;
 }

@@ -21,10 +21,10 @@ public record ExerciseSystemListItemResponse(
         String defaultStructureType,
         @Schema(description = "Demo video url", example = "https://example.com/videos/bench-press")
         String videoUrl,
-        @Schema(description = "Primary muscle names", requiredMode = Schema.RequiredMode.REQUIRED)
-        List<String> primaryMuscles,
-        @Schema(description = "Secondary muscle names", requiredMode = Schema.RequiredMode.REQUIRED)
-        List<String> secondaryMuscles,
+        @Schema(description = "Primary muscles", requiredMode = Schema.RequiredMode.REQUIRED)
+        List<ExerciseListItemMuscleResponse> primaryMuscles,
+        @Schema(description = "Secondary muscles", requiredMode = Schema.RequiredMode.REQUIRED)
+        List<ExerciseListItemMuscleResponse> secondaryMuscles,
         @Schema(description = "Equipment names", requiredMode = Schema.RequiredMode.REQUIRED)
         List<String> equipmentNames) {
 }

@@ -19,10 +19,37 @@ export type MovementType =
   | "cardio"
   | string;
 
-export type SceneType = "home" | "gym" | string;
+export type SceneType = "home" | "gym" | "both" | string;
+
+export type ExerciseListItemMuscle = {
+  muscleId: number;
+  muscleName: string;
+  muscleCode: string;
+};
+
+export type ExerciseFilterMuscleOption = {
+  muscleId: number;
+  muscleName: string;
+  muscleCode: string;
+  parentMuscleId: number | null;
+  parentMuscleName: string | null;
+  sortOrder: number;
+};
+
+export type ExerciseCategoryOption = {
+  categoryCode: string;
+  categoryName: string;
+  sortOrder: number;
+  children: ExerciseFilterMuscleOption[];
+};
+
+export type ExerciseFilterOptionsResponse = {
+  categories: ExerciseCategoryOption[];
+};
 
 export type SystemExerciseSearchQuery = {
   keyword?: string;
+  categoryCode?: string;
   exerciseType?: string;
   movementType?: string;
   structureType?: StructureType;
@@ -40,8 +67,8 @@ export type SystemExerciseOption = {
   defaultUnit: string | null;
   defaultStructureType: StructureType;
   videoUrl: string | null;
-  primaryMuscles: string[];
-  secondaryMuscles: string[];
+  primaryMuscles: ExerciseListItemMuscle[];
+  secondaryMuscles: ExerciseListItemMuscle[];
   equipmentNames: string[];
 };
 
@@ -78,4 +105,15 @@ export type SystemExerciseDetailResponse = {
   primaryMuscles: ExerciseMuscleRelation[];
   secondaryMuscles: ExerciseMuscleRelation[];
   equipments: ExerciseEquipment[];
+};
+
+export type ExerciseCardMeta = {
+  exerciseId: number;
+  exerciseType: ExerciseType | null;
+  movementType: MovementType | null;
+  defaultUnit: string | null;
+  videoUrl: string | null;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+  equipmentNames: string[];
 };

@@ -97,7 +97,7 @@ public interface ExerciseQueryMapper {
         }
 
         private String buildBaseListSql(ExerciseSystemListQuery query, boolean paged) {
-            StringBuilder sql = new StringBuilder();
+            StringBuilder sql = new StringBuilder("<script>");
             sql.append("SELECT ");
             sql.append(paged ? "e.id " : "COUNT(1) ");
             sql.append("FROM exercises e ");
@@ -126,6 +126,21 @@ public interface ExerciseQueryMapper {
                         )
                         """);
             }
+            if (query.getCategoryMuscleIds() != null && !query.getCategoryMuscleIds().isEmpty()) {
+                sql.append("""
+                        AND EXISTS (
+                            SELECT 1
+                            FROM exercise_muscles em
+                            JOIN muscles m ON m.id = em.muscle_id
+                            WHERE em.exercise_id = e.id
+                              AND em.muscle_id IN
+                        """);
+                appendInClause(sql, "categoryMuscleIds");
+                sql.append("""
+                              AND m.is_active = 1
+                        )
+                        """);
+            }
             if (query.getSceneType() != null) {
                 sql.append("""
                         AND EXISTS (
@@ -146,7 +161,15 @@ public interface ExerciseQueryMapper {
                 sql.append("ORDER BY e.name ASC, e.id ASC ");
                 sql.append("LIMIT #{offset}, #{pageSize}");
             }
+            sql.append("</script>");
             return sql.toString();
+        }
+
+        private void appendInClause(StringBuilder sql, String collectionName) {
+            sql.append("<foreach collection='").append(collectionName)
+                    .append("' item='id' open='(' separator=',' close=')'>");
+            sql.append("#{id}");
+            sql.append("</foreach> ");
         }
     }
 }

@@ -4,6 +4,7 @@ import com.dailyforge.common.ApiResponse;
 import com.dailyforge.infrastructure.security.AuthSecurityUtils;
 import com.dailyforge.modules.exercise.application.service.ExerciseQueryApplicationService;
 import com.dailyforge.modules.exercise.interfaces.dto.ExerciseSystemListQuery;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseFilterOptionsResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemDetailResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemListResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,24 @@ public class ExerciseController {
     }
 
     /**
+     * Return category and muscle filter metadata for the exercise selector.
+     */
+    @GetMapping("/system/filter-options")
+    @Operation(summary = "Get exercise selector filter options")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Exercise selector filter options loaded",
+                    content = @Content(schema = @Schema(implementation = ExerciseFilterOptionsResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ApiResponse<ExerciseFilterOptionsResponse> getSystemExerciseFilterOptions() {
+        Long userId = AuthSecurityUtils.getCurrentUserId();
+        log.debug("ExerciseController getSystemExerciseFilterOptions entered. userId={}", userId);
+        return ApiResponse.success(exerciseQueryApplicationService.getSystemExerciseFilterOptions(userId));
+    }
+
+    /**
      * Query one page of active system exercises for template selection and browsing.
      */
     @GetMapping("/system")
@@ -52,8 +71,10 @@ public class ExerciseController {
     })
     public ApiResponse<ExerciseSystemListResponse> getSystemExercises(@Valid @ModelAttribute ExerciseSystemListQuery query) {
         Long userId = AuthSecurityUtils.getCurrentUserId();
-        log.debug("ExerciseController getSystemExercises entered. userId={}, page={}, pageSize={}, hasFilters={}",
-                userId, query.getPage(), query.getPageSize(), query.hasFilters());
+        log.debug(
+                "ExerciseController getSystemExercises entered. userId={}, categoryCode={}, muscleId={}, page={}, pageSize={}, hasFilters={}",
+                userId, query.getCategoryCode(), query.getMuscleId(), query.getPage(), query.getPageSize(),
+                query.hasFilters());
         return ApiResponse.success(exerciseQueryApplicationService.getSystemExercises(query, userId));
     }
 

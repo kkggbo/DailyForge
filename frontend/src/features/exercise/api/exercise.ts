@@ -1,9 +1,16 @@
 import { request } from "../../../shared/api/http";
 import type {
+  ExerciseFilterOptionsResponse,
   SystemExerciseDetailResponse,
   SystemExerciseSearchQuery,
   SystemExerciseSearchResponse
 } from "../types/exercise";
+
+export function getSystemExerciseFilterOptions(accessToken: string) {
+  return request<ExerciseFilterOptionsResponse>("/exercises/system/filter-options", {
+    accessToken
+  });
+}
 
 export function searchSystemExercises(
   accessToken: string,
@@ -13,6 +20,7 @@ export function searchSystemExercises(
     accessToken,
     query: {
       keyword: query.keyword?.trim() || undefined,
+      categoryCode: query.categoryCode,
       exerciseType: query.exerciseType,
       movementType: query.movementType,
       structureType: query.structureType,

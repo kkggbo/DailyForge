@@ -2,8 +2,13 @@ package com.dailyforge.modules.exercise.application.assembler;
 
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseEntity;
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseEquipmentRelationEntity;
+import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseMuscleNodeEntity;
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseMuscleRelationEntity;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseCategoryResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseEquipmentResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseFilterMuscleResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseFilterOptionsResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseListItemMuscleResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseMuscleResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemDetailResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemListItemResponse;
@@ -16,8 +21,8 @@ public interface ExerciseAssembler {
 
     default ExerciseSystemListItemResponse toListItemResponse(
             ExerciseEntity entity,
-            List<String> primaryMuscles,
-            List<String> secondaryMuscles,
+            List<ExerciseListItemMuscleResponse> primaryMuscles,
+            List<ExerciseListItemMuscleResponse> secondaryMuscles,
             List<String> equipmentNames) {
         return new ExerciseSystemListItemResponse(
                 entity.getId(),
@@ -30,6 +35,32 @@ public interface ExerciseAssembler {
                 primaryMuscles,
                 secondaryMuscles,
                 equipmentNames);
+    }
+
+    default ExerciseListItemMuscleResponse toListItemMuscleResponse(ExerciseMuscleRelationEntity entity) {
+        return new ExerciseListItemMuscleResponse(entity.getMuscleId(), entity.getMuscleName(), entity.getMuscleCode());
+    }
+
+    default ExerciseFilterMuscleResponse toFilterMuscleResponse(ExerciseMuscleNodeEntity entity) {
+        return new ExerciseFilterMuscleResponse(
+                entity.getMuscleId(),
+                entity.getMuscleName(),
+                entity.getMuscleCode(),
+                entity.getParentMuscleId(),
+                entity.getParentMuscleName(),
+                entity.getSortOrder());
+    }
+
+    default ExerciseCategoryResponse toCategoryResponse(
+            String categoryCode,
+            String categoryName,
+            Integer sortOrder,
+            List<ExerciseFilterMuscleResponse> children) {
+        return new ExerciseCategoryResponse(categoryCode, categoryName, sortOrder, children);
+    }
+
+    default ExerciseFilterOptionsResponse toFilterOptionsResponse(List<ExerciseCategoryResponse> categories) {
+        return new ExerciseFilterOptionsResponse(categories);
     }
 
     default ExerciseSystemListResponse toListResponse(

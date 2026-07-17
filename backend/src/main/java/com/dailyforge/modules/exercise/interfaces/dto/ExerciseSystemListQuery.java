@@ -1,12 +1,16 @@
 package com.dailyforge.modules.exercise.interfaces.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 
 @Schema(description = "System exercise list query")
 public class ExerciseSystemListQuery {
 
     @Schema(description = "Keyword matched against exercise name", example = "bench")
     private String keyword;
+
+    @Schema(description = "Product-level category code", example = "chest")
+    private String categoryCode;
 
     @Schema(description = "Exercise type", example = "strength")
     private String exerciseType;
@@ -29,12 +33,23 @@ public class ExerciseSystemListQuery {
     @Schema(description = "Page size", example = "20", defaultValue = "20")
     private Integer pageSize;
 
+    @Schema(hidden = true)
+    private List<Long> categoryMuscleIds;
+
     public String getKeyword() {
         return keyword;
     }
 
     public void setKeyword(String keyword) {
         this.keyword = keyword;
+    }
+
+    public String getCategoryCode() {
+        return categoryCode;
+    }
+
+    public void setCategoryCode(String categoryCode) {
+        this.categoryCode = categoryCode;
     }
 
     public String getExerciseType() {
@@ -93,12 +108,21 @@ public class ExerciseSystemListQuery {
         this.pageSize = pageSize;
     }
 
+    public List<Long> getCategoryMuscleIds() {
+        return categoryMuscleIds;
+    }
+
+    public void setCategoryMuscleIds(List<Long> categoryMuscleIds) {
+        this.categoryMuscleIds = categoryMuscleIds;
+    }
+
     public int getOffset() {
         return (page - 1) * pageSize;
     }
 
     public boolean hasFilters() {
         return keyword != null
+                || categoryCode != null
                 || exerciseType != null
                 || movementType != null
                 || structureType != null

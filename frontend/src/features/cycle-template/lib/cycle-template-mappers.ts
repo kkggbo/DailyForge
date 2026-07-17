@@ -55,29 +55,35 @@ export function detailToEditorForm(
             exerciseName: exercise.exerciseName,
             structureType: exercise.structureType,
             note: exercise.note ?? "",
-            items: exercise.items
-              .slice()
-              .sort((left, right) => left.itemIndex - right.itemIndex)
-              .map((item) => ({
-                localId: createLocalId(),
-                itemIndex: item.itemIndex,
-                itemType: item.itemType,
-                itemName: item.itemName ?? "",
-                note: item.note ?? "",
-                metrics: item.metrics
-                  .slice()
-                  .sort((left, right) => left.sortOrder - right.sortOrder)
-                  .map((metric) => ({
-                    localId: createLocalId(),
-                    sortOrder: metric.sortOrder,
-                    metricKey: metric.metricKey,
-                    metricValueNumberText: String(metric.metricValueNumber)
-                  }))
-              }))
+            items: sourceExerciseItemsToEditorItems(exercise.items)
           }))
       };
     })
   };
+}
+
+function sourceExerciseItemsToEditorItems(
+  items: CycleTemplateDetailResponse["days"][number]["exercises"][number]["items"]
+) {
+  return items
+    .slice()
+    .sort((left, right) => left.itemIndex - right.itemIndex)
+    .map((item) => ({
+      localId: createLocalId(),
+      itemIndex: item.itemIndex,
+      itemType: item.itemType,
+      itemName: item.itemName ?? "",
+      note: item.note ?? "",
+      metrics: item.metrics
+        .slice()
+        .sort((left, right) => left.sortOrder - right.sortOrder)
+        .map((metric) => ({
+          localId: createLocalId(),
+          sortOrder: metric.sortOrder,
+          metricKey: metric.metricKey,
+          metricValueNumberText: String(metric.metricValueNumber)
+        }))
+    }));
 }
 
 export function createEmptyDay(dayIndex: number): EditorDayForm {
@@ -85,18 +91,6 @@ export function createEmptyDay(dayIndex: number): EditorDayForm {
     dayIndex,
     dayName: "",
     exercises: []
-  };
-}
-
-export function createEmptyExercise(sortOrder: number): EditorExerciseForm {
-  return {
-    localId: createLocalId(),
-    sortOrder,
-    exerciseId: null,
-    exerciseName: "",
-    structureType: null,
-    note: "",
-    items: []
   };
 }
 
@@ -123,9 +117,31 @@ export function createDefaultItemByStructureType(
     localId: createLocalId(),
     itemIndex,
     itemType: structureType === "set_based" ? "set" : "segment",
-    itemName: structureType === "set_based" ? `第${itemIndex}组` : "主训练段",
+    itemName: getDefaultItemName(
+      structureType === "set_based" ? "set" : "segment",
+      itemIndex
+    ),
     note: "",
     metrics: []
+  };
+}
+
+export function cloneItemForNextIndex(
+  previousItem: EditorItemForm,
+  nextItemIndex: number
+): EditorItemForm {
+  return {
+    localId: createLocalId(),
+    itemIndex: nextItemIndex,
+    itemType: previousItem.itemType,
+    itemName: getDefaultItemName(previousItem.itemType, nextItemIndex),
+    note: "",
+    metrics: previousItem.metrics.map((metric, index) => ({
+      localId: createLocalId(),
+      sortOrder: index + 1,
+      metricKey: metric.metricKey,
+      metricValueNumberText: metric.metricValueNumberText
+    }))
   };
 }
 
@@ -262,6 +278,10 @@ function deriveDefaultItemName(
     return trimmed;
   }
 
+  return getDefaultItemName(itemType, itemIndex);
+}
+
+function getDefaultItemName(itemType: EditorItemForm["itemType"], itemIndex: number) {
   return itemType === "set" ? `第${itemIndex}组` : "主训练段";
 }
 

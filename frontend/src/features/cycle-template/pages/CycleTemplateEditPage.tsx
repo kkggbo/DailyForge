@@ -210,8 +210,8 @@ export function CycleTemplateEditPage() {
         allowEmptyCycleLengthOption={detail.status === "draft"}
         onRootFieldChange={editor.updateRootField}
         onDayChange={editor.updateDay}
-        onAddExercise={editor.addExercise}
-        onSelectSystemExercise={editor.selectSystemExercise}
+        onAppendExerciseFromSystemOption={editor.appendExerciseFromSystemOption}
+        onReplaceExerciseFromSystemOption={editor.replaceExerciseFromSystemOption}
         onUpdateExercise={editor.updateExercise}
         onRemoveExercise={editor.removeExercise}
         onMoveExercise={editor.moveExercise}

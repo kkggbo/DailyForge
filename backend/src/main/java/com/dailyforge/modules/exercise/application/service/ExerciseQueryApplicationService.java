@@ -1,27 +1,38 @@
 package com.dailyforge.modules.exercise.application.service;
 
+import com.dailyforge.modules.exercise.application.model.ExerciseCategoryDefinition;
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
 import com.dailyforge.modules.exercise.application.assembler.ExerciseAssembler;
 import com.dailyforge.modules.exercise.domain.service.ExerciseQueryPolicyService;
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseEntity;
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseEquipmentRelationEntity;
+import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseMuscleNodeEntity;
 import com.dailyforge.modules.exercise.infrastructure.persistence.entity.ExerciseMuscleRelationEntity;
 import com.dailyforge.modules.exercise.infrastructure.persistence.mapper.ExerciseEquipmentQueryMapper;
 import com.dailyforge.modules.exercise.infrastructure.persistence.mapper.ExerciseMuscleQueryMapper;
+import com.dailyforge.modules.exercise.infrastructure.persistence.mapper.ExerciseMuscleTreeQueryMapper;
 import com.dailyforge.modules.exercise.infrastructure.persistence.mapper.ExerciseQueryMapper;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseCategoryResponse;
 import com.dailyforge.modules.exercise.interfaces.dto.ExerciseSystemListQuery;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseEquipmentResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseFilterMuscleResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseFilterOptionsResponse;
+import com.dailyforge.modules.exercise.interfaces.vo.ExerciseListItemMuscleResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseMuscleResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemDetailResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemListItemResponse;
 import com.dailyforge.modules.exercise.interfaces.vo.ExerciseSystemListResponse;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,21 +44,51 @@ public class ExerciseQueryApplicationService {
 
     private final ExerciseQueryMapper exerciseQueryMapper;
     private final ExerciseMuscleQueryMapper exerciseMuscleQueryMapper;
+    private final ExerciseMuscleTreeQueryMapper exerciseMuscleTreeQueryMapper;
     private final ExerciseEquipmentQueryMapper exerciseEquipmentQueryMapper;
     private final ExerciseQueryPolicyService exerciseQueryPolicyService;
+    private final ExerciseSelectorCategoryService exerciseSelectorCategoryService;
     private final ExerciseAssembler exerciseAssembler;
 
     public ExerciseQueryApplicationService(
             ExerciseQueryMapper exerciseQueryMapper,
             ExerciseMuscleQueryMapper exerciseMuscleQueryMapper,
+            ExerciseMuscleTreeQueryMapper exerciseMuscleTreeQueryMapper,
             ExerciseEquipmentQueryMapper exerciseEquipmentQueryMapper,
             ExerciseQueryPolicyService exerciseQueryPolicyService,
+            ExerciseSelectorCategoryService exerciseSelectorCategoryService,
             ExerciseAssembler exerciseAssembler) {
         this.exerciseQueryMapper = exerciseQueryMapper;
         this.exerciseMuscleQueryMapper = exerciseMuscleQueryMapper;
+        this.exerciseMuscleTreeQueryMapper = exerciseMuscleTreeQueryMapper;
         this.exerciseEquipmentQueryMapper = exerciseEquipmentQueryMapper;
         this.exerciseQueryPolicyService = exerciseQueryPolicyService;
+        this.exerciseSelectorCategoryService = exerciseSelectorCategoryService;
         this.exerciseAssembler = exerciseAssembler;
+    }
+
+    /**
+     * Return fixed category and muscle metadata for the exercise selector.
+     */
+    public ExerciseFilterOptionsResponse getSystemExerciseFilterOptions(Long userId) {
+        List<ExerciseCategoryDefinition> definitions = exerciseSelectorCategoryService.getCategoryDefinitions();
+        Map<String, ExerciseMuscleNodeEntity> nodeByCode = indexMuscleNodesByCode(
+                exerciseMuscleTreeQueryMapper.selectActiveMusclesByCodes(
+                        exerciseSelectorCategoryService.getAllChildMuscleCodes()));
+        List<ExerciseCategoryResponse> categories = new ArrayList<>();
+        for (ExerciseCategoryDefinition definition : definitions) {
+            List<ExerciseFilterMuscleResponse> children = new ArrayList<>();
+            for (String code : definition.childMuscleCodes()) {
+                ExerciseMuscleNodeEntity node = nodeByCode.get(code);
+                if (node != null) {
+                    children.add(exerciseAssembler.toFilterMuscleResponse(node));
+                }
+            }
+            categories.add(exerciseAssembler.toCategoryResponse(
+                    definition.categoryCode(), definition.categoryName(), definition.sortOrder(), children));
+        }
+        log.debug("Exercise selector filter options loaded. userId={}, categoryCount={}", userId, categories.size());
+        return exerciseAssembler.toFilterOptionsResponse(categories);
     }
 
     /**
@@ -55,17 +96,26 @@ public class ExerciseQueryApplicationService {
      */
     public ExerciseSystemListResponse getSystemExercises(ExerciseSystemListQuery query, Long userId) {
         exerciseQueryPolicyService.normalizeListQuery(query);
+        resolveCategoryMuscleIds(query);
+        if (query.getCategoryCode() != null && query.getCategoryMuscleIds().isEmpty()) {
+            log.debug(
+                    "System exercise list loaded. userId={}, categoryCode={}, muscleId={}, page={}, pageSize={}, total=0, recordCount=0",
+                    userId, query.getCategoryCode(), query.getMuscleId(), query.getPage(), query.getPageSize());
+            return exerciseAssembler.toListResponse(query.getPage(), query.getPageSize(), 0L, Collections.emptyList());
+        }
         long total = exerciseQueryMapper.countSystemExercises(query);
         if (total == 0) {
-            log.debug("System exercise list loaded. userId={}, page={}, pageSize={}, total=0, recordCount=0",
-                    userId, query.getPage(), query.getPageSize());
+            log.debug(
+                    "System exercise list loaded. userId={}, categoryCode={}, muscleId={}, page={}, pageSize={}, total=0, recordCount=0",
+                    userId, query.getCategoryCode(), query.getMuscleId(), query.getPage(), query.getPageSize());
             return exerciseAssembler.toListResponse(query.getPage(), query.getPageSize(), 0L, Collections.emptyList());
         }
 
         List<Long> pageIds = exerciseQueryMapper.selectSystemExercisePageIds(query);
         if (pageIds.isEmpty()) {
-            log.debug("System exercise list loaded. userId={}, page={}, pageSize={}, total={}, recordCount=0",
-                    userId, query.getPage(), query.getPageSize(), total);
+            log.debug(
+                    "System exercise list loaded. userId={}, categoryCode={}, muscleId={}, page={}, pageSize={}, total={}, recordCount=0",
+                    userId, query.getCategoryCode(), query.getMuscleId(), query.getPage(), query.getPageSize(), total);
             return exerciseAssembler.toListResponse(query.getPage(), query.getPageSize(), total, Collections.emptyList());
         }
 
@@ -87,13 +137,15 @@ public class ExerciseQueryApplicationService {
                     equipmentMap.getOrDefault(entity.getId(), Collections.emptyList());
             records.add(exerciseAssembler.toListItemResponse(
                     entity,
-                    extractMuscleNames(muscles, "primary"),
-                    extractMuscleNames(muscles, "secondary"),
+                    extractListItemMuscles(muscles, "primary"),
+                    extractListItemMuscles(muscles, "secondary"),
                     extractEquipmentNames(equipments)));
         }
 
-        log.debug("System exercise list loaded. userId={}, page={}, pageSize={}, total={}, recordCount={}",
-                userId, query.getPage(), query.getPageSize(), total, records.size());
+        log.debug(
+                "System exercise list loaded. userId={}, categoryCode={}, muscleId={}, page={}, pageSize={}, total={}, recordCount={}",
+                userId, query.getCategoryCode(), query.getMuscleId(), query.getPage(), query.getPageSize(), total,
+                records.size());
         return exerciseAssembler.toListResponse(query.getPage(), query.getPageSize(), total, records);
     }
 
@@ -160,14 +212,43 @@ public class ExerciseQueryApplicationService {
         return result;
     }
 
-    private List<String> extractMuscleNames(List<ExerciseMuscleRelationEntity> relations, String relationType) {
-        List<String> names = new ArrayList<>();
+    private Map<String, ExerciseMuscleNodeEntity> indexMuscleNodesByCode(Collection<ExerciseMuscleNodeEntity> nodes) {
+        Map<String, ExerciseMuscleNodeEntity> result = new HashMap<>();
+        for (ExerciseMuscleNodeEntity node : nodes) {
+            result.put(node.getMuscleCode(), node);
+        }
+        return result;
+    }
+
+    private void resolveCategoryMuscleIds(ExerciseSystemListQuery query) {
+        if (query.getCategoryCode() == null) {
+            query.setCategoryMuscleIds(null);
+            return;
+        }
+        ExerciseCategoryDefinition definition =
+                exerciseSelectorCategoryService.getRequiredCategoryDefinition(query.getCategoryCode());
+        if (definition == null) {
+            query.setCategoryMuscleIds(Collections.emptyList());
+            return;
+        }
+        List<ExerciseMuscleNodeEntity> nodes =
+                exerciseMuscleTreeQueryMapper.selectActiveMusclesByCodes(definition.filterMuscleCodes());
+        Set<Long> muscleIds = new LinkedHashSet<>();
+        for (ExerciseMuscleNodeEntity node : nodes) {
+            muscleIds.add(node.getMuscleId());
+        }
+        query.setCategoryMuscleIds(new ArrayList<>(muscleIds));
+    }
+
+    private List<ExerciseListItemMuscleResponse> extractListItemMuscles(
+            List<ExerciseMuscleRelationEntity> relations, String relationType) {
+        List<ExerciseListItemMuscleResponse> muscles = new ArrayList<>();
         for (ExerciseMuscleRelationEntity relation : relations) {
             if (relationType.equals(relation.getRelationType())) {
-                names.add(relation.getMuscleName());
+                muscles.add(exerciseAssembler.toListItemMuscleResponse(relation));
             }
         }
-        return names;
+        return muscles;
     }
 
     private List<String> extractEquipmentNames(List<ExerciseEquipmentRelationEntity> relations) {

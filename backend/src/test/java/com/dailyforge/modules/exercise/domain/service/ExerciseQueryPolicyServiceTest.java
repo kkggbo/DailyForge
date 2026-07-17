@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.dailyforge.common.BusinessException;
+import com.dailyforge.modules.exercise.application.service.ExerciseSelectorCategoryService;
 import com.dailyforge.modules.exercise.interfaces.dto.ExerciseSystemListQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,13 +15,14 @@ class ExerciseQueryPolicyServiceTest {
 
     @BeforeEach
     void setUp() {
-        exerciseQueryPolicyService = new ExerciseQueryPolicyService();
+        exerciseQueryPolicyService = new ExerciseQueryPolicyService(new ExerciseSelectorCategoryService());
     }
 
     @Test
     void normalizeListQueryShouldApplyDefaultsAndTrimText() {
         ExerciseSystemListQuery query = new ExerciseSystemListQuery();
         query.setKeyword("  bench  ");
+        query.setCategoryCode("  chest  ");
         query.setExerciseType("  strength ");
         query.setMovementType(" ");
 
@@ -29,8 +31,19 @@ class ExerciseQueryPolicyServiceTest {
         assertThat(query.getPage()).isEqualTo(1);
         assertThat(query.getPageSize()).isEqualTo(20);
         assertThat(query.getKeyword()).isEqualTo("bench");
+        assertThat(query.getCategoryCode()).isEqualTo("chest");
         assertThat(query.getExerciseType()).isEqualTo("strength");
         assertThat(query.getMovementType()).isNull();
+    }
+
+    @Test
+    void normalizeListQueryShouldRejectInvalidCategoryCode() {
+        ExerciseSystemListQuery query = new ExerciseSystemListQuery();
+        query.setCategoryCode("unknown");
+
+        assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("request arguments are invalid");
     }
 
     @Test

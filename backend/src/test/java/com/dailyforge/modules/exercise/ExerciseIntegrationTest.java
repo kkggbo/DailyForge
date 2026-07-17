@@ -53,8 +53,8 @@ class ExerciseIntegrationTest {
     @Test
     void getSystemExercisesShouldReturnOnlyActiveSystemExercisesWithFullFields() throws Exception {
         long userId = insertUser("exercise@example.com", "PlainTextPassword123");
-        long chestId = insertMuscle("Chest", "chest");
-        long tricepsId = insertMuscle("Triceps", "triceps");
+        long chestId = insertMuscle("Chest Middle", "pectoralis_major_middle", null, "subgroup", 12);
+        long tricepsId = insertMuscle("Triceps", "triceps_brachii", null, "group", 50);
         long barbellId = insertEquipment("Barbell", "gym", 1);
         long benchId = insertEquipment("Bench", "gym", 1);
         long systemExerciseId = insertExercise(null, "Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
@@ -73,8 +73,9 @@ class ExerciseIntegrationTest {
                 .andExpect(jsonPath("$.data.records[0].exerciseId").value(systemExerciseId))
                 .andExpect(jsonPath("$.data.records[0].exerciseName").value("Barbell Bench Press"))
                 .andExpect(jsonPath("$.data.records[0].defaultStructureType").value("set_based"))
-                .andExpect(jsonPath("$.data.records[0].primaryMuscles[0]").value("Chest"))
-                .andExpect(jsonPath("$.data.records[0].secondaryMuscles[0]").value("Triceps"))
+                .andExpect(jsonPath("$.data.records[0].primaryMuscles[0].muscleName").value("Chest Middle"))
+                .andExpect(jsonPath("$.data.records[0].primaryMuscles[0].muscleCode").value("pectoralis_major_middle"))
+                .andExpect(jsonPath("$.data.records[0].secondaryMuscles[0].muscleName").value("Triceps"))
                 .andExpect(jsonPath("$.data.records[0].equipmentNames[0]").value("Barbell"));
     }
 
@@ -96,6 +97,64 @@ class ExerciseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.records[0].exerciseName").value("Running"));
+    }
+
+    @Test
+    void getSystemExerciseFilterOptionsShouldReturnFixedCategoriesAndResolvedChildren() throws Exception {
+        long userId = insertUser("exercise@example.com", "PlainTextPassword123");
+        long chestGroupId = insertMuscle("Chest", "pectoralis_major", null, "group", 10);
+        insertMuscle("Chest Upper", "pectoralis_major_upper", chestGroupId, "subgroup", 11);
+        insertMuscle("Chest Middle", "pectoralis_major_middle", chestGroupId, "subgroup", 12);
+        insertMuscle("Chest Lower", "pectoralis_major_lower", chestGroupId, "subgroup", 13);
+        long backGroupId = insertMuscle("Back", "back", null, "group", 20);
+        insertMuscle("Latissimus Dorsi", "latissimus_dorsi", backGroupId, "subgroup", 21);
+        String accessToken = loginAndGetAccessToken("exercise@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiGet("/exercises/system/filter-options").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.categories.length()").value(7))
+                .andExpect(jsonPath("$.data.categories[0].categoryCode").value("chest"))
+                .andExpect(jsonPath("$.data.categories[0].children[0].muscleCode").value("pectoralis_major_upper"))
+                .andExpect(jsonPath("$.data.categories[0].children[0].parentMuscleName").value("Chest"))
+                .andExpect(jsonPath("$.data.categories[6].categoryCode").value("cardio"))
+                .andExpect(jsonPath("$.data.categories[6].children.length()").value(0));
+    }
+
+    @Test
+    void getSystemExercisesShouldFilterByCategoryKeywordAndExactMuscleTogether() throws Exception {
+        insertUser("exercise@example.com", "PlainTextPassword123");
+        long chestGroupId = insertMuscle("Chest", "pectoralis_major", null, "group", 10);
+        long chestUpperId = insertMuscle("Chest Upper", "pectoralis_major_upper", chestGroupId, "subgroup", 11);
+        long legGroupId = insertMuscle("Legs", "legs", null, "group", 90);
+        long quadricepsId = insertMuscle("Quadriceps", "quadriceps", legGroupId, "subgroup", 91);
+        long chestExerciseId = insertExercise(null, "Incline Dumbbell Press", "strength", "push", "kg", "set_based", 1);
+        long legExerciseId = insertExercise(null, "Leg Press", "strength", "legs", "kg", "set_based", 1);
+        insertExerciseMuscle(chestExerciseId, chestUpperId, "primary", 1);
+        insertExerciseMuscle(legExerciseId, quadricepsId, "primary", 1);
+        String accessToken = loginAndGetAccessToken("exercise@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiGet("/exercises/system?categoryCode=chest")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.records[0].exerciseId").value(chestExerciseId));
+
+        mockMvc.perform(apiGet("/exercises/system?categoryCode=chest&keyword=Incline")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.records[0].exerciseName").value("Incline Dumbbell Press"));
+
+        mockMvc.perform(apiGet("/exercises/system?categoryCode=chest&muscleId=" + chestUpperId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.records[0].exerciseId").value(chestExerciseId));
+
+        mockMvc.perform(apiGet("/exercises/system?categoryCode=chest&muscleId=" + quadricepsId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0));
     }
 
     @Test
@@ -132,9 +191,9 @@ class ExerciseIntegrationTest {
     @Test
     void getSystemExercisesShouldFilterByMuscleIdExactly() throws Exception {
         insertUser("exercise@example.com", "PlainTextPassword123");
-        long chestGroupId = insertMuscle("Chest Group", "chest_group");
-        long chestUpperId = insertMuscle("Chest Upper", "chest_upper");
-        long backId = insertMuscle("Back", "back");
+        long chestGroupId = insertMuscle("Chest Group", "chest_group", null, "group", 10);
+        long chestUpperId = insertMuscle("Chest Upper", "chest_upper", chestGroupId, "subgroup", 11);
+        long backId = insertMuscle("Back", "back", null, "group", 20);
         long chestExerciseId = insertExercise(null, "Incline Dumbbell Press", "strength", "push", "kg", "set_based", 1);
         long backExerciseId = insertExercise(null, "Lat Pulldown", "strength", "pull", "kg", "set_based", 1);
         insertExerciseMuscle(chestExerciseId, chestUpperId, "primary", 1);
@@ -156,8 +215,8 @@ class ExerciseIntegrationTest {
     @Test
     void getSystemExerciseDetailShouldReturnFullStructuredFields() throws Exception {
         insertUser("exercise@example.com", "PlainTextPassword123");
-        long chestId = insertMuscle("Chest", "chest");
-        long frontDeltId = insertMuscle("Front Delt", "front_delt");
+        long chestId = insertMuscle("Chest", "pectoralis_major_middle", null, "subgroup", 12);
+        long frontDeltId = insertMuscle("Front Delt", "deltoid_front", null, "subgroup", 31);
         long benchId = insertEquipment("Bench", "gym", 1);
         long barbellId = insertEquipment("Barbell", "gym", 1);
         long exerciseId = insertExercise(null, "Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
@@ -200,6 +259,10 @@ class ExerciseIntegrationTest {
 
     @Test
     void protectedExerciseEndpointsShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(apiGet("/exercises/system/filter-options"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
         mockMvc.perform(apiGet("/exercises/system"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -230,11 +293,11 @@ class ExerciseIntegrationTest {
         return userId;
     }
 
-    private long insertMuscle(String name, String code) {
+    private long insertMuscle(String name, String code, Long parentId, String muscleLevel, int sortOrder) {
         jdbcTemplate.update("""
                 INSERT INTO muscles(name, code, parent_id, muscle_level, sort_order, is_active)
-                VALUES (?, ?, NULL, 'group', 0, 1)
-                """, name, code);
+                VALUES (?, ?, ?, ?, ?, 1)
+                """, name, code, parentId, muscleLevel, sortOrder);
         return jdbcTemplate.queryForObject("SELECT id FROM muscles WHERE code = ?", Long.class, code);
     }
 

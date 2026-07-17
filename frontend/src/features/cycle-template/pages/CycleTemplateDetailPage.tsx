@@ -43,9 +43,7 @@ export function CycleTemplateDetailPage() {
     try {
       setDetail(await getCycleTemplateDetail(token, id));
     } catch (error) {
-      setPageError(
-        getCycleTemplateErrorMessage(error, "加载模板详情失败，请稍后再试。")
-      );
+      setPageError(getCycleTemplateErrorMessage(error, "加载模板详情失败，请稍后再试。"));
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +94,7 @@ export function CycleTemplateDetailPage() {
         return;
       }
 
-      setDialogError(
-        getCycleTemplateErrorMessage(error, "操作失败，请稍后再试。")
-      );
+      setDialogError(getCycleTemplateErrorMessage(error, "操作失败，请稍后再试。"));
     } finally {
       setIsSubmitting(false);
     }

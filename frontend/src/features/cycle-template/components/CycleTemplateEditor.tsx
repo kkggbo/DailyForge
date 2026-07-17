@@ -1,5 +1,21 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  getSystemExerciseDetail,
+  getSystemExerciseFilterOptions,
+  searchSystemExercises
+} from "../../exercise/api/exercise";
+import { getExerciseErrorMessage } from "../../exercise/lib/exercise-enums";
+import {
+  mapSystemExerciseDetailToCardMeta,
+  mapSystemExerciseOptionToCardMeta
+} from "../../exercise/lib/exercise-mappers";
+import type {
+  ExerciseCardMeta,
+  ExerciseCategoryOption,
+  SystemExerciseOption
+} from "../../exercise/types/exercise";
+import { ExercisePickerDialog } from "./ExercisePickerDialog";
 import { ExerciseStructureEditor } from "./ExerciseStructureEditor";
-import type { SystemExerciseOption } from "../../exercise/types/exercise";
 import type {
   CycleTemplateEditorForm,
   CycleTemplateFieldErrors,
@@ -30,10 +46,13 @@ type CycleTemplateEditorProps = {
     dayIndex: number,
     patch: Partial<CycleTemplateEditorForm["days"][number]>
   ) => void;
-  onAddExercise: (dayIndex: number) => void;
-  onSelectSystemExercise: (
+  onAppendExerciseFromSystemOption: (
     dayIndex: number,
-    localId: string,
+    option: SystemExerciseOption
+  ) => void;
+  onReplaceExerciseFromSystemOption: (
+    dayIndex: number,
+    exerciseLocalId: string,
     option: SystemExerciseOption
   ) => void;
   onUpdateExercise: (
@@ -91,6 +110,18 @@ type CycleTemplateEditorProps = {
   onSubmit: () => void;
 };
 
+type PickerTarget =
+  | {
+      mode: "append";
+      dayIndex: number;
+    }
+  | {
+      mode: "replace";
+      dayIndex: number;
+      exerciseLocalId: string;
+    }
+  | null;
+
 export function CycleTemplateEditor({
   accessToken,
   form,
@@ -107,8 +138,8 @@ export function CycleTemplateEditor({
   allowEmptyCycleLengthOption = false,
   onRootFieldChange,
   onDayChange,
-  onAddExercise,
-  onSelectSystemExercise,
+  onAppendExerciseFromSystemOption,
+  onReplaceExerciseFromSystemOption,
   onUpdateExercise,
   onRemoveExercise,
   onMoveExercise,
@@ -126,6 +157,235 @@ export function CycleTemplateEditor({
 }: CycleTemplateEditorProps) {
   const activeDay =
     form.days.find((day) => day.dayIndex === selectedDayIndex) ?? form.days[0];
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+  const [pickerCategories, setPickerCategories] = useState<ExerciseCategoryOption[]>([]);
+  const [selectedCategoryCode, setSelectedCategoryCode] = useState("");
+  const [selectedMuscleId, setSelectedMuscleId] = useState<number | null>(null);
+  const [pickerKeywordInput, setPickerKeywordInput] = useState("");
+  const [pickerKeywordQuery, setPickerKeywordQuery] = useState("");
+  const [pickerResults, setPickerResults] = useState<SystemExerciseOption[]>([]);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [isLoadingFilterOptions, setIsLoadingFilterOptions] = useState(false);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [manualSearchNonce, setManualSearchNonce] = useState(0);
+  const [exerciseMetaById, setExerciseMetaById] = useState<Record<number, ExerciseCardMeta>>(
+    {}
+  );
+
+  const exerciseIdsInForm = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          form.days
+            .flatMap((day) => day.exercises.map((exercise) => exercise.exerciseId))
+            .filter((exerciseId): exerciseId is number => Number.isFinite(exerciseId))
+        )
+      ),
+    [form.days]
+  );
+
+  useEffect(() => {
+    if (!pickerTarget) {
+      return;
+    }
+
+    setPickerKeywordInput("");
+    setPickerKeywordQuery("");
+    setSelectedMuscleId(null);
+    setPickerResults([]);
+    setPickerError(null);
+
+    let cancelled = false;
+    setIsLoadingFilterOptions(true);
+
+    void getSystemExerciseFilterOptions(accessToken)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const categories = response.categories ?? [];
+        setPickerCategories(categories);
+        setSelectedCategoryCode(categories[0]?.categoryCode ?? "");
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPickerCategories([]);
+        setSelectedCategoryCode("");
+        setPickerError(getExerciseErrorMessage(error, "加载动作分类失败，请稍后再试。"));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingFilterOptions(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, pickerTarget]);
+
+  useEffect(() => {
+    if (!pickerTarget) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setPickerKeywordQuery(pickerKeywordInput.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [pickerKeywordInput, pickerTarget]);
+
+  useEffect(() => {
+    if (!pickerTarget || !selectedCategoryCode) {
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingResults(true);
+    setPickerError(null);
+
+    void searchSystemExercises(accessToken, {
+      categoryCode: selectedCategoryCode,
+      muscleId: selectedMuscleId ?? undefined,
+      keyword: pickerKeywordQuery || undefined,
+      page: 1,
+      pageSize: 20
+    })
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPickerResults(response.records ?? []);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPickerResults([]);
+        setPickerError(getExerciseErrorMessage(error, "加载动作列表失败，请稍后再试。"));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingResults(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    manualSearchNonce,
+    pickerKeywordQuery,
+    pickerTarget,
+    selectedCategoryCode,
+    selectedMuscleId
+  ]);
+
+  useEffect(() => {
+    const missingExerciseIds = exerciseIdsInForm.filter(
+      (exerciseId) => !exerciseMetaById[exerciseId]
+    );
+
+    if (!missingExerciseIds.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void Promise.allSettled(
+      missingExerciseIds.map((exerciseId) =>
+        getSystemExerciseDetail(accessToken, exerciseId)
+      )
+    ).then((results) => {
+      if (cancelled) {
+        return;
+      }
+
+      const nextMetaEntries = results.flatMap((result) => {
+        if (result.status !== "fulfilled") {
+          return [];
+        }
+
+        const detail = result.value;
+        return [[detail.exerciseId, mapSystemExerciseDetailToCardMeta(detail)] as const];
+      });
+
+      if (!nextMetaEntries.length) {
+        return;
+      }
+
+      setExerciseMetaById((current) => ({
+        ...current,
+        ...Object.fromEntries(nextMetaEntries)
+      }));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, exerciseIdsInForm, exerciseMetaById]);
+
+  function openAppendPicker(dayIndex: number) {
+    setPickerTarget({
+      mode: "append",
+      dayIndex
+    });
+  }
+
+  function openReplacePicker(dayIndex: number, exerciseLocalId: string) {
+    setPickerTarget({
+      mode: "replace",
+      dayIndex,
+      exerciseLocalId
+    });
+  }
+
+  function closePicker() {
+    setPickerTarget(null);
+    setPickerError(null);
+    setPickerResults([]);
+  }
+
+  function handleCategoryChange(categoryCode: string) {
+    setSelectedCategoryCode(categoryCode);
+    setSelectedMuscleId(null);
+  }
+
+  function handleKeywordSubmit() {
+    setPickerKeywordQuery(pickerKeywordInput.trim());
+    setManualSearchNonce((current) => current + 1);
+  }
+
+  function handleSelectExercise(option: SystemExerciseOption) {
+    setExerciseMetaById((current) => ({
+      ...current,
+      [option.exerciseId]: mapSystemExerciseOptionToCardMeta(option)
+    }));
+
+    if (!pickerTarget) {
+      return;
+    }
+
+    if (pickerTarget.mode === "append") {
+      onAppendExerciseFromSystemOption(pickerTarget.dayIndex, option);
+    } else {
+      onReplaceExerciseFromSystemOption(
+        pickerTarget.dayIndex,
+        pickerTarget.exerciseLocalId,
+        option
+      );
+    }
+
+    closePicker();
+  }
 
   return (
     <div className="space-y-6">
@@ -188,7 +448,7 @@ export function CycleTemplateEditor({
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-stone-400">
-            {isDirty ? "有未保存修改" : "当前内容已保存或未修改"}
+            {isDirty ? "有未保存修改" : "当前内容已保存或尚未修改"}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -244,13 +504,13 @@ export function CycleTemplateEditor({
 
         {activeDay ? (
           <CycleTemplateDayEditor
-            accessToken={accessToken}
             day={activeDay}
+            exerciseMetaById={exerciseMetaById}
             lockedBeforeDayIndex={lockedBeforeDayIndex}
             fieldErrors={fieldErrors}
             onDayChange={onDayChange}
-            onAddExercise={onAddExercise}
-            onSelectSystemExercise={onSelectSystemExercise}
+            onOpenAppendPicker={openAppendPicker}
+            onOpenReplacePicker={openReplacePicker}
             onUpdateExercise={onUpdateExercise}
             onRemoveExercise={onRemoveExercise}
             onMoveExercise={onMoveExercise}
@@ -265,18 +525,37 @@ export function CycleTemplateEditor({
           />
         ) : null}
       </section>
+
+      <ExercisePickerDialog
+        open={Boolean(pickerTarget)}
+        mode={pickerTarget?.mode ?? "append"}
+        categories={pickerCategories}
+        selectedCategoryCode={selectedCategoryCode}
+        selectedMuscleId={selectedMuscleId}
+        keyword={pickerKeywordInput}
+        results={pickerResults}
+        isLoadingFilters={isLoadingFilterOptions}
+        isLoadingResults={isLoadingResults}
+        errorMessage={pickerError}
+        onClose={closePicker}
+        onKeywordChange={setPickerKeywordInput}
+        onKeywordSubmit={handleKeywordSubmit}
+        onCategoryChange={handleCategoryChange}
+        onMuscleChange={setSelectedMuscleId}
+        onSelectExercise={handleSelectExercise}
+      />
     </div>
   );
 }
 
 function CycleTemplateDayEditor({
-  accessToken,
   day,
+  exerciseMetaById,
   lockedBeforeDayIndex,
   fieldErrors,
   onDayChange,
-  onAddExercise,
-  onSelectSystemExercise,
+  onOpenAppendPicker,
+  onOpenReplacePicker,
   onUpdateExercise,
   onRemoveExercise,
   onMoveExercise,
@@ -289,20 +568,16 @@ function CycleTemplateDayEditor({
   onRemoveMetric,
   onMoveMetric
 }: {
-  accessToken: string;
   day: CycleTemplateEditorForm["days"][number];
+  exerciseMetaById: Record<number, ExerciseCardMeta>;
   lockedBeforeDayIndex: number;
   fieldErrors: CycleTemplateFieldErrors;
   onDayChange: (
     dayIndex: number,
     patch: Partial<CycleTemplateEditorForm["days"][number]>
   ) => void;
-  onAddExercise: (dayIndex: number) => void;
-  onSelectSystemExercise: (
-    dayIndex: number,
-    localId: string,
-    option: SystemExerciseOption
-  ) => void;
+  onOpenAppendPicker: (dayIndex: number) => void;
+  onOpenReplacePicker: (dayIndex: number, exerciseLocalId: string) => void;
   onUpdateExercise: (
     dayIndex: number,
     localId: string,
@@ -374,7 +649,7 @@ function CycleTemplateDayEditor({
         <button
           type="button"
           disabled={isDayLocked}
-          onClick={() => onAddExercise(day.dayIndex)}
+          onClick={() => onOpenAppendPicker(day.dayIndex)}
           className={primaryButtonClass}
         >
           添加动作
@@ -396,15 +671,13 @@ function CycleTemplateDayEditor({
           {day.exercises.map((exercise, exerciseIndex) => (
             <ExerciseStructureEditor
               key={exercise.localId}
-              accessToken={accessToken}
               dayIndex={day.dayIndex - 1}
               exerciseIndex={exerciseIndex}
               exercise={exercise}
+              exerciseMeta={exercise.exerciseId ? exerciseMetaById[exercise.exerciseId] : undefined}
               locked={isDayLocked}
               fieldErrors={fieldErrors}
-              onSelectSystemExercise={(option) =>
-                onSelectSystemExercise(day.dayIndex, exercise.localId, option)
-              }
+              onRequestReplace={() => onOpenReplacePicker(day.dayIndex, exercise.localId)}
               onUpdateExercise={(patch) =>
                 onUpdateExercise(day.dayIndex, exercise.localId, patch)
               }
