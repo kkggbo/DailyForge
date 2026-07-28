@@ -433,10 +433,12 @@
 
 ### 提交规范
 
-1. 禁止直接提交到：
+1. 允许在满足提交门禁的前提下直接提交到：
    - `main`
    - `master`
    - `develop`
+   - 仍然禁止 `git push --force`
+   - 仍然要求先完成契约联调校验、测试与代码审查
 2. 必须遵守 Conventional Commits：
    - `feat:`
    - `fix:`
@@ -461,7 +463,7 @@
 
 - 业务代码
 - SQL 业务实现
-- 直接 push 到主分支
+- 在未满足提交门禁时直接 push 到 `main`、`master` 或 `develop`
 
 ---
 

@@ -15,6 +15,12 @@ export function AiGeneratePanel({ accessToken }: AiGeneratePanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
+    const normalizedPrompt = prompt.trim();
+    if (!normalizedPrompt) {
+      setMessage("请先填写生成要求。");
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage(null);
 
@@ -22,7 +28,7 @@ export function AiGeneratePanel({ accessToken }: AiGeneratePanelProps) {
       await generateDraftTemplateByAi(accessToken, {
         goalType: goalType || null,
         cycleLength: cycleLength ? Number(cycleLength) : null,
-        prompt,
+        prompt: normalizedPrompt,
         useProfileData
       });
       setMessage("AI 草稿生成接口当前仍是占位状态，还没有可直接编辑的模板返回。");
