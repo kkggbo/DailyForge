@@ -115,6 +115,23 @@ class ProfileIntegrationTest {
     }
 
     @Test
+    void updateBasicProfileShouldRejectInvalidGoalType() throws Exception {
+        insertUser("profile@example.com", "PlainTextPassword123");
+        String accessToken = loginAndGetAccessToken("profile@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiPut("/profile/basic")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "goalType": "contest_prep"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+    }
+
+    @Test
     void getCurrentSnapshotShouldReturnSnapshot() throws Exception {
         long userId = insertUser("profile@example.com", "PlainTextPassword123");
         insertCurrentSnapshot(userId, new BigDecimal("76.50"), new BigDecimal("18.20"), new BigDecimal("82.00"));
@@ -257,6 +274,16 @@ class ProfileIntegrationTest {
         mockMvc.perform(apiDelete("/profile/body-metrics/latest").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("BODY_METRIC_LATEST_ALREADY_DELETED"));
+    }
+
+    @Test
+    void deleteLatestBodyMetricShouldReturnNotFoundWhenNoRecordExists() throws Exception {
+        insertUser("profile@example.com", "PlainTextPassword123");
+        String accessToken = loginAndGetAccessToken("profile@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiDelete("/profile/body-metrics/latest").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BODY_METRIC_NOT_FOUND"));
     }
 
     @Test

@@ -17,6 +17,10 @@ export type RedeemInviteCodePayload = {
   code: string;
 };
 
+export type RefreshTokenPayload = {
+  refreshToken: string;
+};
+
 export type AuthUserSummary = {
   userId: number;
   email: string;
@@ -65,6 +69,13 @@ export async function register(payload: RegisterPayload) {
 
 export async function login(payload: LoginPayload) {
   return request<AuthTokenResponse>("/auth/login", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function refreshAccessToken(payload: RefreshTokenPayload) {
+  return request<AuthTokenResponse>("/auth/refresh-token", {
     method: "POST",
     body: payload
   });

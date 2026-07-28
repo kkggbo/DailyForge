@@ -213,6 +213,22 @@ class ExerciseIntegrationTest {
     }
 
     @Test
+    void getSystemExercisesShouldRejectInvalidQueryArguments() throws Exception {
+        insertUser("exercise@example.com", "PlainTextPassword123");
+        String accessToken = loginAndGetAccessToken("exercise@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiGet("/exercises/system?categoryCode=unknown")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+
+        mockMvc.perform(apiGet("/exercises/system?page=0")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+    }
+
+    @Test
     void getSystemExerciseDetailShouldReturnFullStructuredFields() throws Exception {
         insertUser("exercise@example.com", "PlainTextPassword123");
         long chestId = insertMuscle("Chest", "pectoralis_major_middle", null, "subgroup", 12);
@@ -255,6 +271,16 @@ class ExerciseIntegrationTest {
         mockMvc.perform(apiGet("/exercises/system/999999").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("EXERCISE_NOT_FOUND"));
+    }
+
+    @Test
+    void getSystemExerciseDetailShouldRejectInvalidExerciseId() throws Exception {
+        insertUser("exercise@example.com", "PlainTextPassword123");
+        String accessToken = loginAndGetAccessToken("exercise@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiGet("/exercises/system/0").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
     }
 
     @Test

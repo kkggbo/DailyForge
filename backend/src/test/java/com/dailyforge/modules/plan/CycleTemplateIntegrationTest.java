@@ -322,6 +322,188 @@ class CycleTemplateIntegrationTest {
     }
 
     @Test
+    void updateActiveTemplateShouldRejectLockedPastDaySubmission() throws Exception {
+        long userId = insertUser("plan@example.com", "PlainTextPassword123");
+        long exerciseId = insertSystemExercise("Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
+        long templateId = insertTemplate(userId, "PPL", 5, "muscle_gain", "active");
+        long versionId = insertVersion(templateId, 1, "manual");
+        setTemplateCurrentVersion(templateId, versionId);
+        insertDay(versionId, 2, "Pull");
+        long activeRunId = insertRun(userId, templateId, versionId, 1, "active");
+        insertUserActiveCycle(userId, templateId, versionId, activeRunId, 3);
+        String accessToken = loginAndGetAccessToken("plan@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiPut("/cycle-templates/" + templateId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "templateName": "PPL v2",
+                                  "goalType": "muscle_gain",
+                                  "days": [
+                                    {
+                                      "dayIndex": 2,
+                                      "dayName": "Pull",
+                                      "exercises": [
+                                        {
+                                          "sortOrder": 1,
+                                          "exerciseId": %d,
+                                          "structureType": "set_based",
+                                          "items": [
+                                            {
+                                              "itemIndex": 1,
+                                              "itemType": "set",
+                                              "metrics": [
+                                                {"sortOrder": 1, "metricKey": "weight_kg", "metricValueNumber": 50}
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                                """.formatted(exerciseId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CYCLE_TEMPLATE_EDIT_FORBIDDEN"));
+    }
+
+    @Test
+    void createDraftShouldRejectDuplicateMetricKey() throws Exception {
+        insertUser("plan@example.com", "PlainTextPassword123");
+        long exerciseId = insertSystemExercise("Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
+        String accessToken = loginAndGetAccessToken("plan@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiPost("/cycle-templates/drafts")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "templateName": "Bad Draft",
+                                  "cycleLength": 3,
+                                  "days": [
+                                    {
+                                      "dayIndex": 1,
+                                      "dayName": "Push",
+                                      "exercises": [
+                                        {
+                                          "sortOrder": 1,
+                                          "exerciseId": %d,
+                                          "structureType": "set_based",
+                                          "items": [
+                                            {
+                                              "itemIndex": 1,
+                                              "itemType": "set",
+                                              "metrics": [
+                                                {"sortOrder": 1, "metricKey": "reps", "metricValueNumber": 8},
+                                                {"sortOrder": 2, "metricKey": "reps", "metricValueNumber": 10}
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                                """.formatted(exerciseId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CYCLE_TEMPLATE_METRIC_DUPLICATE"));
+    }
+
+    @Test
+    void activateTemplateShouldRequireConfirmationWhenSwitchingExistingActiveTemplate() throws Exception {
+        long userId = insertUser("plan@example.com", "PlainTextPassword123");
+        long exerciseId = insertSystemExercise("Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
+
+        long oldTemplateId = insertTemplate(userId, "Current Active", 4, "muscle_gain", "active");
+        long oldVersionId = insertVersion(oldTemplateId, 1, "manual");
+        setTemplateCurrentVersion(oldTemplateId, oldVersionId);
+        insertDay(oldVersionId, 1, "Push");
+        long oldRunId = insertRun(userId, oldTemplateId, oldVersionId, 1, "active");
+        insertUserActiveCycle(userId, oldTemplateId, oldVersionId, oldRunId, 2);
+
+        long newTemplateId = insertTemplate(userId, "Next Template", 4, "fat_loss", "inactive");
+        long newVersionId = insertVersion(newTemplateId, 1, "manual");
+        setTemplateCurrentVersion(newTemplateId, newVersionId);
+        long newDayId = insertDay(newVersionId, 1, "Push");
+        long newExerciseId = insertDayExercise(newDayId, exerciseId, "Barbell Bench Press", "set_based", null, 1);
+        long newItemId = insertDayExerciseItem(newExerciseId, 1, "set", "Set 1", null);
+        insertDayExerciseMetric(newItemId, 1, "weight_kg", new BigDecimal("60"));
+
+        String accessToken = loginAndGetAccessToken("plan@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiPost("/cycle-templates/" + newTemplateId + "/activate")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "confirmSwitch": false
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED"));
+    }
+
+    @Test
+    void activateTemplateShouldCompletePreviousRunAndCreateNewActiveContext() throws Exception {
+        long userId = insertUser("plan@example.com", "PlainTextPassword123");
+        long exerciseId = insertSystemExercise("Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
+
+        long oldTemplateId = insertTemplate(userId, "Current Active", 4, "muscle_gain", "active");
+        long oldVersionId = insertVersion(oldTemplateId, 1, "manual");
+        setTemplateCurrentVersion(oldTemplateId, oldVersionId);
+        insertDay(oldVersionId, 1, "Push");
+        long oldRunId = insertRun(userId, oldTemplateId, oldVersionId, 1, "active");
+        insertUserActiveCycle(userId, oldTemplateId, oldVersionId, oldRunId, 3);
+
+        long targetTemplateId = insertTemplate(userId, "Next Template", 4, "fat_loss", "inactive");
+        long targetVersionId = insertVersion(targetTemplateId, 1, "manual");
+        setTemplateCurrentVersion(targetTemplateId, targetVersionId);
+        long dayId = insertDay(targetVersionId, 1, "Push");
+        long dayExerciseId = insertDayExercise(dayId, exerciseId, "Barbell Bench Press", "set_based", null, 1);
+        long itemId = insertDayExerciseItem(dayExerciseId, 1, "set", "Set 1", null);
+        insertDayExerciseMetric(itemId, 1, "weight_kg", new BigDecimal("70"));
+
+        String accessToken = loginAndGetAccessToken("plan@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiPost("/cycle-templates/" + targetTemplateId + "/activate")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "confirmSwitch": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.templateId").value(targetTemplateId))
+                .andExpect(jsonPath("$.data.status").value("active"))
+                .andExpect(jsonPath("$.data.currentDayIndex").value(1))
+                .andExpect(jsonPath("$.data.previousActiveTemplateId").value(oldTemplateId));
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM cycle_templates WHERE id = ?",
+                String.class,
+                oldTemplateId)).isEqualTo("inactive");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM cycle_runs WHERE id = ?",
+                String.class,
+                oldRunId)).isEqualTo("completed");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT template_id FROM user_active_cycles WHERE user_id = ?",
+                Long.class,
+                userId)).isEqualTo(targetTemplateId);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT current_day_index FROM user_active_cycles WHERE user_id = ?",
+                Integer.class,
+                userId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM cycle_runs WHERE user_id = ? AND template_id = ?",
+                Integer.class,
+                userId,
+                targetTemplateId)).isEqualTo(1);
+    }
+
+    @Test
     void createDraftShouldRejectStructureTypeMismatch() throws Exception {
         insertUser("plan@example.com", "PlainTextPassword123");
         long exerciseId = insertSystemExercise("Running", "cardio", "cardio", "minutes", "single_segment", 1);

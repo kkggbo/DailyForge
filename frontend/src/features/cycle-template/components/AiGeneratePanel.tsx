@@ -4,10 +4,9 @@ import { getCycleTemplateErrorMessage, goalTypeOptions } from "../lib/cycle-temp
 
 type AiGeneratePanelProps = {
   accessToken: string;
-  onGenerated: (templateId: number) => void;
 };
 
-export function AiGeneratePanel({ accessToken, onGenerated }: AiGeneratePanelProps) {
+export function AiGeneratePanel({ accessToken }: AiGeneratePanelProps) {
   const [goalType, setGoalType] = useState("muscle_gain");
   const [cycleLength, setCycleLength] = useState("5");
   const [prompt, setPrompt] = useState("");
@@ -20,13 +19,13 @@ export function AiGeneratePanel({ accessToken, onGenerated }: AiGeneratePanelPro
     setMessage(null);
 
     try {
-      const response = await generateDraftTemplateByAi(accessToken, {
+      await generateDraftTemplateByAi(accessToken, {
         goalType: goalType || null,
         cycleLength: cycleLength ? Number(cycleLength) : null,
         prompt,
         useProfileData
       });
-      onGenerated(response.templateId);
+      setMessage("AI 草稿生成接口当前仍是占位状态，还没有可直接编辑的模板返回。");
     } catch (error) {
       setMessage(
         getCycleTemplateErrorMessage(error, "AI 生成模板失败，请稍后再试。")
@@ -45,7 +44,7 @@ export function AiGeneratePanel({ accessToken, onGenerated }: AiGeneratePanelPro
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-white">AI 生成草稿</h2>
           <p className="mt-2 text-sm leading-6 text-stone-300">
-            当前后端是占位接口，提交后会给出明确提示，不会静默创建假草稿。
+            当前后端接口仍是占位实现，提交后会给出明确提示，不会静默创建假草稿。
           </p>
         </div>
       </div>

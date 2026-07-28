@@ -10,6 +10,7 @@ import {
   fetchCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
+  refreshAccessToken as refreshAccessTokenRequest,
   redeemInviteCode as redeemInviteCodeRequest,
   register as registerRequest,
   type AuthTokenResponse,
@@ -18,6 +19,7 @@ import {
   type RedeemInviteCodePayload,
   type RegisterPayload
 } from "../../features/auth/api/auth";
+import { ApiRequestError } from "../../shared/api/http";
 import {
   clearStoredAuthSession,
   getStoredAuthSession,
@@ -37,14 +39,34 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const SESSION_REFRESH_SKEW_MS = 60_000;
 
 function toStoredSession(response: AuthTokenResponse): StoredAuthSession {
   return {
     accessToken: response.accessToken,
     refreshToken: response.refreshToken,
     expiresIn: response.expiresIn,
+    expiresAt: Date.now() + response.expiresIn * 1000,
     user: response.user
   };
+}
+
+function shouldRefreshSession(session: StoredAuthSession) {
+  return session.expiresAt - Date.now() <= SESSION_REFRESH_SKEW_MS;
+}
+
+function isRefreshableAuthError(error: unknown) {
+  if (!(error instanceof ApiRequestError)) {
+    return false;
+  }
+
+  return (
+    error.status === 401 ||
+    error.code === "UNAUTHORIZED" ||
+    error.code === "TOKEN_INVALID" ||
+    error.code === "TOKEN_EXPIRED" ||
+    error.code === "TOKEN_TYPE_MISMATCH"
+  );
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -63,6 +85,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSession(nextSession);
   }
 
+  async function refreshSession(currentSession: StoredAuthSession) {
+    const response = await refreshAccessTokenRequest({
+      refreshToken: currentSession.refreshToken
+    });
+    const nextSession = toStoredSession(response);
+    updateStoredSession(nextSession);
+    return nextSession;
+  }
+
+  async function loadCurrentUser(currentSession: StoredAuthSession) {
+    try {
+      return await fetchCurrentUser(currentSession.accessToken);
+    } catch (error) {
+      if (!isRefreshableAuthError(error)) {
+        throw error;
+      }
+
+      const nextSession = await refreshSession(currentSession);
+      return fetchCurrentUser(nextSession.accessToken);
+    }
+  }
+
   useEffect(() => {
     async function bootstrap() {
       if (!session?.accessToken) {
@@ -71,11 +115,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
 
       try {
-        const me = await fetchCurrentUser(session.accessToken);
+        const effectiveSession = shouldRefreshSession(session)
+          ? await refreshSession(session)
+          : session;
+        const me = await loadCurrentUser(effectiveSession);
         setCurrentUser(me);
       } catch {
-        clearStoredAuthSession();
-        setSession(null);
+        updateStoredSession(null);
         setCurrentUser(null);
       } finally {
         setIsBootstrapping(false);
@@ -83,7 +129,38 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     void bootstrap();
-  }, [session?.accessToken]);
+  }, [session?.accessToken, session?.expiresAt, session?.refreshToken]);
+
+  useEffect(() => {
+    if (!session?.refreshToken || !currentUser) {
+      return;
+    }
+
+    const timeoutMs = Math.max(session.expiresAt - Date.now() - SESSION_REFRESH_SKEW_MS, 0);
+    let cancelled = false;
+
+    const timerId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const nextSession = await refreshSession(session);
+          const me = await fetchCurrentUser(nextSession.accessToken);
+          if (!cancelled) {
+            setCurrentUser(me);
+          }
+        } catch {
+          if (!cancelled) {
+            updateStoredSession(null);
+            setCurrentUser(null);
+          }
+        }
+      })();
+    }, timeoutMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [currentUser, session?.expiresAt, session?.refreshToken]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

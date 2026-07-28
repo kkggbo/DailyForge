@@ -138,6 +138,17 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void loginShouldRejectDisabledAccount() throws Exception {
+        insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "disabled");
+
+        mockMvc.perform(apiPost("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("user@example.com", "PlainTextPassword123"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_DISABLED"));
+    }
+
+    @Test
     void meShouldReturnCurrentUserInfo() throws Exception {
         insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
         String accessToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "accessToken");
@@ -173,6 +184,19 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(new RefreshTokenRequest(accessToken))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("TOKEN_TYPE_MISMATCH"));
+    }
+
+    @Test
+    void refreshTokenShouldRejectDisabledAccount() throws Exception {
+        insertUser("user@example.com", "PlainTextPassword123", "daily_user", "basic", "active");
+        String refreshToken = loginAndGetToken("user@example.com", "PlainTextPassword123", "refreshToken");
+        jdbcTemplate.update("UPDATE users SET status = 'disabled' WHERE email = ?", "user@example.com");
+
+        mockMvc.perform(apiPost("/auth/refresh-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_DISABLED"));
     }
 
     @Test

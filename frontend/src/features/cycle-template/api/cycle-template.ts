@@ -45,14 +45,11 @@ export function generateDraftTemplateByAi(
   accessToken: string,
   payload: AiGenerateCycleTemplatePayload
 ) {
-  return request<CreateOrCopyCycleTemplateResponse>(
-    "/cycle-templates/drafts/ai-generate",
-    {
-      method: "POST",
-      accessToken,
-      body: payload
-    }
-  );
+  return request<void>("/cycle-templates/drafts/ai-generate", {
+    method: "POST",
+    accessToken,
+    body: payload
+  });
 }
 
 export function updateDraftTemplate(
@@ -60,11 +57,14 @@ export function updateDraftTemplate(
   templateId: number,
   payload: SaveCycleTemplatePayload
 ) {
-  return request<void>(`/cycle-templates/drafts/${templateId}`, {
-    method: "PUT",
-    accessToken,
-    body: payload
-  });
+  return request<CreateOrCopyCycleTemplateResponse>(
+    `/cycle-templates/drafts/${templateId}`,
+    {
+      method: "PUT",
+      accessToken,
+      body: payload
+    }
+  );
 }
 
 export function updateFormalTemplate(
@@ -72,7 +72,7 @@ export function updateFormalTemplate(
   templateId: number,
   payload: SaveCycleTemplatePayload
 ) {
-  return request<void>(`/cycle-templates/${templateId}`, {
+  return request<CreateOrCopyCycleTemplateResponse>(`/cycle-templates/${templateId}`, {
     method: "PUT",
     accessToken,
     body: payload
