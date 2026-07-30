@@ -208,7 +208,7 @@ MVP 阶段：
   - 请求中的 `days` 是草稿完整内容
 - `PUT /{templateId}`
   - `inactive`：按完整模板全量覆盖保存，生成新版本
-  - `active`：只允许改 `currentDayIndex` 及之后的天，并同步更新当前运行引用版本
+  - `active`：只允许改 `currentDayIndex` 及之后的天，并同步更新当前运行引用版本；用户确认保存后，若当前 Day 已创建 `in_progress` session，则同步刷新其快照并覆盖未完成训练页中的填写记录
 
 ---
 
@@ -609,7 +609,11 @@ MVP 阶段：
 - 路径：`PUT /api/cycle-templates/{templateId}`
 - 作用：更新 `inactive` 或 `active` 模板
 
-请求体结构与 `POST /drafts` 相同。
+请求体结构与 `POST /drafts` 基本相同，额外支持：
+
+| 字段 | 类型 | 是否必填 | 说明 |
+|------|------|:---:|------|
+| `confirmOverwriteCurrentSession` | `boolean` | active 必填 | 保存 `active` 模板时必须传 `true`，表示用户已确认覆盖当前 Day 未完成训练页填写记录；`inactive` 模板保存可省略。 |
 
 实现逻辑：
 
@@ -628,6 +632,7 @@ MVP 阶段：
     - 更新 `cycle_templates.current_version_id`
     - 更新 `user_active_cycles.template_version_id`
     - 更新 `cycle_runs.template_version_id`
+    - 若当前 Day 已创建 `in_progress training_session`，在 `confirmOverwriteCurrentSession = true` 时刷新该 session 快照并覆盖未完成填写记录
 
 常见失败：
 
@@ -710,7 +715,9 @@ MVP 阶段：
 3. 校验模板中所有动作结构合法
 4. 若已有旧激活模板：
    - 旧模板状态改为 `inactive`
-   - 旧 `cycle_run` 状态改为 `completed`
+   - 若旧 `cycle_run` 为 `active`，状态改为 `cancelled` 并写入 `cancelledAt`
+   - 旧 run 下全部 `in_progress training_session` 状态改为 `cancelled`
+   - 已完成的 `training_session` 保留 `completed`，不删除、不改写
 5. 目标模板状态改为 `active`
 6. 创建新的 `cycle_runs`
 7. upsert `user_active_cycles`
@@ -791,6 +798,7 @@ MVP 阶段：
 | `CYCLE_TEMPLATE_METRIC_DUPLICATE` | 400 | 同一 item 下重复 `metricKey` |
 | `CYCLE_TEMPLATE_METRIC_VALUE_INVALID` | 400 | 参数值非法，例如未传 `metricValueNumber` 或传入非数值 |
 | `CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED` | 409 | 切换激活模板前需要二次确认 |
+| `CYCLE_TEMPLATE_OVERWRITE_CONFIRM_REQUIRED` | 409 | 保存 active 模板前需要确认覆盖当前训练日未完成填写记录 |
 | `CYCLE_TEMPLATE_EDIT_FORBIDDEN` | 409 | 当前模板或模板日不允许修改 |
 | `CYCLE_TEMPLATE_DELETE_FORBIDDEN` | 409 | 当前模板不允许删除 |
 | `CYCLE_TEMPLATE_STATUS_INVALID` | 409 | 当前状态下不允许执行该操作 |

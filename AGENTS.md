@@ -1,4 +1,4 @@
-# DailyForge Agent Rules
+﻿# DailyForge Agent Rules
 
 本文件是 DailyForge 的多 agent 执行入口规则。
 
@@ -338,3 +338,12 @@
    - `docs/frontend/**`
 
 如果规则之间冲突，主控会话应显式指出，并优先遵循最新确认的人类决策。
+---
+
+## 10. 主控会话长期执行规则
+
+1. 后续 DailyForge 开发默认只由主控会话与用户直接沟通，主控会话负责根据本文件和 `docs/agent协作规范.md` 主动分派 Subagent，不再要求用户手动把需求和文档转发给其他 Agent。
+2. 每轮进入实现、测试、审查或提交阶段前，主控会话必须先判断是否需要调用 Subagent；当任务符合第 3 节“优先创建 subagent”的条件时，应主动使用 `tool_search` 查找可用多 Agent 工具，并按角色创建对应 Subagent。
+3. 调用 Subagent 时，主控会话必须同时指定适用 skill、任务目标、写入范围、参考文档、禁止修改区域和返回要求。
+4. 如果当前会话没有暴露可用的 Subagent 调度工具，主控会话必须明确说明，并在本地按同一 Pipeline 模拟执行，不得静默跳过测试、审查或 Git Steward 门禁。
+5. 主控会话始终负责最终收敛：汇总 Subagent 输出、判断门禁是否通过、决定是否进入下一阶段，并把结论反馈给用户。

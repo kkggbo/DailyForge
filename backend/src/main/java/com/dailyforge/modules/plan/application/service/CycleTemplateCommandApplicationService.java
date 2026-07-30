@@ -25,6 +25,7 @@ import com.dailyforge.modules.plan.interfaces.dto.UpdateDraftCycleTemplateReques
 import com.dailyforge.modules.plan.interfaces.vo.CopyCycleTemplateResponse;
 import com.dailyforge.modules.plan.interfaces.vo.CreateDraftCycleTemplateResponse;
 import com.dailyforge.modules.plan.interfaces.vo.DeleteCycleTemplateResponse;
+import com.dailyforge.modules.workout.application.service.WorkoutSessionSnapshotApplicationService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -51,6 +52,7 @@ public class CycleTemplateCommandApplicationService {
     private final UserActiveCycleMapper userActiveCycleMapper;
     private final CycleRunMapper cycleRunMapper;
     private final CycleTemplateAssembler cycleTemplateAssembler;
+    private final WorkoutSessionSnapshotApplicationService workoutSessionSnapshotApplicationService;
 
     public CycleTemplateCommandApplicationService(
             PlanUserSupportService planUserSupportService,
@@ -61,7 +63,8 @@ public class CycleTemplateCommandApplicationService {
             SystemExerciseLookupService systemExerciseLookupService,
             UserActiveCycleMapper userActiveCycleMapper,
             CycleRunMapper cycleRunMapper,
-            CycleTemplateAssembler cycleTemplateAssembler) {
+            CycleTemplateAssembler cycleTemplateAssembler,
+            WorkoutSessionSnapshotApplicationService workoutSessionSnapshotApplicationService) {
         this.planUserSupportService = planUserSupportService;
         this.cycleTemplateMapper = cycleTemplateMapper;
         this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
@@ -71,6 +74,7 @@ public class CycleTemplateCommandApplicationService {
         this.userActiveCycleMapper = userActiveCycleMapper;
         this.cycleRunMapper = cycleRunMapper;
         this.cycleTemplateAssembler = cycleTemplateAssembler;
+        this.workoutSessionSnapshotApplicationService = workoutSessionSnapshotApplicationService;
     }
 
     /**
@@ -155,16 +159,21 @@ public class CycleTemplateCommandApplicationService {
     @Transactional
     public CreateDraftCycleTemplateResponse updateFormal(Long templateId, UpdateCycleTemplateRequest request) {
         Long userId = planUserSupportService.requireActiveUserId();
-        CycleTemplateEntity template = cycleTemplateMapper.selectByIdAndUserIdForUpdate(templateId, userId);
+        CycleTemplateEntity template = cycleTemplateMapper.selectByIdAndUserId(templateId, userId);
         if (template == null || "deleted".equals(template.getStatus())) {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_NOT_FOUND);
         }
         cycleTemplatePolicyService.assertTemplateStatus(template, "inactive", "active");
 
         if ("inactive".equals(template.getStatus())) {
-            return updateInactiveTemplate(template, request, userId);
+            CycleTemplateEntity lockedTemplate = cycleTemplateMapper.selectByIdAndUserIdForUpdate(templateId, userId);
+            if (lockedTemplate == null || "deleted".equals(lockedTemplate.getStatus())) {
+                throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_NOT_FOUND);
+            }
+            cycleTemplatePolicyService.assertTemplateStatus(lockedTemplate, "inactive");
+            return updateInactiveTemplate(lockedTemplate, request, userId);
         }
-        return updateActiveTemplate(template, request, userId);
+        return updateActiveTemplate(templateId, request, userId);
     }
 
     /**
@@ -251,12 +260,23 @@ public class CycleTemplateCommandApplicationService {
     }
 
     private CreateDraftCycleTemplateResponse updateActiveTemplate(
-            CycleTemplateEntity template,
+            Long templateId,
             UpdateCycleTemplateRequest request,
             Long userId) {
         UserActiveCycleEntity activeCycle = userActiveCycleMapper.selectByUserIdForUpdate(userId);
-        if (activeCycle == null || !template.getId().equals(activeCycle.getTemplateId())) {
+        if (activeCycle == null || !templateId.equals(activeCycle.getTemplateId())) {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_ACTIVE_NOT_FOUND);
+        }
+        CycleRunEntity currentRun = cycleRunMapper.selectByIdAndUserIdForUpdate(activeCycle.getCurrentRunId(), userId);
+        if (currentRun == null || !"active".equals(currentRun.getStatus())) {
+            throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_ACTIVE_NOT_FOUND);
+        }
+        CycleTemplateEntity template = cycleTemplateMapper.selectByIdAndUserIdForUpdate(templateId, userId);
+        if (template == null || !"active".equals(template.getStatus())) {
+            throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_ACTIVE_NOT_FOUND);
+        }
+        if (!Boolean.TRUE.equals(request.confirmOverwriteCurrentSession())) {
+            throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_OVERWRITE_CONFIRM_REQUIRED);
         }
         cycleTemplatePolicyService.assertActiveUpdateAllowed(template, request, activeCycle);
         Map<Long, SystemExerciseLookupResult> exerciseMap = loadAndValidateExercises(request.days());
@@ -279,11 +299,17 @@ public class CycleTemplateCommandApplicationService {
         activeCycle.setTemplateVersionId(version.getId());
         userActiveCycleMapper.updateById(activeCycle);
 
-        CycleRunEntity currentRun = cycleRunMapper.selectById(activeCycle.getCurrentRunId());
-        if (currentRun != null) {
-            currentRun.setTemplateVersionId(version.getId());
-            currentRun.setUpdatedAt(LocalDateTime.now());
-            cycleRunMapper.updateById(currentRun);
+        currentRun.setTemplateVersionId(version.getId());
+        currentRun.setUpdatedAt(LocalDateTime.now());
+        cycleRunMapper.updateById(currentRun);
+        if (activeCycle.getCurrentDayIndex() != null) {
+            workoutSessionSnapshotApplicationService.refreshCurrentDaySession(
+                    userId,
+                    currentRun.getId(),
+                    template.getId(),
+                    template.getName(),
+                    version.getId(),
+                    activeCycle.getCurrentDayIndex());
         }
 
         log.debug(

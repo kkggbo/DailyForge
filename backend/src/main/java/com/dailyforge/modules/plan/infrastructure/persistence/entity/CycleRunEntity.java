@@ -17,7 +17,7 @@ public class CycleRunEntity {
     private String status;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
-    private LocalDateTime archivedAt;
+    private LocalDateTime cancelledAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -85,12 +85,12 @@ public class CycleRunEntity {
         this.completedAt = completedAt;
     }
 
-    public LocalDateTime getArchivedAt() {
-        return archivedAt;
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
     }
 
-    public void setArchivedAt(LocalDateTime archivedAt) {
-        this.archivedAt = archivedAt;
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 
     public LocalDateTime getCreatedAt() {

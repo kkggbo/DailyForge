@@ -11,9 +11,9 @@ DailyForge 是一个面向健身用户的 Web 项目，目标是帮助用户完�
 - `profile`：基础档案、身体指标记录、档案引导页、AI 资料完整度提示
 - `exercise`：系统动作搜索、系统动作详情、动作选择器筛选元数据、分类筛选、为模板编辑器提供 `defaultStructureType`
 - `cycle_template`：正式模板/草稿模板管理、详情页、编辑页、激活切换、复制、删除、运行中模板未来天编辑、动作选择器弹窗与结构化动作编辑体验优化
+- `workout`：训练工作台、当前 Day 自动初始化、训练保存与打卡、休息日打卡、训练历史详情、循环结束后的下一步选择
 
 当前仍在后续阶段的模块：
-- `training session / workout`：训练打卡闭环
 - 饮食建议
 - 历史统计与趋势分析
 - AI 真正落地的计划生成与总结能力
@@ -140,6 +140,8 @@ DailyForge/
 - 模板软删除
 - 当前激活模板摘要查询
 - 运行中模板仅允许编辑当前天及未来天
+- 保存运行中模板时需要二次确认，并会覆盖当前 Day 未完成训练页填写记录
+- 切换激活模板时会取消旧运行循环，保留已完成训练记录
 - 动作参数模型升级为 `动作 -> 执行项 -> 参数` 三层结构
 - 支持 `set_based` 与 `single_segment` 两类动作结构
 - 模板编辑器“添加动作”改为弹窗选择器
@@ -170,6 +172,38 @@ DailyForge/
 - `docs/动作参数模型改造草案.md`
 - `docs/frontend/cycle_template_module/cycle_template_DDD.md`
 
+### 5. Workout 模块
+
+已完成：
+- 训练工作台上下文查询
+- 当前 Day 训练会话自动初始化或恢复
+- 当前循环内历史 Day、当前 Day、未来 Day 浏览
+- 训练日与休息日打卡
+- 训练动作完成状态、失败 / 跳过原因、实际参数、感受备注记录
+- 手动保存进行中的训练会话
+- 完成打卡后推进当前循环，但前端保留在已完成 Day
+- 最近训练记录列表与训练详情页
+- 当前循环完成后的下一步选择：重启当前模板、跳转模板页、AI 分析占位
+- 运行中切换模板时取消旧循环和未完成 session，保留历史训练记录
+
+前端页面已接入：
+- `/workout`
+- `/workout/history/:sessionId`
+
+说明：
+- `workout` 复用 `cycle_template v2` 的三层动作结构快照
+- 已创建或已完成 session 不直接依赖后续模板结构变化
+- AI 分析接口当前返回 `WORKOUT_AI_NOT_IMPLEMENTED`，仅作为后续能力占位
+
+相关文档：
+- `docs/prd/workout_PRD.md`
+- `docs/interfaces/workout_接口文档.md`
+- `docs/backend/workout_module/workout_business_flow.md`
+- `docs/backend/workout_module/数据库改造清单.md`
+- `docs/frontend/workout_module/workout_DDD.md`
+- `docs/frontend/workout_module/workout_页面说明.md`
+- `docs/testing/workout_功能测试顺序建议.md`
+
 ## 数据库与 SQL
 
 当前数据库初始化 / 升级脚本位于：
@@ -179,11 +213,13 @@ DailyForge/
 - `backend/src/main/resources/db/migration/V3__profile_schema_upgrade.sql`
 - `backend/src/main/resources/db/migration/V4__cycle_template_schema_upgrade.sql`
 - `backend/src/main/resources/db/migration/V5__cycle_template_structure_v2.sql`
+- `backend/src/main/resources/db/migration/V6__workout_schema_upgrade.sql`
 
 说明：
 - 项目当前未在运行时启用 Flyway 自动迁移
 - 现阶段由开发者按顺序手动执行 SQL
 - `V5` 用于把 `cycle_template` 动作参数模型升级到三层结构版本
+- `V6` 用于升级训练会话、训练动作执行项和实际参数记录结构
 
 ## 本地启动
 
@@ -209,6 +245,7 @@ docker compose -f deploy/docker-compose.local.yml up -d
 3. `backend/src/main/resources/db/migration/V3__profile_schema_upgrade.sql`
 4. `backend/src/main/resources/db/migration/V4__cycle_template_schema_upgrade.sql`
 5. `backend/src/main/resources/db/migration/V5__cycle_template_structure_v2.sql`
+6. `backend/src/main/resources/db/migration/V6__workout_schema_upgrade.sql`
 
 ### 3. 启动后端
 
@@ -239,7 +276,7 @@ pnpm dev
 
 说明：
 - 当前后端采用统一路径策略：`server.servlet.context-path=/api`
-- Controller 仅声明资源路径，例如 `/auth`、`/profile`、`/cycle-templates`、`/exercises`
+- Controller 仅声明资源路径，例如 `/auth`、`/profile`、`/cycle-templates`、`/exercises`、`/workouts`
 - Swagger 与 OpenAPI 文档地址统一挂载在 `/api/docs/...`
 
 ## 接口与文档索引
@@ -257,6 +294,7 @@ pnpm dev
 
 - [Profile PRD](docs/prd/profile_PRD.md)
 - [Cycle Template PRD](docs/prd/cycle_template_PRD.md)
+- [Workout PRD](docs/prd/workout_PRD.md)
 
 ### 接口文档
 
@@ -265,6 +303,7 @@ pnpm dev
 - [Exercise 接口文档](docs/interfaces/exercise_接口文档.md)
 - [Cycle Template 接口文档](docs/interfaces/cycle_template_接口文档.md)
 - [Cycle Template 接口文档 v2](docs/interfaces/cycle_template_接口文档_v2.md)
+- [Workout 接口文档](docs/interfaces/workout_接口文档.md)
 
 ### DDD / 实现文档
 
@@ -276,6 +315,9 @@ pnpm dev
 - [Cycle Template 后端 DDD v2](docs/backend/cycle_template_module/cycle_template_DDD_v2.md)
 - [Cycle Template 前端 DDD](docs/frontend/cycle_template_module/cycle_template_DDD.md)
 - [动作选择器前端改造清单](docs/frontend/cycle_template_module/动作选择器前端改造清单.md)
+- [Workout 业务流程](docs/backend/workout_module/workout_business_flow.md)
+- [Workout 前端 DDD](docs/frontend/workout_module/workout_DDD.md)
+- [Workout 页面说明](docs/frontend/workout_module/workout_页面说明.md)
 
 ## 测试情况
 
@@ -284,8 +326,9 @@ pnpm dev
 - `exercise` 查询策略测试与集成测试
 - `cycle_template` 领域策略测试
 - `cycle_template` v2 结构化动作参数模型集成测试
-- 前端 Vitest 交互测试：当前 10 个测试文件、13 个测试通过
-- 后端核心模块集成测试：当前指定测试合计 51 个通过
+- 前端 Vitest 交互测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键交互
+- 后端核心模块集成测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键路径
+- 本轮 workout 聚焦验证：后端 30 个测试通过，前端 cycle_template active 保存确认测试通过，前端生产构建通过
 
 说明：
 - 本 README 只描述当前仓库中的测试覆盖方向，不代表所有模块都已达到完整测试覆盖
@@ -295,7 +338,7 @@ pnpm dev
 
 按照当前进度，下一阶段最自然的继续方向是：
 
-1. 开始 `training session` 模块，打通“模板 -> 当天训练 -> 打卡 -> 推进到下一天”的闭环
-2. 复用当前 `cycle_template v2` 的三层动作结构设计训练打卡数据模型
-3. 在完成训练记录后，再继续做历史统计与趋势分析
-4. 最后再引入真正的 AI 计划生成与周期总结能力
+1. 继续手动回归 `workout` 与 `cycle_template` 的联动边界，确认真实使用流畅度
+2. 开始历史统计与趋势分析，复用已沉淀的训练 session 和身体指标数据
+3. 推进饮食建议模块，补齐 MVP 中的饮食建议能力
+4. 最后再引入真正的 AI 计划生成、训练周期总结与模板调整建议

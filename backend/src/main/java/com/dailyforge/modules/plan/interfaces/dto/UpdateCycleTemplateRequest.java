@@ -22,5 +22,9 @@ public record UpdateCycleTemplateRequest(
         @Min(1) @Max(7) Integer cycleLength,
 
         @ArraySchema(schema = @Schema(implementation = CycleTemplateDayRequest.class))
-        List<@Valid CycleTemplateDayRequest> days) {
+        List<@Valid CycleTemplateDayRequest> days,
+
+        @Schema(description = "Required as true when saving an active template because current in-progress workout input will be overwritten",
+                example = "true")
+        Boolean confirmOverwriteCurrentSession) {
 }

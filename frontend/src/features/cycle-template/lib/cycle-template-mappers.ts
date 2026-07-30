@@ -179,12 +179,13 @@ export function syncDaysWithCycleLength(
 
 export function editorFormToPayload(
   form: CycleTemplateEditorForm,
-  options: { includeOnlyEditableFromDay?: number } = {}
+  options: { includeOnlyEditableFromDay?: number; confirmOverwriteCurrentSession?: boolean } = {}
 ): SaveCycleTemplatePayload {
   return {
     templateName: form.templateName.trim(),
     cycleLength: parseOptionalInteger(form.cycleLength),
     goalType: toNullableText(form.goalType),
+    confirmOverwriteCurrentSession: options.confirmOverwriteCurrentSession,
     days: form.days
       .filter((day) =>
         options.includeOnlyEditableFromDay

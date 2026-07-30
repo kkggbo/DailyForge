@@ -17,6 +17,7 @@ import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleTempla
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.UserActiveCycleMapper;
 import com.dailyforge.modules.plan.interfaces.dto.ActivateCycleTemplateRequest;
 import com.dailyforge.modules.plan.interfaces.vo.ActivateCycleTemplateResponse;
+import com.dailyforge.modules.workout.infrastructure.persistence.mapper.TrainingSessionMapper;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ public class CycleTemplateActivationApplicationService {
     private final UserActiveCycleMapper userActiveCycleMapper;
     private final CycleRunMapper cycleRunMapper;
     private final SystemExerciseLookupService systemExerciseLookupService;
+    private final TrainingSessionMapper trainingSessionMapper;
     private final CycleTemplatePolicyService cycleTemplatePolicyService;
     private final ExerciseStructurePolicyService exerciseStructurePolicyService;
     private final CycleTemplateVersionDomainService cycleTemplateVersionDomainService;
@@ -50,6 +52,7 @@ public class CycleTemplateActivationApplicationService {
             UserActiveCycleMapper userActiveCycleMapper,
             CycleRunMapper cycleRunMapper,
             SystemExerciseLookupService systemExerciseLookupService,
+            TrainingSessionMapper trainingSessionMapper,
             CycleTemplatePolicyService cycleTemplatePolicyService,
             ExerciseStructurePolicyService exerciseStructurePolicyService,
             CycleTemplateVersionDomainService cycleTemplateVersionDomainService,
@@ -60,6 +63,7 @@ public class CycleTemplateActivationApplicationService {
         this.userActiveCycleMapper = userActiveCycleMapper;
         this.cycleRunMapper = cycleRunMapper;
         this.systemExerciseLookupService = systemExerciseLookupService;
+        this.trainingSessionMapper = trainingSessionMapper;
         this.cycleTemplatePolicyService = cycleTemplatePolicyService;
         this.exerciseStructurePolicyService = exerciseStructurePolicyService;
         this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
@@ -73,6 +77,10 @@ public class CycleTemplateActivationApplicationService {
     @Transactional
     public ActivateCycleTemplateResponse activateTemplate(Long templateId, ActivateCycleTemplateRequest request) {
         Long userId = planUserSupportService.requireActiveUserId();
+        UserActiveCycleEntity activeCycle = userActiveCycleMapper.selectByUserIdForUpdate(userId);
+        CycleRunEntity previousRun = activeCycle != null && !templateId.equals(activeCycle.getTemplateId())
+                ? cycleRunMapper.selectByIdAndUserIdForUpdate(activeCycle.getCurrentRunId(), userId)
+                : null;
         CycleTemplateEntity targetTemplate = cycleTemplateMapper.selectByIdAndUserIdForUpdate(templateId, userId);
         if (targetTemplate == null || "deleted".equals(targetTemplate.getStatus())) {
             throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_NOT_FOUND);
@@ -84,14 +92,13 @@ public class CycleTemplateActivationApplicationService {
         cycleTemplatePolicyService.assertCanActivate(targetTemplate);
         validateCurrentVersionStructure(targetTemplate);
 
-        UserActiveCycleEntity activeCycle = userActiveCycleMapper.selectByUserIdForUpdate(userId);
         Long previousActiveTemplateId = null;
         if (activeCycle != null && !targetTemplate.getId().equals(activeCycle.getTemplateId())) {
             if (!Boolean.TRUE.equals(request.confirmSwitch())) {
                 throw new BusinessException(ErrorCode.CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED);
             }
             previousActiveTemplateId = activeCycle.getTemplateId();
-            closeCurrentActiveContext(userId, activeCycle);
+            closeCurrentActiveContext(userId, activeCycle, previousRun);
         }
 
         targetTemplate.setStatus("active");
@@ -133,18 +140,22 @@ public class CycleTemplateActivationApplicationService {
         exerciseStructurePolicyService.validateVersionSnapshot(snapshot, exerciseMap);
     }
 
-    private void closeCurrentActiveContext(Long userId, UserActiveCycleEntity activeCycle) {
+    private void closeCurrentActiveContext(
+            Long userId,
+            UserActiveCycleEntity activeCycle,
+            CycleRunEntity previousRun) {
+        // 锁序固定为活动循环、cycle run、模板、session，避免模板切换与打卡交叉等待。
         CycleTemplateEntity oldTemplate =
                 cycleTemplateMapper.selectByIdAndUserIdForUpdate(activeCycle.getTemplateId(), userId);
         if (oldTemplate != null) {
             oldTemplate.setStatus("inactive");
             cycleTemplateMapper.updateById(oldTemplate);
         }
-        CycleRunEntity oldRun = cycleRunMapper.selectById(activeCycle.getCurrentRunId());
-        if (oldRun != null && "active".equals(oldRun.getStatus())) {
-            oldRun.setStatus("completed");
-            oldRun.setCompletedAt(LocalDateTime.now());
-            cycleRunMapper.updateById(oldRun);
+        if (previousRun != null && "active".equals(previousRun.getStatus())) {
+            previousRun.setStatus("cancelled");
+            previousRun.setCancelledAt(LocalDateTime.now());
+            cycleRunMapper.updateById(previousRun);
+            trainingSessionMapper.cancelInProgressByCycleRunIdAndUserId(previousRun.getId(), userId);
         }
     }
 }

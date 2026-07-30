@@ -14,6 +14,8 @@ import { hasCompletedProfileOnboarding } from "../features/profile/lib/onboardin
 import { ProfileAiCompletionPage } from "../features/profile/pages/ProfileAiCompletionPage";
 import { ProfileOnboardingPage } from "../features/profile/pages/ProfileOnboardingPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
+import { WorkoutHistoryDetailPage } from "../features/workout/pages/WorkoutHistoryDetailPage";
+import { WorkoutPage } from "../features/workout/pages/WorkoutPage";
 
 function ProtectedOutlet() {
   const { isAuthenticated, isBootstrapping } = useAuth();
@@ -99,6 +101,14 @@ export const router = createBrowserRouter([
           {
             path: "/cycle-templates/:templateId/edit",
             element: <CycleTemplateEditPage />
+          },
+          {
+            path: "/workout",
+            element: <WorkoutPage />
+          },
+          {
+            path: "/workout/history/:sessionId",
+            element: <WorkoutHistoryDetailPage />
           }
         ]
       }

@@ -82,7 +82,7 @@ Authorization: Bearer <accessToken>
 - `PUT /drafts/{templateId}`：每次保存都会创建新版本，并用请求中的 `days` 全量覆盖当前草稿内容
 - `PUT /{templateId}`：
   - `inactive` 模板：按完整模板全量覆盖保存，生成新版本
-  - `active` 模板：只允许改 `currentDayIndex` 及之后的天；保存时“保留锁定天 + 用请求中的可编辑天全量覆盖可编辑范围”，并同步更新当前运行引用版本
+  - `active` 模板：只允许改 `currentDayIndex` 及之后的天；保存时“保留锁定天 + 用请求中的可编辑天全量覆盖可编辑范围”，并同步更新当前运行引用版本；必须传 `confirmOverwriteCurrentSession = true`，确认覆盖当前 Day 未完成训练页填写记录
 
 ---
 
@@ -541,6 +541,7 @@ Authorization: Bearer <accessToken>
 | `CYCLE_TEMPLATE_EXERCISE_NOT_FOUND` | 404 | 动作不存在 |
 | `CYCLE_TEMPLATE_SYSTEM_EXERCISE_REQUIRED` | 400 | 只能使用系统动作 |
 | `CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED` | 409 | 切换激活模板前需要二次确认 |
+| `CYCLE_TEMPLATE_OVERWRITE_CONFIRM_REQUIRED` | 409 | 保存 active 模板前需要确认覆盖当前训练日未完成填写记录 |
 | `CYCLE_TEMPLATE_EDIT_FORBIDDEN` | 409 | 当前模板或模板日不允许修改 |
 | `CYCLE_TEMPLATE_DELETE_FORBIDDEN` | 409 | 当前模板不允许删除 |
 | `CYCLE_TEMPLATE_STATUS_INVALID` | 409 | 当前状态下不允许执行该操作 |

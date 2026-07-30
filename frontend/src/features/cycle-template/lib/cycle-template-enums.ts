@@ -34,6 +34,8 @@ export const cycleTemplateErrorMessages: Record<string, string> = {
   CYCLE_TEMPLATE_ACTIVE_NOT_FOUND: "当前没有启用中的训练模板。",
   CYCLE_TEMPLATE_SWITCH_CONFIRM_REQUIRED:
     "当前已有启用中的训练模板，请再次确认是否切换。",
+  CYCLE_TEMPLATE_OVERWRITE_CONFIRM_REQUIRED:
+    "保存正在运行的模板前需要确认覆盖当前训练日填写记录。",
   CYCLE_TEMPLATE_EDIT_FORBIDDEN: "当前模板或训练日不允许编辑。",
   CYCLE_TEMPLATE_DELETE_FORBIDDEN: "当前模板不允许删除。",
   CYCLE_TEMPLATE_ACTIVATE_INVALID: "模板还不满足启用条件，请先完善模板内容。",

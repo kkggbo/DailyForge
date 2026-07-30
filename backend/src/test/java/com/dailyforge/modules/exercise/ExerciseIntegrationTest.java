@@ -390,6 +390,9 @@ class ExerciseIntegrationTest {
     private void cleanTables() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.update("DELETE FROM user_active_cycles");
+        jdbcTemplate.update("DELETE FROM training_session_exercise_item_metrics");
+        jdbcTemplate.update("DELETE FROM training_session_exercise_items");
+        jdbcTemplate.update("DELETE FROM training_session_exercises");
         jdbcTemplate.update("DELETE FROM training_sessions");
         jdbcTemplate.update("DELETE FROM cycle_runs");
         jdbcTemplate.update("DELETE FROM cycle_day_exercise_item_metrics");

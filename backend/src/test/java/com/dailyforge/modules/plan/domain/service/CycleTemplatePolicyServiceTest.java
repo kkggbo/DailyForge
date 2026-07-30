@@ -80,7 +80,8 @@ class CycleTemplatePolicyServiceTest {
                 "Push Pull Legs",
                 "muscle_gain",
                 6,
-                List.of(new CycleTemplateDayRequest(3, "Legs", List.of())));
+                List.of(new CycleTemplateDayRequest(3, "Legs", List.of())),
+                true);
 
         assertThatThrownBy(() -> cycleTemplatePolicyService.assertActiveUpdateAllowed(template, request, activeCycle))
                 .isInstanceOf(BusinessException.class)

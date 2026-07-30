@@ -1,4 +1,7 @@
 DROP TABLE IF EXISTS user_active_cycles;
+DROP TABLE IF EXISTS training_session_exercise_item_metrics;
+DROP TABLE IF EXISTS training_session_exercise_items;
+DROP TABLE IF EXISTS training_session_exercises;
 DROP TABLE IF EXISTS training_sessions;
 DROP TABLE IF EXISTS cycle_runs;
 DROP TABLE IF EXISTS cycle_day_exercise_item_metrics;
@@ -272,7 +275,7 @@ CREATE TABLE cycle_runs (
     status VARCHAR(32) NOT NULL DEFAULT 'active',
     started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
-    archived_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_cycle_runs_user_template_run UNIQUE (user_id, template_id, run_no),
@@ -280,6 +283,9 @@ CREATE TABLE cycle_runs (
     CONSTRAINT fk_cycle_runs_template_id FOREIGN KEY (template_id) REFERENCES cycle_templates(id),
     CONSTRAINT fk_cycle_runs_template_version_id FOREIGN KEY (template_version_id) REFERENCES cycle_template_versions(id)
 );
+
+CREATE INDEX idx_cycle_runs_user_status
+    ON cycle_runs(user_id, status);
 
 CREATE TABLE user_active_cycles (
     user_id BIGINT PRIMARY KEY,
@@ -301,21 +307,95 @@ CREATE TABLE training_sessions (
     user_id BIGINT NOT NULL,
     cycle_run_id BIGINT NOT NULL,
     template_id BIGINT NOT NULL,
+    template_name_snapshot VARCHAR(128) NOT NULL,
     template_version_id BIGINT NOT NULL,
     template_day_id BIGINT NOT NULL,
+    day_name_snapshot VARCHAR(64) NOT NULL,
     day_index TINYINT NOT NULL,
-    session_no INT NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'in_progress',
+    session_type VARCHAR(32) NOT NULL DEFAULT 'workout',
     started_at TIMESTAMP NULL,
     completed_at TIMESTAMP NULL,
     overall_feeling VARCHAR(255) NULL,
     notes VARCHAR(1000) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_training_sessions_cycle_run_day UNIQUE (cycle_run_id, day_index),
     CONSTRAINT fk_training_sessions_user_id FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_training_sessions_cycle_run_id FOREIGN KEY (cycle_run_id) REFERENCES cycle_runs(id),
     CONSTRAINT fk_training_sessions_template_id FOREIGN KEY (template_id) REFERENCES cycle_templates(id),
     CONSTRAINT fk_training_sessions_template_version_id FOREIGN KEY (template_version_id) REFERENCES cycle_template_versions(id),
     CONSTRAINT fk_training_sessions_template_day_id FOREIGN KEY (template_day_id) REFERENCES cycle_template_days(id)
 );
+
+CREATE INDEX idx_training_sessions_template_id
+    ON training_sessions(template_id);
+
+CREATE INDEX idx_training_sessions_cycle_run_status
+    ON training_sessions(cycle_run_id, status);
+
+CREATE INDEX idx_training_sessions_user_completed_at
+    ON training_sessions(user_id, completed_at, started_at);
+
+CREATE TABLE training_session_exercises (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    cycle_day_exercise_id BIGINT NOT NULL,
+    exercise_id BIGINT NOT NULL,
+    exercise_name_snapshot VARCHAR(128) NOT NULL,
+    structure_type VARCHAR(32) NOT NULL,
+    exercise_status VARCHAR(32) NULL,
+    feeling VARCHAR(255) NULL,
+    failure_reason VARCHAR(64) NULL,
+    adjustment_note VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_training_session_exercises_session_id
+        FOREIGN KEY (session_id) REFERENCES training_sessions(id),
+    CONSTRAINT fk_training_session_exercises_cycle_day_exercise_id
+        FOREIGN KEY (cycle_day_exercise_id) REFERENCES cycle_day_exercises(id),
+    CONSTRAINT fk_training_session_exercises_exercise_id
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+);
+
+CREATE INDEX idx_training_session_exercises_session_sort
+    ON training_session_exercises(session_id, sort_order);
+
+CREATE TABLE training_session_exercise_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_exercise_id BIGINT NOT NULL,
+    item_index SMALLINT NOT NULL,
+    item_type VARCHAR(32) NOT NULL,
+    item_name_snapshot VARCHAR(64) NULL,
+    note_snapshot VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_training_session_exercise_items_exercise_item
+        UNIQUE (session_exercise_id, item_index),
+    CONSTRAINT fk_training_session_exercise_items_session_exercise_id
+        FOREIGN KEY (session_exercise_id) REFERENCES training_session_exercises(id)
+);
+
+CREATE INDEX idx_training_session_exercise_items_exercise_sort
+    ON training_session_exercise_items(session_exercise_id, sort_order);
+
+CREATE TABLE training_session_exercise_item_metrics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_exercise_item_id BIGINT NOT NULL,
+    metric_key VARCHAR(64) NOT NULL,
+    planned_value_number DECIMAL(12, 4) NULL,
+    actual_value_number DECIMAL(12, 4) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_training_session_exercise_item_metrics_item_key
+        UNIQUE (session_exercise_item_id, metric_key),
+    CONSTRAINT fk_training_session_exercise_item_metrics_item_id
+        FOREIGN KEY (session_exercise_item_id) REFERENCES training_session_exercise_items(id)
+);
+
+CREATE INDEX idx_training_session_exercise_item_metrics_item_sort
+    ON training_session_exercise_item_metrics(session_exercise_item_id, sort_order);
 
 ALTER TABLE cycle_templates
     ADD CONSTRAINT fk_cycle_templates_current_version_id

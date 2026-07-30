@@ -1,0 +1,23 @@
+﻿export type WorkspaceState = "no_active_template" | "active" | "cycle_completed";
+export type DayState = "completed" | "current" | "upcoming";
+export type ViewMode = "editable" | "readonly" | "preview";
+export type SessionStatus = "in_progress" | "completed" | "cancelled";
+export type SessionType = "workout" | "rest_day";
+export type ExerciseStatus = "completed" | "partial_completed" | "skipped" | "failed";
+export type FailureReason = "too_tired" | "equipment_unavailable" | "pain_or_discomfort" | "time_not_enough" | "plan_too_hard" | "other";
+export type StructureType = "set_based" | "single_segment";
+export type ItemType = "set" | "segment";
+export type MetricKey = "weight_kg" | "reps" | "duration_seconds" | "distance_km" | "speed_kmh" | "pace_seconds_per_km" | "incline_percent" | "rest_seconds" | "rpe" | "intensity_level";
+
+export type DayNavItem = { dayIndex: number; dayName: string; isRestDay: boolean; dayState: DayState; sessionId: number | null; sessionStatus: SessionStatus | null };
+export type Metric = { sortOrder: number; metricKey: MetricKey; metricUnit: string; plannedValueNumber: number | null; actualValueNumber: number | null };
+export type ExerciseItem = { itemIndex: number; itemType: ItemType; itemName: string | null; note: string | null; metrics: Metric[] };
+export type SessionExercise = { sessionExerciseId: number | null; sortOrder: number; exerciseId: number; exerciseName: string; structureType: StructureType; exerciseStatus: ExerciseStatus | null; failureReason: FailureReason | null; feedback: string | null; items: ExerciseItem[] };
+export type WorkoutSession = { sessionId: number; sessionType: SessionType; sessionStatus: SessionStatus; startedAt: string | null; completedAt: string | null; notes: string | null; exercises: SessionExercise[] };
+export type DayDetail = { cycleRunId: number; runNo: number; templateId: number; templateName: string; dayIndex: number; dayName: string; isRestDay: boolean; dayState: DayState; viewMode: ViewMode; canInitializeSession: boolean; session: WorkoutSession | null; exercises?: SessionExercise[] };
+export type Workspace = { workspaceState: WorkspaceState; templateId: number | null; templateName: string | null; cycleRunId: number | null; runNo: number | null; cycleLength: number | null; currentDayIndex: number | null; defaultDayIndex: number | null; days: DayNavItem[] };
+export type SavePayload = { notes: string | null; exercises: Array<{ sessionExerciseId: number; exerciseStatus: ExerciseStatus | null; failureReason: FailureReason | null; feedback: string | null; items: Array<{ itemIndex: number; metrics: Array<{ metricKey: MetricKey; actualValueNumber: number | null }> }> }> };
+export type RecentRecord = { sessionId: number; sessionType: SessionType; sessionStatus: SessionStatus; templateId: number; templateName: string; cycleRunId: number; runNo: number; dayIndex: number; dayName: string; startedAt: string | null; completedAt: string | null };
+export type RecentWorkouts = { page: number; pageSize: number; total: number; records: RecentRecord[] };
+export type SessionDetail = WorkoutSession & { cycleRunId: number; runNo: number; templateId: number; templateName: string; dayIndex: number; dayName: string };
+export type RestartResponse = { templateId: number; templateName: string; cycleRunId: number; runNo: number; cycleRunStatus: "active"; currentDayIndex: number };

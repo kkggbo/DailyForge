@@ -50,6 +50,9 @@ export function AppShell() {
                   <NavLink to="/cycle-templates" className={navLinkClass}>
                     训练模板
                   </NavLink>
+                  <NavLink to="/workout" className={navLinkClass}>
+                    训练工作台
+                  </NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
                     个人资料
                   </NavLink>

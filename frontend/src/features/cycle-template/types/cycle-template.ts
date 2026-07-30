@@ -138,6 +138,7 @@ export type SaveCycleTemplatePayload = {
   cycleLength: number | null;
   goalType: string | null;
   days: SaveCycleTemplateDayPayload[];
+  confirmOverwriteCurrentSession?: boolean;
 };
 
 export type CreateOrCopyCycleTemplateResponse = {

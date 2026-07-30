@@ -7,6 +7,7 @@ import {
   updateFormalTemplate
 } from "../api/cycle-template";
 import { CycleTemplateEditor } from "../components/CycleTemplateEditor";
+import { TemplateActionDialog } from "../components/CycleTemplateDialogs";
 import { useCycleTemplateEditor } from "../hooks/useCycleTemplateEditor";
 import { getCycleTemplateErrorMessage } from "../lib/cycle-template-enums";
 import {
@@ -28,6 +29,7 @@ export function CycleTemplateEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [showValidationSummary, setShowValidationSummary] = useState(false);
+  const [showActiveSaveConfirm, setShowActiveSaveConfirm] = useState(false);
 
   useEffect(() => {
     if (!accessToken || !Number.isFinite(templateId)) {
@@ -77,7 +79,7 @@ export function CycleTemplateEditPage() {
     }
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!accessToken || !detail) {
       return;
     }
@@ -85,6 +87,19 @@ export function CycleTemplateEditPage() {
     if (editor.hasErrors) {
       setShowValidationSummary(true);
       setPageError("请先修正表单中的错误，再保存模板。");
+      return;
+    }
+
+    if (detail.status === "active") {
+      setShowActiveSaveConfirm(true);
+      return;
+    }
+
+    void submitTemplate();
+  }
+
+  async function submitTemplate() {
+    if (!accessToken || !detail) {
       return;
     }
 
@@ -105,13 +120,15 @@ export function CycleTemplateEditPage() {
           detail.templateId,
           editorFormToPayload(editor.form, {
             includeOnlyEditableFromDay:
-              detail.status === "active" ? detail.editableFromDayIndex : undefined
+              detail.status === "active" ? detail.editableFromDayIndex : undefined,
+            confirmOverwriteCurrentSession: detail.status === "active" ? true : undefined
           })
         );
       }
 
       await loadDetail(accessToken, detail.templateId);
       editor.setBaselineToCurrent();
+      setShowActiveSaveConfirm(false);
     } catch (error) {
       setPageError(
         getCycleTemplateErrorMessage(error, "保存训练模板失败，请稍后再试。")
@@ -194,6 +211,22 @@ export function CycleTemplateEditPage() {
         </div>
       ) : null}
 
+      <TemplateActionDialog
+        open={showActiveSaveConfirm}
+        title="确认保存正在运行的模板？"
+        description="保存后会同步更新当前训练日内容，并覆盖当前训练工作台中尚未完成打卡的填写记录。已完成或已取消的历史训练记录不会被修改。请确认后继续。"
+        confirmLabel="确认保存并覆盖当前训练日"
+        isSubmitting={isSubmitting}
+        errorMessage={showActiveSaveConfirm ? pageError : null}
+        danger
+        onClose={() => {
+          setShowActiveSaveConfirm(false);
+          setPageError(null);
+        }}
+        onConfirm={() => {
+          void submitTemplate();
+        }}
+      />
       <CycleTemplateEditor
         accessToken={accessToken}
         form={editor.form}
