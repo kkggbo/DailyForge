@@ -47,3 +47,14 @@ dailyforge:
       secret: ${DAILYFORGE_JWT_SECRET:dailyforge-local-jwt-secret-key-change-me-1234567890}
       access-token-ttl: PT2H
       refresh-token-ttl: P14D
+  ai:
+    enabled: true
+    provider: deepseek
+    model: deepseek-v4-pro
+    base-url: https://api.deepseek.com
+    api-key: ${DAILYFORGE_AI_API_KEY:replace-with-your-ai-api-key}
+    timeout: PT30S
+    max-tool-rounds: 6
+    max-repair-attempts: 2
+    template-generation-prompt-version: template_generation_v1
+    cycle-summary-prompt-version: cycle_summary_v1

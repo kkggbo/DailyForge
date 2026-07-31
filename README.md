@@ -12,11 +12,12 @@ DailyForge 是一个面向健身用户的 Web 项目，目标是帮助用户完�
 - `exercise`：系统动作搜索、系统动作详情、动作选择器筛选元数据、分类筛选、为模板编辑器提供 `defaultStructureType`
 - `cycle_template`：正式模板/草稿模板管理、详情页、编辑页、激活切换、复制、删除、运行中模板未来天编辑、动作选择器弹窗与结构化动作编辑体验优化
 - `workout`：训练工作台、当前 Day 自动初始化、训练保存与打卡、休息日打卡、训练历史详情、循环结束后的下一步选择
+- `ai_coach`：AI 能力概览、异步训练模板生成任务、异步周期总结任务、AI 任务状态查询、AI 生成草稿模板写入与结果结构化返回
 
 当前仍在后续阶段的模块：
 - 饮食建议
 - 历史统计与趋势分析
-- AI 真正落地的计划生成与总结能力
+- AI 模型真实接入、工具调用闭环与结果修复重试
 
 ## 技术栈
 
@@ -204,6 +205,29 @@ DailyForge/
 - `docs/frontend/workout_module/workout_页面说明.md`
 - `docs/testing/workout_功能测试顺序建议.md`
 
+### 6. AI Coach 模块
+
+已完成：
+- AI 能力概览查询
+- AI 训练模板生成任务提交与结果查询
+- AI 周期总结任务提交与结果查询
+- AI 任务记录、状态流转与结构化结果返回
+- AI 生成 `cycle_template draft` 与 `source_task_id` 回写
+- AI 周期总结基于历史训练快照与模板版本快照生成摘要
+
+当前实现说明：
+- 当前后端为可运行的 stub 版本，已完成任务流、结果结构、持久化与接口闭环
+- 当前尚未正式接入 Spring AI + DeepSeek 模型调用
+- 当前不记录伪造 tool call，`toolCallCount` 固定为真实调用前的保守值 `0`
+- AI 任务以异步方式执行，状态链路为 `pending -> running -> succeeded/failed`
+
+相关文档：
+- `docs/prd/ai_coach_PRD.md`
+- `docs/interfaces/ai_coach_接口文档.md`
+- `docs/backend/ai_coach_module/AI接入与提示词上下文设计.md`
+- `docs/backend/ai_coach_module/ai_coach_数据库改造清单.md`
+- `docs/backend/ai_coach_module/ai_coach_DDD.md`
+
 ## 数据库与 SQL
 
 当前数据库初始化 / 升级脚本位于：
@@ -214,12 +238,14 @@ DailyForge/
 - `backend/src/main/resources/db/migration/V4__cycle_template_schema_upgrade.sql`
 - `backend/src/main/resources/db/migration/V5__cycle_template_structure_v2.sql`
 - `backend/src/main/resources/db/migration/V6__workout_schema_upgrade.sql`
+- `backend/src/main/resources/db/migration/V7__ai_coach_schema_upgrade.sql`
 
 说明：
 - 项目当前未在运行时启用 Flyway 自动迁移
 - 现阶段由开发者按顺序手动执行 SQL
 - `V5` 用于把 `cycle_template` 动作参数模型升级到三层结构版本
 - `V6` 用于升级训练会话、训练动作执行项和实际参数记录结构
+- `V7` 用于新增 AI 任务记录、工具调用记录与模板来源追踪字段
 
 ## 本地启动
 
@@ -246,6 +272,7 @@ docker compose -f deploy/docker-compose.local.yml up -d
 4. `backend/src/main/resources/db/migration/V4__cycle_template_schema_upgrade.sql`
 5. `backend/src/main/resources/db/migration/V5__cycle_template_structure_v2.sql`
 6. `backend/src/main/resources/db/migration/V6__workout_schema_upgrade.sql`
+7. `backend/src/main/resources/db/migration/V7__ai_coach_schema_upgrade.sql`
 
 ### 3. 启动后端
 
@@ -295,6 +322,7 @@ pnpm dev
 - [Profile PRD](docs/prd/profile_PRD.md)
 - [Cycle Template PRD](docs/prd/cycle_template_PRD.md)
 - [Workout PRD](docs/prd/workout_PRD.md)
+- [AI Coach PRD](docs/prd/ai_coach_PRD.md)
 
 ### 接口文档
 
@@ -304,6 +332,7 @@ pnpm dev
 - [Cycle Template 接口文档](docs/interfaces/cycle_template_接口文档.md)
 - [Cycle Template 接口文档 v2](docs/interfaces/cycle_template_接口文档_v2.md)
 - [Workout 接口文档](docs/interfaces/workout_接口文档.md)
+- [AI Coach 接口文档](docs/interfaces/ai_coach_接口文档.md)
 
 ### DDD / 实现文档
 
@@ -318,6 +347,9 @@ pnpm dev
 - [Workout 业务流程](docs/backend/workout_module/workout_business_flow.md)
 - [Workout 前端 DDD](docs/frontend/workout_module/workout_DDD.md)
 - [Workout 页面说明](docs/frontend/workout_module/workout_页面说明.md)
+- [AI Coach 提示词上下文设计](docs/backend/ai_coach_module/AI接入与提示词上下文设计.md)
+- [AI Coach 数据库改造清单](docs/backend/ai_coach_module/ai_coach_数据库改造清单.md)
+- [AI Coach 后端 DDD](docs/backend/ai_coach_module/ai_coach_DDD.md)
 
 ## 测试情况
 
@@ -329,6 +361,7 @@ pnpm dev
 - 前端 Vitest 交互测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键交互
 - 后端核心模块集成测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键路径
 - 本轮 workout 聚焦验证：后端 30 个测试通过，前端 cycle_template active 保存确认测试通过，前端生产构建通过
+- 本轮 ai_coach 聚焦验证：后端 AI coach 定向测试 6 个通过，全量 `mvn test` 通过，增量审查结论无中高风险
 
 说明：
 - 本 README 只描述当前仓库中的测试覆盖方向，不代表所有模块都已达到完整测试覆盖

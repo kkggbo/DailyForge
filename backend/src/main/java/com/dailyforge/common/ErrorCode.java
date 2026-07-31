@@ -104,6 +104,18 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST),
     WORKOUT_AI_NOT_IMPLEMENTED("WORKOUT_AI_NOT_IMPLEMENTED", "workout ai analysis is not implemented yet",
             HttpStatus.NOT_IMPLEMENTED),
+    AI_FEATURE_NOT_AVAILABLE("AI_FEATURE_NOT_AVAILABLE", "ai feature is not available for current account",
+            HttpStatus.FORBIDDEN),
+    AI_REQUIRED_PROFILE_MISSING("AI_REQUIRED_PROFILE_MISSING",
+            "required profile fields are missing for ai generation", HttpStatus.BAD_REQUEST),
+    AI_REQUIRED_BODY_METRIC_MISSING("AI_REQUIRED_BODY_METRIC_MISSING",
+            "required body metric fields are missing for ai generation", HttpStatus.BAD_REQUEST),
+    AI_CYCLE_RUN_NOT_COMPLETED("AI_CYCLE_RUN_NOT_COMPLETED", "cycle run must be completed before ai summary",
+            HttpStatus.CONFLICT),
+    AI_TASK_NOT_FOUND("AI_TASK_NOT_FOUND", "ai task not found", HttpStatus.NOT_FOUND),
+    AI_OUTPUT_INVALID("AI_OUTPUT_INVALID", "ai output is invalid", HttpStatus.INTERNAL_SERVER_ERROR),
+    AI_SERVICE_TIMEOUT("AI_SERVICE_TIMEOUT", "ai service timeout", HttpStatus.GATEWAY_TIMEOUT),
+    AI_SERVICE_UNAVAILABLE("AI_SERVICE_UNAVAILABLE", "ai service is unavailable", HttpStatus.SERVICE_UNAVAILABLE),
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;

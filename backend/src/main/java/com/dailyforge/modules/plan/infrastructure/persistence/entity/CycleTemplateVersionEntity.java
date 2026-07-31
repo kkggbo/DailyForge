@@ -13,6 +13,7 @@ public class CycleTemplateVersionEntity {
     private Long templateId;
     private Integer versionNo;
     private String sourceType;
+    private Long sourceTaskId;
     private String changeNote;
     private LocalDateTime createdAt;
 
@@ -46,6 +47,14 @@ public class CycleTemplateVersionEntity {
 
     public void setSourceType(String sourceType) {
         this.sourceType = sourceType;
+    }
+
+    public Long getSourceTaskId() {
+        return sourceTaskId;
+    }
+
+    public void setSourceTaskId(Long sourceTaskId) {
+        this.sourceTaskId = sourceTaskId;
     }
 
     public String getChangeNote() {
