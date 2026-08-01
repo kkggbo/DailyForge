@@ -790,7 +790,7 @@ dailyforge:
     model: deepseek-chat
     base-url: https://...
     api-key: ${DAILYFORGE_AI_API_KEY:}
-    timeout: PT30S
+    timeout: PT120S
     max-tool-rounds: 6
     max-repair-attempts: 2
     template-generation-prompt-version: template_generation_v1
@@ -934,3 +934,97 @@ Redis 在本期不是必需依赖，但可作为后续扩展点：
 5. 明确当前仓库里哪些基础设施已存在，哪些依赖和模块代码仍待新增。
 
 按本文档推进后，`ai_coach` 可以先落地 `template_generation`，再平滑扩展到 `cycle_summary` 与后续 AI 能力。
+
+---
+
+## 十六、2026-08-01 实现补充
+
+### 16.1 默认 timeout 已调整为 `PT120S`
+
+真实 DeepSeek 联调中，`template_generation` 场景会经历：
+
+- 初始模型调用
+- 多轮 tool calling
+- tool 返回后的后续模型生成
+
+对这类链路，`PT30S` 偏紧，容易把较慢但仍正常处理中的请求直接打成失败。
+
+当前后端实现已将默认配置调整为：
+
+- `dailyforge.ai.timeout = PT120S`
+
+该值用于覆盖 MVP 阶段的模板生成主链路；后续如继续出现慢请求，可再按场景拆分更细的 timeout 策略。
+
+### 16.2 `DeepSeekOpenAiModelClient` 错误分类职责
+
+当前实现中，模型客户端负责把上游失败分为两类对外错误码：
+
+- `AI_SERVICE_TIMEOUT`
+  - 读取超时
+  - 请求超时
+  - 其他可识别的 timeout 场景
+- `AI_SERVICE_UNAVAILABLE`
+  - HTTP 4xx
+  - HTTP 5xx
+  - 网络访问异常
+  - 无法拿到有效响应
+
+说明：
+
+- 对前端仍保持既有错误码契约稳定
+- 更细粒度的诊断信息只保留在后端日志中
+
+### 16.3 AI 调用可观测性补充
+
+本轮实现后，模型调用日志最少应包含：
+
+- `taskId`
+- `taskType`
+- `stage`
+- `provider`
+- `model`
+- `timeoutMs`
+- `httpStatus`
+- `responsePreview`
+- `rootCause`
+
+其中：
+
+- `stage` 当前至少区分：
+  - `initial-generation`
+  - `tool-followup`
+  - `json-repair`
+- `responsePreview` 只允许保留截断摘要
+- `rootCause` 用于区分 timeout、DNS、连接失败、HTTP 4xx/5xx 等问题
+
+### 16.4 日志脱敏补充
+
+除第 6.5 节已有约束外，本轮再补充以下禁止项：
+
+- API Key
+- 完整上游响应体
+- 完整工具调用参数原文
+
+允许记录：
+
+- 响应体截断摘要
+- 根因异常类名
+- 任务阶段信息
+
+### 16.5 错误码语义补充
+
+需要明确：
+
+- `AI_SERVICE_UNAVAILABLE` 不代表“本次请求未真正调用到 AI”
+- 它也可能表示：
+  - tool calling 已经发生
+  - 部分模型轮次已经成功
+  - 失败发生在后续某一次模型调用
+
+因此后续排障必须结合：
+
+- `ai_task_records`
+- `ai_task_tool_calls`
+- 后端结构化日志
+
+一起判断真实失败点。

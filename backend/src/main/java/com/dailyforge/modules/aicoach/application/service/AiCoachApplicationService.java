@@ -292,7 +292,11 @@ public class AiCoachApplicationService {
     }
 
     private boolean isAiEnabled(UserEntity user) {
-        if (!aiCoachProperties.isEnabled() || user == null) {
+        if (!aiCoachProperties.isEnabled()
+                || user == null
+                || !StringUtils.hasText(aiCoachProperties.getApiKey())
+                || !StringUtils.hasText(aiCoachProperties.getBaseUrl())
+                || !StringUtils.hasText(aiCoachProperties.getModel())) {
             return false;
         }
         return PLATFORM_ROLE_ADMIN.equalsIgnoreCase(user.getPlatformRole())
@@ -332,7 +336,17 @@ public class AiCoachApplicationService {
     }
 
     private List<String> collectRecommendedFields(UserProfileEntity profile, UserCurrentBodyMetricsEntity metrics) {
-        return collectTemplateGenerationMissingFields(profile, metrics);
+        java.util.ArrayList<String> fields = new java.util.ArrayList<>();
+        if (profile == null || !StringUtils.hasText(profile.getGoalType())) {
+            fields.add("goalType");
+        }
+        if (profile == null || !StringUtils.hasText(profile.getTrainingLevel())) {
+            fields.add("trainingLevel");
+        }
+        if (metrics == null || metrics.getCurrentWeightKg() == null) {
+            fields.add("currentWeightKg");
+        }
+        return fields;
     }
 
     private List<String> collectProfileMissingFields(UserProfileEntity profile) {

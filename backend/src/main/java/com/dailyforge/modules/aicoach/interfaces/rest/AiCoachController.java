@@ -39,11 +39,11 @@ public class AiCoachController {
     }
 
     @GetMapping("/capabilities")
-    @Operation(summary = "Get AI coach capabilities")
+    @Operation(summary = "Get current AI capability and readiness summary")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Capabilities loaded",
+                    description = "AI capability summary loaded",
                     content = @Content(schema = @Schema(implementation = AiCoachCapabilitiesResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
@@ -53,13 +53,42 @@ public class AiCoachController {
 
     @PostMapping("/template-generations")
     @Operation(summary = "Submit one AI template generation task")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI template generation task accepted",
+                    content = @Content(schema = @Schema(implementation = AiAsyncTaskAcceptedResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request or missing required AI profile data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "AI feature is not available"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "503",
+                    description = "AI service is unavailable"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "504",
+                    description = "AI service timeout")
+    })
     public ApiResponse<AiAsyncTaskAcceptedResponse> submitTemplateGeneration(
             @Valid @RequestBody TemplateGenerationRequest request) {
         return ApiResponse.success(aiCoachApplicationService.submitTemplateGeneration(request));
     }
 
     @GetMapping("/template-generations/{taskId}")
-    @Operation(summary = "Query one AI template generation task")
+    @Operation(summary = "Query one AI template generation task result")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI template generation task detail loaded",
+                    content = @Content(schema = @Schema(implementation = AiTaskDetailResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "AI task not found")
+    })
     public ApiResponse<AiTaskDetailResponse<TemplateGenerationTaskResultResponse>> getTemplateGeneration(
             @PathVariable @Min(1) Long taskId) {
         return ApiResponse.success(aiCoachApplicationService.getTemplateGeneration(taskId));
@@ -67,13 +96,46 @@ public class AiCoachController {
 
     @PostMapping("/cycle-summaries")
     @Operation(summary = "Submit one AI cycle summary task")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI cycle summary task accepted",
+                    content = @Content(schema = @Schema(implementation = AiAsyncTaskAcceptedResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "AI feature is not available"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Cycle run not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "Cycle run is not completed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "503",
+                    description = "AI service is unavailable"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "504",
+                    description = "AI service timeout")
+    })
     public ApiResponse<AiAsyncTaskAcceptedResponse> submitCycleSummary(
             @Valid @RequestBody CycleSummaryRequest request) {
         return ApiResponse.success(aiCoachApplicationService.submitCycleSummary(request));
     }
 
     @GetMapping("/cycle-summaries/{taskId}")
-    @Operation(summary = "Query one AI cycle summary task")
+    @Operation(summary = "Query one AI cycle summary task result")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI cycle summary task detail loaded",
+                    content = @Content(schema = @Schema(implementation = AiTaskDetailResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "AI task not found")
+    })
     public ApiResponse<AiTaskDetailResponse<CycleSummaryTaskResultResponse>> getCycleSummary(
             @PathVariable @Min(1) Long taskId) {
         return ApiResponse.success(aiCoachApplicationService.getCycleSummary(taskId));

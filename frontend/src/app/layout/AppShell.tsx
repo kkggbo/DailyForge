@@ -47,6 +47,9 @@ export function AppShell() {
                   <NavLink to="/app" className={navLinkClass}>
                     控制台
                   </NavLink>
+                  <NavLink to="/ai-coach" className={navLinkClass}>
+                    AI Coach
+                  </NavLink>
                   <NavLink to="/cycle-templates" className={navLinkClass}>
                     训练模板
                   </NavLink>

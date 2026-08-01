@@ -858,4 +858,91 @@ Prompt 中必须明确：
 3. 用系统规则兜底，而不是把规则完全交给 Prompt。
 4. 用“首次生成 + 最多两次 JSON 修复”保证结构稳定。
 5. 优先落地 `template_generation`，先把能感知到的 AI 价值做出来。
+## 18. 2026-08-01 实现补充
 
+### 18.1 默认 timeout 已落地为 `PT120S`
+
+当前后端真实实现已将：
+
+- `dailyforge.ai.timeout`
+
+默认值调整为：
+
+- `PT120S`
+
+原因：
+
+- `template_generation` 属于“多轮 tool calling + 最终大 JSON 输出”场景
+- 在真实 DeepSeek 联调中，`PT30S` 容易把较慢但仍在处理中的后续模型调用直接打成失败
+
+### 18.2 上游失败分类
+
+当前实现将模型调用失败分为两类对外错误码：
+
+- `AI_SERVICE_TIMEOUT`
+  - 可识别的超时场景
+  - 包括读取超时、请求超时等
+- `AI_SERVICE_UNAVAILABLE`
+  - 非超时类上游不可用场景
+  - 包括 HTTP `4xx`、HTTP `5xx`、网络访问异常、无法拿到有效响应
+
+说明：
+
+- 对前端继续保持稳定错误码契约
+- 更细粒度失败原因只通过后端结构化日志暴露
+
+### 18.3 模型客户端日志补充要求
+
+当前实现要求模型客户端日志最少带上：
+
+- `taskId`
+- `taskType`
+- `stage`
+- `provider`
+- `model`
+- `timeoutMs`
+- `httpStatus`
+- `responsePreview`
+- `rootCause`
+
+其中：
+
+- `stage` 当前至少区分：
+  - `initial-generation`
+  - `tool-followup`
+  - `json-repair`
+- `responsePreview` 只能保留上游响应体的截断摘要
+- `rootCause` 用于区分 timeout、DNS、连接失败、HTTP 4xx/5xx 等排障方向
+
+### 18.4 脱敏边界补充
+
+日志中仍然禁止记录：
+
+- API Key
+- 完整 prompt
+- 完整上游响应体
+- 完整工具调用参数原文
+
+允许记录：
+
+- 响应体截断摘要
+- 根因异常类名
+- 调用阶段信息
+
+### 18.5 排障口径补充
+
+需要明确：
+
+- `AI_SERVICE_UNAVAILABLE` 不代表“本次请求没有真正调用到 AI”
+- 在真实联调中，完全可能已经发生：
+  - 多轮 tool calling
+  - 部分模型调用成功
+  - 最终在后续某一次模型调用阶段失败
+
+因此排障必须结合：
+
+- `ai_task_records`
+- `ai_task_tool_calls`
+- 后端结构化日志
+
+一起判断真实失败点。

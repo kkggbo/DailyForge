@@ -17,7 +17,7 @@ DailyForge 是一个面向健身用户的 Web 项目，目标是帮助用户完�
 当前仍在后续阶段的模块：
 - 饮食建议
 - 历史统计与趋势分析
-- AI 模型真实接入、工具调用闭环与结果修复重试
+- AI 训练建议精细化
 
 ## 技术栈
 
@@ -216,9 +216,10 @@ DailyForge/
 - AI 周期总结基于历史训练快照与模板版本快照生成摘要
 
 当前实现说明：
-- 当前后端为可运行的 stub 版本，已完成任务流、结果结构、持久化与接口闭环
-- 当前尚未正式接入 Spring AI + DeepSeek 模型调用
-- 当前不记录伪造 tool call，`toolCallCount` 固定为真实调用前的保守值 `0`
+- 已正式接入 Spring AI + DeepSeek，支持模板生成与周期总结的真实模型调用
+- 已落地多轮 tool calling、工具调用明细持久化、结果 JSON 修复与结构化结果回写
+- 已补齐 AI 调用失败可观测性与超时策略，默认 timeout 调整为更适合模板生成场景的 `PT120S`
+- 前端已接入 `/ai-coach`、模板生成、周期总结与任务结果页，支持能力概览、任务轮询与结果展示
 - AI 任务以异步方式执行，状态链路为 `pending -> running -> succeeded/failed`
 
 相关文档：
@@ -361,7 +362,7 @@ pnpm dev
 - 前端 Vitest 交互测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键交互
 - 后端核心模块集成测试：覆盖 auth、profile、exercise、cycle_template、workout 等关键路径
 - 本轮 workout 聚焦验证：后端 30 个测试通过，前端 cycle_template active 保存确认测试通过，前端生产构建通过
-- 本轮 ai_coach 聚焦验证：后端 AI coach 定向测试 6 个通过，全量 `mvn test` 通过，增量审查结论无中高风险
+- 本轮 ai_coach 聚焦验证：后端 `mvn test` 110 个测试通过，前端 `pnpm.cmd test:run` 17 files / 35 tests 通过，`pnpm.cmd build` 通过，增量审查结论无中高风险
 
 说明：
 - 本 README 只描述当前仓库中的测试覆盖方向，不代表所有模块都已达到完整测试覆盖
@@ -374,4 +375,4 @@ pnpm dev
 1. 继续手动回归 `workout` 与 `cycle_template` 的联动边界，确认真实使用流畅度
 2. 开始历史统计与趋势分析，复用已沉淀的训练 session 和身体指标数据
 3. 推进饮食建议模块，补齐 MVP 中的饮食建议能力
-4. 最后再引入真正的 AI 计划生成、训练周期总结与模板调整建议
+4. 基于已接入的 AI Coach 继续优化历史统计、饮食建议与更细粒度的 AI 训练建议

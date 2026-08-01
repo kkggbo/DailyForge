@@ -2,11 +2,13 @@ package com.dailyforge.modules.aicoach.infrastructure.ai;
 
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
-import com.dailyforge.modules.aicoach.application.service.AiCycleSummaryService;
-import com.dailyforge.modules.aicoach.application.service.AiTemplateGenerationService;
+import com.dailyforge.modules.aicoach.infrastructure.ai.executor.AiScenarioExecutor;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.entity.AiTaskRecordEntity;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskRecordMapper;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,22 +21,20 @@ import org.springframework.util.StringUtils;
 public class AiTaskExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(AiTaskExecutor.class);
-    private static final String TEMPLATE = "template_generation";
-    private static final String SUMMARY = "cycle_summary";
 
     private final AiTaskRecordMapper taskMapper;
-    private final AiTemplateGenerationService templateService;
-    private final AiCycleSummaryService summaryService;
+    private final Map<String, AiScenarioExecutor> executors;
     private final TransactionTemplate tx;
 
     public AiTaskExecutor(
             AiTaskRecordMapper taskMapper,
-            AiTemplateGenerationService templateService,
-            AiCycleSummaryService summaryService,
+            List<AiScenarioExecutor> executors,
             PlatformTransactionManager transactionManager) {
         this.taskMapper = taskMapper;
-        this.templateService = templateService;
-        this.summaryService = summaryService;
+        this.executors = new LinkedHashMap<>();
+        for (AiScenarioExecutor executor : executors) {
+            this.executors.put(executor.taskType(), executor);
+        }
         this.tx = new TransactionTemplate(transactionManager);
     }
 
@@ -47,16 +47,19 @@ public class AiTaskExecutor {
             return;
         }
         try {
-            if (TEMPLATE.equals(task.getTaskType())) {
-                templateService.processTask(taskId);
-            } else if (SUMMARY.equals(task.getTaskType())) {
-                summaryService.processTask(taskId);
-            } else {
+            AiScenarioExecutor executor = executors.get(task.getTaskType());
+            if (executor == null) {
                 throw new BusinessException(ErrorCode.AI_OUTPUT_INVALID, "unsupported ai task type");
             }
+            executor.execute(task);
         } catch (BusinessException ex) {
             fail(taskId, ex.getErrorCode(), ex.getMessage());
-            log.warn("AI task failed. taskId={}, taskType={}, code={}", taskId, task.getTaskType(), ex.getErrorCode().getCode());
+            log.warn(
+                    "AI task failed. taskId={}, taskType={}, code={}, message={}",
+                    taskId,
+                    task.getTaskType(),
+                    ex.getErrorCode().getCode(),
+                    trim(StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.getErrorCode().getDefaultMessage()));
         } catch (Exception ex) {
             fail(taskId, ErrorCode.AI_SERVICE_UNAVAILABLE, ErrorCode.AI_SERVICE_UNAVAILABLE.getDefaultMessage());
             log.error("AI task failed unexpectedly. taskId={}, taskType={}", taskId, task.getTaskType(), ex);

@@ -53,7 +53,7 @@ dailyforge:
     model: deepseek-v4-pro
     base-url: https://api.deepseek.com
     api-key: ${DAILYFORGE_AI_API_KEY:replace-with-your-ai-api-key}
-    timeout: PT30S
+    timeout: PT120S
     max-tool-rounds: 6
     max-repair-attempts: 2
     template-generation-prompt-version: template_generation_v1

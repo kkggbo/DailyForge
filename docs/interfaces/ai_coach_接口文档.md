@@ -991,4 +991,43 @@ AI 周期总结页面建议调用顺序：
 - `C5 POST /api/cycle-templates/drafts/ai-generate`
 
 应视为旧占位接口，不再作为 AI 模板生成正式入口。
+### 8.3 2026-08-01 实现补充
 
+#### 错误码语义补充
+
+- `AI_SERVICE_TIMEOUT`
+  - 表示后端在调用上游 AI 服务时发生超时
+  - HTTP 状态保持为 `504`
+- `AI_SERVICE_UNAVAILABLE`
+  - 表示后端在调用上游 AI 服务时发生不可用类错误
+  - HTTP 状态保持为 `503`
+  - 可能原因包括：
+    - 上游 HTTP `4xx`
+    - 上游 HTTP `5xx`
+    - 网络访问异常
+    - 未拿到有效模型响应
+
+#### 联调排障说明
+
+需要明确：
+
+- `AI_SERVICE_UNAVAILABLE` 不等于“本次请求没有真正调用到 AI”
+- 在真实联调中，可能已经发生：
+  - 多轮 tool calling
+  - 部分模型调用成功
+  - 最终在后续某一次模型调用阶段失败
+
+因此联调排障时，不能只看前端错误提示，还应结合：
+
+- `ai_task_records.status / error_code / error_message`
+- `ai_task_records.tool_call_count / repair_attempt_count`
+- `ai_task_tool_calls`
+- 后端结构化日志
+
+#### 当前默认 timeout
+
+当前后端默认配置已调整为：
+
+- `dailyforge.ai.timeout = PT120S`
+
+该值用于覆盖模板生成这类“多轮 tool calling + 最终大 JSON 输出”的 MVP 场景。

@@ -1,6 +1,11 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { useAuth } from "./providers/AuthProvider";
+import { AiCoachPage } from "../features/ai-coach/pages/AiCoachPage";
+import { CycleSummaryPage } from "../features/ai-coach/pages/CycleSummaryPage";
+import { CycleSummaryTaskPage } from "../features/ai-coach/pages/CycleSummaryTaskPage";
+import { TemplateGenerationPage } from "../features/ai-coach/pages/TemplateGenerationPage";
+import { TemplateGenerationTaskPage } from "../features/ai-coach/pages/TemplateGenerationTaskPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RedeemInviteCodePage } from "../features/auth/pages/RedeemInviteCodePage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
@@ -73,6 +78,26 @@ export const router = createBrowserRouter([
           {
             path: "/invite-code",
             element: <RedeemInviteCodePage />
+          },
+          {
+            path: "/ai-coach",
+            element: <AiCoachPage />
+          },
+          {
+            path: "/ai-coach/template-generation",
+            element: <TemplateGenerationPage />
+          },
+          {
+            path: "/ai-coach/template-generation/tasks/:taskId",
+            element: <TemplateGenerationTaskPage />
+          },
+          {
+            path: "/ai-coach/cycle-summary",
+            element: <CycleSummaryPage />
+          },
+          {
+            path: "/ai-coach/cycle-summary/tasks/:taskId",
+            element: <CycleSummaryTaskPage />
           },
           {
             path: "/profile",

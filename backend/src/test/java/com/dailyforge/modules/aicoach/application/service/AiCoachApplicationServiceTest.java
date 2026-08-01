@@ -69,6 +69,7 @@ class AiCoachApplicationServiceTest {
         properties.setEnabled(true);
         properties.setProvider("deepseek");
         properties.setModel("deepseek-chat");
+        properties.setApiKey("test-api-key");
         properties.setTemplateGenerationPromptVersion("template_generation_v1");
         properties.setCycleSummaryPromptVersion("cycle_summary_v1");
 

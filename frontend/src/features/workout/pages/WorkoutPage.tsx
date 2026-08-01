@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { ApiRequestError } from "../../../shared/api/http";
-import { completeSession, getDay, getRecent, getWorkspace, initializeCurrentDay, requestAiAnalysis, restartCycle, saveSession } from "../api/workout";
+import { completeSession, getDay, getRecent, getWorkspace, initializeCurrentDay, restartCycle, saveSession } from "../api/workout";
 import { DayNavigator, RecentList, SessionEditor, SessionReadOnly } from "../components/WorkoutPanel";
 import { errorMessage, formatTime } from "../lib/workout";
 import type { DayDetail, RecentWorkouts, SavePayload, Workspace } from "../types/workout";
@@ -20,7 +20,6 @@ export function WorkoutPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
-  const [isRequestingAi, setIsRequestingAi] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [recentError, setRecentError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -114,21 +113,13 @@ export function WorkoutPage() {
     finally { setIsRestarting(false); }
   }
 
-  async function aiAnalysis() {
-    if (!accessToken) return;
-    setIsRequestingAi(true); setActionError(null); setMessage(null);
-    try { await requestAiAnalysis(accessToken); setMessage("AI 分析请求已接收。"); }
-    catch (error) { setMessage(errorMessage(error, "AI 循环分析能力暂未开放。")); }
-    finally { setIsRequestingAi(false); }
-  }
-
   if (isLoading) return <Loading label="正在加载训练工作台..." />;
   if (!workspace) return <ErrorPanel message={pageError ?? "训练工作台当前不可用。"} />;
 
   return <section className="space-y-8">
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-sm uppercase tracking-[0.28em] text-amber-300">Workout</p><h1 className="mt-3 text-4xl font-semibold text-white sm:text-5xl">训练工作台</h1><p className="mt-3 max-w-3xl leading-7 text-stone-300">记录实际训练表现。仅默认当前 Day 会自动初始化；浏览历史和未来 Day 不会创建训练记录。</p></div><Link to="/cycle-templates" className={secondaryButton}>管理训练模板</Link></header>
     {workspace.workspaceState === "no_active_template" ? <NoTemplate /> : null}
-    {workspace.workspaceState === "cycle_completed" ? <CycleComplete isRestarting={isRestarting} isRequestingAi={isRequestingAi} message={message} error={actionError} onRestart={() => void restart()} onAi={() => void aiAnalysis()} /> : null}
+    {workspace.workspaceState === "cycle_completed" ? <CycleComplete isRestarting={isRestarting} message={message} error={actionError} onRestart={() => void restart()} /> : null}
     {workspace.workspaceState === "active" ? <>
       <section className="rounded-[32px] border border-white/10 bg-white/6 p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-sm uppercase tracking-[0.22em] text-amber-300">{workspace.templateName}</p><h2 className="mt-2 text-2xl font-semibold text-white">第 {workspace.runNo} 轮 · 当前进度 Day {workspace.currentDayIndex}</h2></div><span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm text-stone-300">共 {workspace.cycleLength} 天</span></div><div className="mt-5"><DayNavigator days={workspace.days} selectedDayIndex={selectedDayIndex} disabled={isLoadingDay || isCompleting} onSelect={(dayIndex) => void selectDay(dayIndex)} /></div></section>
       {pageError ? <Notice tone="error">{pageError}</Notice> : null}{message ? <Notice>{message}</Notice> : null}{completedCycleOnCurrentDay ? <Notice>当前循环已完成。刷新或重新进入后会显示循环结束选项；当前记录保留为只读。</Notice> : null}
@@ -144,7 +135,7 @@ function DayPanel({ detail, isSaving, isCompleting, error, onSave, onComplete }:
 }
 function Preview({ exercises, rest }: { exercises: NonNullable<DayDetail["exercises"]>; rest: boolean }) { if (rest) return <Notice>这是未来休息日预览。到达该 Day 前不会创建休息日打卡记录。</Notice>; return <div className="space-y-4">{exercises.map((exercise) => <article key={`${exercise.exerciseId}-${exercise.sortOrder}`} className="rounded-[28px] border border-white/10 bg-white/6 p-5"><p className="text-xs uppercase tracking-[0.2em] text-amber-300">动作 {exercise.sortOrder}</p><h3 className="mt-1 text-xl font-semibold text-white">{exercise.exerciseName}</h3><div className="mt-4 space-y-2">{exercise.items.map((item) => <div key={item.itemIndex} className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="font-medium text-stone-100">{item.itemName ?? `执行项 ${item.itemIndex}`}</p><div className="mt-2 flex flex-wrap gap-2 text-sm text-stone-300">{item.metrics.map((metric) => <span key={metric.metricKey} className="rounded-full bg-white/8 px-3 py-1">{metric.metricKey}: {metric.plannedValueNumber ?? "未设定"} {metric.metricUnit}</span>)}</div></div>)}</div></article>)}</div>; }
 function NoTemplate() { return <section className="rounded-[32px] border border-dashed border-white/15 bg-white/6 p-8 text-center"><p className="text-sm uppercase tracking-[0.28em] text-amber-300">Workout</p><h2 className="mt-3 text-3xl font-semibold text-white">先启用一个训练模板</h2><p className="mx-auto mt-3 max-w-xl leading-7 text-stone-300">训练工作台会按当前模板的循环进度创建和保存训练记录，不支持自由训练打卡。</p><Link to="/cycle-templates" className="mt-6 inline-flex rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300">前往训练模板</Link></section>; }
-function CycleComplete({ isRestarting, isRequestingAi, message, error, onRestart, onAi }: { isRestarting: boolean; isRequestingAi: boolean; message: string | null; error: string | null; onRestart: () => void; onAi: () => void }) { return <section className="rounded-[32px] border border-amber-300/25 bg-amber-300/10 p-8"><p className="text-sm uppercase tracking-[0.28em] text-amber-200">Cycle Complete</p><h2 className="mt-3 text-3xl font-semibold text-white">这一轮训练已完成</h2><p className="mt-3 max-w-2xl leading-7 text-stone-200">系统不会自动开启下一轮。你可以沿用当前模板重新开始、切换模板，或等待 AI 总结能力开放。</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" disabled={isRestarting || isRequestingAi} onClick={onRestart} className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:opacity-60">{isRestarting ? "重启中..." : "再次使用当前模板"}</button><Link to="/cycle-templates" className={secondaryButton}>选择其他模板</Link><button type="button" disabled={isRestarting || isRequestingAi} onClick={onAi} className={secondaryButton}>{isRequestingAi ? "请求中..." : "AI 分析占位"}</button></div>{message ? <Notice>{message}</Notice> : null}{error ? <Notice tone="error">{error}</Notice> : null}</section>; }
+function CycleComplete({ isRestarting, message, error, onRestart }: { isRestarting: boolean; message: string | null; error: string | null; onRestart: () => void }) { return <section className="rounded-[32px] border border-amber-300/25 bg-amber-300/10 p-8"><p className="text-sm uppercase tracking-[0.28em] text-amber-200">Cycle Complete</p><h2 className="mt-3 text-3xl font-semibold text-white">这一轮训练已完成</h2><p className="mt-3 max-w-2xl leading-7 text-stone-200">系统不会自动开启下一轮。你可以沿用当前模板重新开始、切换模板，或立即进入 AI 周期总结。</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" disabled={isRestarting} onClick={onRestart} className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:opacity-60">{isRestarting ? "重启中..." : "再次使用当前模板"}</button><Link to="/cycle-templates" className={secondaryButton}>选择其他模板</Link><Link to="/ai-coach/cycle-summary" className={secondaryButton}>AI 周期总结</Link></div>{message ? <Notice>{message}</Notice> : null}{error ? <Notice tone="error">{error}</Notice> : null}</section>; }
 function Notice({ children, tone = "info" }: { children: string; tone?: "info" | "error" }) { return <div className={["rounded-2xl border px-4 py-3 text-sm", tone === "error" ? "border-rose-400/20 bg-rose-400/10 text-rose-100" : "border-amber-300/20 bg-amber-300/10 text-amber-100"].join(" ")}>{children}</div>; }
 function Loading({ label }: { label: string }) { return <div className="flex min-h-[32vh] items-center justify-center"><div className="rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm text-stone-200">{label}</div></div>; }
 function ErrorPanel({ message }: { message: string }) { return <section className="space-y-5"><Notice tone="error">{message}</Notice><button type="button" onClick={() => window.location.reload()} className={secondaryButton}>重新加载</button></section>; }

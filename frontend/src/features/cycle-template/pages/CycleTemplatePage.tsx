@@ -41,7 +41,6 @@ export function CycleTemplatePage() {
     useState<CurrentActiveTemplateResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
-  const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
@@ -185,27 +184,18 @@ export function CycleTemplatePage() {
           >
             新建草稿
           </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setPageMessage("AI 生成草稿功能暂未开放。");
-            }}
+          <Link
+            to="/ai-coach/template-generation"
             className="rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
           >
             AI 生成草稿
-          </button>
+          </Link>
         </div>
       </div>
 
       {pageError ? (
         <div className="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
           {pageError}
-        </div>
-      ) : null}
-
-      {pageMessage ? (
-        <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-          {pageMessage}
         </div>
       ) : null}
 

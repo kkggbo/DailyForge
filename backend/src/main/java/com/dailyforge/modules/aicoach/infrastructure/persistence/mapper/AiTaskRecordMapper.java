@@ -5,6 +5,7 @@ import com.dailyforge.modules.aicoach.infrastructure.persistence.entity.AiTaskRe
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface AiTaskRecordMapper extends BaseMapper<AiTaskRecordEntity> {
@@ -40,4 +41,18 @@ public interface AiTaskRecordMapper extends BaseMapper<AiTaskRecordEntity> {
             FOR UPDATE
             """)
     AiTaskRecordEntity selectByIdForUpdate(@Param("taskId") Long taskId);
+
+    @Update("""
+            UPDATE ai_task_records
+            SET tool_call_count = tool_call_count + 1
+            WHERE id = #{taskId}
+            """)
+    int incrementToolCallCount(@Param("taskId") Long taskId);
+
+    @Update("""
+            UPDATE ai_task_records
+            SET repair_attempt_count = repair_attempt_count + 1
+            WHERE id = #{taskId}
+            """)
+    int incrementRepairAttemptCount(@Param("taskId") Long taskId);
 }
