@@ -10,13 +10,16 @@ import { AiCoachMissingFieldsNotice } from "../components/AiCoachMissingFieldsNo
 import { AiCoachUnavailableState } from "../components/AiCoachUnavailableState";
 import { TemplateGenerationForm } from "../components/TemplateGenerationForm";
 import { getAiCoachErrorMessage } from "../lib/ai-coach-enums";
-import { formatCycleLengthRange } from "../lib/ai-coach-formatters";
+import {
+  formatCycleLengthRange
+} from "../lib/ai-coach-formatters";
+import { normalizeOptionalText } from "../lib/ai-coach-mappers";
 import type {
   AiCoachCapabilities,
   TemplateGenerationForm as TemplateGenerationFormValues
 } from "../types/ai-coach";
 
-const backLinkClass =
+const secondaryLinkClass =
   "inline-flex rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 transition hover:bg-white/12";
 
 export function TemplateGenerationPage() {
@@ -48,7 +51,10 @@ export function TemplateGenerationPage() {
       } catch (error) {
         if (!cancelled) {
           setPageError(
-            getAiCoachErrorMessage(error, "加载模板生成状态失败，请稍后再试。")
+            getAiCoachErrorMessage(
+              error,
+              "加载模板生成状态失败，请稍后再试。"
+            )
           );
         }
       } finally {
@@ -79,7 +85,8 @@ export function TemplateGenerationPage() {
         sceneType: form.sceneType,
         goalType: form.goalType,
         cycleLength: Number(form.cycleLengthText),
-        includeCardio: form.includeCardio
+        includeCardio: form.includeCardio,
+        additionalRequirements: normalizeOptionalText(form.additionalRequirements)
       });
 
       navigate(`/ai-coach/template-generation/tasks/${acceptedTask.taskId}`, {
@@ -87,7 +94,10 @@ export function TemplateGenerationPage() {
       });
     } catch (error) {
       setSubmitError(
-        getAiCoachErrorMessage(error, "提交模板生成任务失败，请稍后再试。")
+        getAiCoachErrorMessage(
+          error,
+          "提交模板生成任务失败，请稍后再试。"
+        )
       );
     } finally {
       setIsSubmitting(false);
@@ -100,9 +110,17 @@ export function TemplateGenerationPage() {
 
   return (
     <section className="space-y-8">
-      <Link to="/ai-coach" className={backLinkClass}>
-        返回 AI Coach
-      </Link>
+      <div className="flex flex-wrap gap-3">
+        <Link to="/ai-coach" className={secondaryLinkClass}>
+          返回 AI Coach
+        </Link>
+        <Link
+          to="/ai-coach/history?tab=template-generations"
+          className={secondaryLinkClass}
+        >
+          查看生成历史
+        </Link>
+      </div>
 
       <header className="rounded-[36px] border border-white/10 bg-white/6 p-8 backdrop-blur">
         <p className="text-sm uppercase tracking-[0.28em] text-amber-300">
@@ -112,7 +130,8 @@ export function TemplateGenerationPage() {
           AI 生成训练模板草稿
         </h1>
         <p className="mt-4 max-w-3xl leading-8 text-stone-300">
-          提交后会创建一条异步任务。任务成功后，你会同时看到草稿模板和只读的 AI 设计说明。
+          提交后会创建一条异步任务。任务成功后，你会同时看到草稿模板和只读的
+          AI 设计说明。
         </p>
       </header>
 

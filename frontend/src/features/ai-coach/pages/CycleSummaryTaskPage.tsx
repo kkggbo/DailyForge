@@ -89,6 +89,12 @@ export function CycleSummaryTaskPage() {
         <Link to="/ai-coach/cycle-summary" className={backLinkClass}>
           返回周期总结
         </Link>
+        <Link
+          to="/ai-coach/history?tab=cycle-summaries"
+          className={backLinkClass}
+        >
+          查看总结历史
+        </Link>
         <Link to="/ai-coach" className={backLinkClass}>
           返回 AI Coach
         </Link>

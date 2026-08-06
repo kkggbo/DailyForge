@@ -15,24 +15,32 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface CycleTemplateAssembler {
 
-    default FormalCycleTemplateSummary toFormalSummary(CycleTemplateEntity template, Integer currentDayIndex) {
+    default FormalCycleTemplateSummary toFormalSummary(
+            CycleTemplateEntity template,
+            String sourceType,
+            Integer currentDayIndex) {
         return new FormalCycleTemplateSummary(
                 template.getId(),
                 template.getName(),
                 template.getCycleLength(),
                 template.getGoalType(),
+                sourceType,
                 template.getStatus(),
                 "active".equals(template.getStatus()),
                 currentDayIndex,
                 template.getUpdatedAt());
     }
 
-    default DraftCycleTemplateSummary toDraftSummary(CycleTemplateEntity template, int configuredDayCount) {
+    default DraftCycleTemplateSummary toDraftSummary(
+            CycleTemplateEntity template,
+            int configuredDayCount,
+            String sourceType) {
         return new DraftCycleTemplateSummary(
                 template.getId(),
                 template.getName(),
                 template.getCycleLength(),
                 configuredDayCount,
+                sourceType,
                 template.getCreatedAt(),
                 template.getUpdatedAt());
     }

@@ -2,6 +2,7 @@ package com.dailyforge.modules.aicoach.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.entity.AiTaskRecordEntity;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -33,6 +34,45 @@ public interface AiTaskRecordMapper extends BaseMapper<AiTaskRecordEntity> {
             @Param("taskId") Long taskId,
             @Param("userId") Long userId,
             @Param("taskType") String taskType);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM ai_task_records
+            WHERE user_id = #{userId}
+              AND task_type = #{taskType}
+            """)
+    long countByUserIdAndTaskType(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType);
+
+    @Select("""
+            SELECT * FROM ai_task_records
+            WHERE user_id = #{userId}
+              AND task_type = #{taskType}
+            ORDER BY created_at DESC, id DESC
+            LIMIT #{limit} OFFSET #{offset}
+            """)
+    List<AiTaskRecordEntity> selectHistoryPageByUserIdAndTaskType(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType,
+            @Param("offset") int offset,
+            @Param("limit") int limit);
+
+    @Select("""
+            SELECT * FROM ai_task_records
+            WHERE user_id = #{userId}
+              AND task_type = #{taskType}
+              AND related_entity_type = #{relatedEntityType}
+              AND related_entity_id = #{relatedEntityId}
+              AND status = 'succeeded'
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """)
+    AiTaskRecordEntity selectLatestSucceededByUserIdAndTaskTypeAndRelatedEntity(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType,
+            @Param("relatedEntityType") String relatedEntityType,
+            @Param("relatedEntityId") Long relatedEntityId);
 
     @Select("""
             SELECT * FROM ai_task_records

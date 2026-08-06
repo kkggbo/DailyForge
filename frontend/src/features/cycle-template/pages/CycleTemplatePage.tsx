@@ -190,6 +190,12 @@ export function CycleTemplatePage() {
           >
             AI 生成草稿
           </Link>
+          <Link
+            to="/ai-coach/history?tab=template-generations"
+            className="rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+          >
+            AI 生成历史
+          </Link>
         </div>
       </div>
 
@@ -283,7 +289,10 @@ function getDialogTitle(action: PendingAction) {
   return "复制训练模板";
 }
 
-function getDialogDescription(action: PendingAction, requiresSwitchConfirm: boolean) {
+function getDialogDescription(
+  action: PendingAction,
+  requiresSwitchConfirm: boolean
+) {
   if (!action) {
     return "";
   }
@@ -301,7 +310,10 @@ function getDialogDescription(action: PendingAction, requiresSwitchConfirm: bool
   return `复制「${action.templateName}」为新的草稿模板，并进入编辑页。`;
 }
 
-function getDialogConfirmLabel(action: PendingAction, requiresSwitchConfirm: boolean) {
+function getDialogConfirmLabel(
+  action: PendingAction,
+  requiresSwitchConfirm: boolean
+) {
   if (!action) {
     return "确认";
   }

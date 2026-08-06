@@ -13,5 +13,9 @@ public record AiTaskDetailResponse<T>(
         @Schema(description = "Completed at", example = "2026-07-31T09:30:20") LocalDateTime completedAt,
         @Schema(description = "Error code", example = "AI_OUTPUT_INVALID") String errorCode,
         @Schema(description = "Error message", example = "ai output cannot be converted") String errorMessage,
+        @Schema(description = "Backend-derived progress stage", example = "calling_tool") String progressStage,
+        @Schema(description = "Latest tool-call summary") AiTaskLatestToolCallResponse latestToolCall,
+        @Schema(description = "Request snapshot for template generation tasks") TemplateGenerationRequestSnapshotResponse requestSnapshot,
+        @Schema(description = "Last updated at", example = "2026-07-31T09:30:17") LocalDateTime updatedAt,
         @Schema(description = "Task result") T result) {
 }

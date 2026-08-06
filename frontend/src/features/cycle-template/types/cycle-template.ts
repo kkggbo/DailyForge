@@ -1,4 +1,5 @@
 export type CycleTemplateStatus = "draft" | "active" | "inactive" | "deleted";
+export type CycleTemplateSourceType = "manual" | "ai_generated";
 
 export type CycleTemplateTab = "formal" | "drafts";
 
@@ -24,6 +25,7 @@ export type FormalTemplateListItem = {
   cycleLength: number | null;
   goalType: string | null;
   status: CycleTemplateStatus;
+  sourceType?: CycleTemplateSourceType | null;
   isActive: boolean;
   currentDayIndex: number | null;
   updatedAt: string | null;
@@ -33,6 +35,7 @@ export type DraftTemplateListItem = {
   templateId: number;
   templateName: string;
   cycleLength: number | null;
+  sourceType?: CycleTemplateSourceType | null;
   configuredDayCount: number;
   createdAt: string | null;
   updatedAt: string | null;
@@ -84,6 +87,7 @@ export type CycleTemplateDetailResponse = {
   templateName: string;
   goalType: string | null;
   status: CycleTemplateStatus;
+  sourceType?: CycleTemplateSourceType | null;
   cycleLength: number | null;
   isActive: boolean;
   currentDayIndex: number | null;

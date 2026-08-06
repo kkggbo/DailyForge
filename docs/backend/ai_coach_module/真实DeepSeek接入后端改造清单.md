@@ -345,7 +345,7 @@ AiTaskExecutor -> AiCycleSummaryService.processTask -> 本地生成
 ### 轮次要求
 
 - 单次任务最多 `maxToolRounds`
-- 当前默认值为 6
+- 当前默认值为 50
 - 超限直接失败
 
 ---

@@ -106,7 +106,7 @@ class CycleTemplateIntegrationTest {
         long userId = insertUser("plan@example.com", "PlainTextPassword123");
         long exerciseId = insertSystemExercise("Barbell Bench Press", "strength", "push", "kg", "set_based", 1);
         long templateId = insertTemplate(userId, "PPL", 6, "muscle_gain", "inactive");
-        long versionId = insertVersion(templateId, 1, "manual");
+        long versionId = insertVersion(templateId, 1, "ai_generated");
         setTemplateCurrentVersion(templateId, versionId);
         long dayId = insertDay(versionId, 1, "Push");
         long dayExerciseId = insertDayExercise(dayId, exerciseId, "Barbell Bench Press", "set_based", "main lift", 1);
@@ -118,10 +118,35 @@ class CycleTemplateIntegrationTest {
         mockMvc.perform(apiGet("/cycle-templates/" + templateId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sourceType").value("ai_generated"))
                 .andExpect(jsonPath("$.data.days[0].exercises[0].structureType").value("set_based"))
                 .andExpect(jsonPath("$.data.days[0].exercises[0].items[0].itemType").value("set"))
                 .andExpect(jsonPath("$.data.days[0].exercises[0].items[0].metrics[0].metricUnit").value("kg"))
                 .andExpect(jsonPath("$.data.days[0].exercises[0].items[0].metrics[1].metricUnit").value("count"));
+    }
+
+    @Test
+    void templateListsShouldExposeCurrentVersionSourceType() throws Exception {
+        long userId = insertUser("plan-source@example.com", "PlainTextPassword123");
+        long formalTemplateId = insertTemplate(userId, "AI Formal", 4, "muscle_gain", "inactive");
+        long formalVersionId = insertVersion(formalTemplateId, 1, "ai_generated");
+        setTemplateCurrentVersion(formalTemplateId, formalVersionId);
+        long draftTemplateId = insertTemplate(userId, "Manual Draft", 5, "fat_loss", "draft");
+        long draftVersionId = insertVersion(draftTemplateId, 1, "manual");
+        setTemplateCurrentVersion(draftTemplateId, draftVersionId);
+        insertDay(formalVersionId, 1, "Push");
+        insertDay(draftVersionId, 1, "Legs");
+        String accessToken = loginAndGetAccessToken("plan-source@example.com", "PlainTextPassword123");
+
+        mockMvc.perform(apiGet("/cycle-templates/formal")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records[0].sourceType").value("ai_generated"));
+
+        mockMvc.perform(apiGet("/cycle-templates/drafts")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records[0].sourceType").value("manual"));
     }
 
     @Test

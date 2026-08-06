@@ -1,7 +1,9 @@
 import { ApiRequestError } from "../../../shared/api/http";
 import { goalTypeOptions } from "../../profile/lib/profile-enums";
 import type {
+  AiTaskProgressStage,
   AiTaskStatus,
+  AiTaskToolCallStatus,
   IntensityBasisType,
   MissingFieldCode,
   SceneType
@@ -26,6 +28,32 @@ export const aiTaskStatusLabels: Record<AiTaskStatus, string> = {
   running: "AI 处理中",
   succeeded: "已完成",
   failed: "已失败"
+};
+
+export const aiTaskProgressStageLabels: Record<AiTaskProgressStage, string> = {
+  queued: "排队中",
+  generating_result: "生成结果中",
+  calling_tool: "调用工具中",
+  repairing_output: "修复输出中",
+  completed: "已完成",
+  failed: "已失败"
+};
+
+export const aiTaskProgressStageDescriptions: Record<
+  AiTaskProgressStage,
+  string
+> = {
+  queued: "任务已创建，正在等待 AI 执行器开始处理。",
+  generating_result: "AI 正在整理结构化输出，结果页会继续自动刷新。",
+  calling_tool: "AI 正在调用工具补充上下文，你会看到最近一次工具调用痕迹。",
+  repairing_output: "AI 正在修复输出结构，确保结果能被系统正确解析。",
+  completed: "任务已成功完成，可以查看最终结果。",
+  failed: "任务执行失败，请根据错误信息重试。"
+};
+
+export const aiTaskToolCallStatusLabels: Record<AiTaskToolCallStatus, string> = {
+  succeeded: "成功",
+  failed: "失败"
 };
 
 export const intensityBasisTypeLabels: Record<IntensityBasisType, string> = {

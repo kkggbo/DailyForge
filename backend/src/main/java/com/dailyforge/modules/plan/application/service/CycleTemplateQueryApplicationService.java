@@ -14,10 +14,12 @@ import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainServ
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.VersionSnapshot;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleRunEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateEntity;
+import com.dailyforge.modules.plan.infrastructure.persistence.entity.CycleTemplateVersionEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.entity.UserActiveCycleEntity;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleRunMapper;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleTemplateDayMapper;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleTemplateMapper;
+import com.dailyforge.modules.plan.infrastructure.persistence.mapper.CycleTemplateVersionMapper;
 import com.dailyforge.modules.plan.infrastructure.persistence.mapper.UserActiveCycleMapper;
 import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateDayResponse;
 import com.dailyforge.modules.plan.interfaces.vo.CycleTemplateDetailResponse;
@@ -46,6 +48,7 @@ public class CycleTemplateQueryApplicationService {
     private final UserActiveCycleMapper userActiveCycleMapper;
     private final CycleRunMapper cycleRunMapper;
     private final CycleTemplateDayMapper cycleTemplateDayMapper;
+    private final CycleTemplateVersionMapper cycleTemplateVersionMapper;
     private final CycleTemplateVersionDomainService cycleTemplateVersionDomainService;
     private final CycleTemplatePolicyService cycleTemplatePolicyService;
     private final CycleTemplateAssembler cycleTemplateAssembler;
@@ -56,6 +59,7 @@ public class CycleTemplateQueryApplicationService {
             UserActiveCycleMapper userActiveCycleMapper,
             CycleRunMapper cycleRunMapper,
             CycleTemplateDayMapper cycleTemplateDayMapper,
+            CycleTemplateVersionMapper cycleTemplateVersionMapper,
             CycleTemplateVersionDomainService cycleTemplateVersionDomainService,
             CycleTemplatePolicyService cycleTemplatePolicyService,
             CycleTemplateAssembler cycleTemplateAssembler) {
@@ -64,6 +68,7 @@ public class CycleTemplateQueryApplicationService {
         this.userActiveCycleMapper = userActiveCycleMapper;
         this.cycleRunMapper = cycleRunMapper;
         this.cycleTemplateDayMapper = cycleTemplateDayMapper;
+        this.cycleTemplateVersionMapper = cycleTemplateVersionMapper;
         this.cycleTemplateVersionDomainService = cycleTemplateVersionDomainService;
         this.cycleTemplatePolicyService = cycleTemplatePolicyService;
         this.cycleTemplateAssembler = cycleTemplateAssembler;
@@ -86,7 +91,7 @@ public class CycleTemplateQueryApplicationService {
             if (activeCycle != null && template.getId().equals(activeCycle.getTemplateId())) {
                 currentDayIndex = activeCycle.getCurrentDayIndex();
             }
-            records.add(cycleTemplateAssembler.toFormalSummary(template, currentDayIndex));
+            records.add(cycleTemplateAssembler.toFormalSummary(template, resolveSourceType(template), currentDayIndex));
         }
 
         log.debug("Formal templates loaded. userId={}, count={}", userId, records.size());
@@ -108,7 +113,7 @@ public class CycleTemplateQueryApplicationService {
             int configuredDayCount = template.getCurrentVersionId() == null
                     ? 0
                     : cycleTemplateDayMapper.selectByVersionId(template.getCurrentVersionId()).size();
-            records.add(cycleTemplateAssembler.toDraftSummary(template, configuredDayCount));
+            records.add(cycleTemplateAssembler.toDraftSummary(template, configuredDayCount, resolveSourceType(template)));
         }
 
         log.debug("Draft templates loaded. userId={}, count={}", userId, records.size());
@@ -147,6 +152,7 @@ public class CycleTemplateQueryApplicationService {
                 template.getName(),
                 template.getGoalType(),
                 template.getStatus(),
+                resolveSourceType(template),
                 template.getCycleLength(),
                 "active".equals(template.getStatus()),
                 currentDayIndex,
@@ -156,6 +162,17 @@ public class CycleTemplateQueryApplicationService {
                 template.getCreatedAt(),
                 template.getUpdatedAt(),
                 dayResponses);
+    }
+
+    private String resolveSourceType(CycleTemplateEntity template) {
+        if (template == null || template.getCurrentVersionId() == null) {
+            return "manual";
+        }
+        CycleTemplateVersionEntity version = cycleTemplateVersionMapper.selectById(template.getCurrentVersionId());
+        if (version == null || version.getSourceType() == null || version.getSourceType().isBlank()) {
+            return "manual";
+        }
+        return version.getSourceType();
     }
 
     /**

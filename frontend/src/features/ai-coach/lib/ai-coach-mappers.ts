@@ -26,7 +26,8 @@ export function createDefaultTemplateGenerationForm(
     sceneType: defaultSceneType,
     goalType: defaultGoalType,
     cycleLengthText: String(defaultCycleLength),
-    includeCardio: true
+    includeCardio: true,
+    additionalRequirements: ""
   };
 }
 
@@ -38,6 +39,7 @@ export function mapGeneratedDraftTemplateToDetail(
     templateName: draftTemplate.templateName,
     goalType: null,
     status: draftTemplate.templateStatus,
+    sourceType: "ai_generated",
     cycleLength: draftTemplate.cycleLength,
     isActive: false,
     currentDayIndex: null,
@@ -65,6 +67,15 @@ export function buildProfileAiCompletionPath(
   return `/profile/ai-completion?${params.toString()}`;
 }
 
-function clampCycleLength(value: number, minCycleLength: number, maxCycleLength: number) {
+export function normalizeOptionalText(value: string) {
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function clampCycleLength(
+  value: number,
+  minCycleLength: number,
+  maxCycleLength: number
+) {
   return Math.min(Math.max(value, minCycleLength), maxCycleLength);
 }

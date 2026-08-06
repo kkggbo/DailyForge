@@ -24,7 +24,7 @@ export function ActiveTemplatePanel({ activeTemplate }: ActiveTemplatePanelProps
         </p>
         <h2 className="mt-3 text-2xl font-semibold text-white">当前没有启用模板</h2>
         <p className="mt-2 text-sm leading-6 text-stone-300">
-          创建并启用一个训练模板后，这里会显示当前循环进度和下一次默认训练日。
+          创建并启用一个训练模板后，这里会显示当前循环进度和下一个默认训练日。
         </p>
       </section>
     );
@@ -144,18 +144,23 @@ function FormalTemplateCard({
             {template.templateName}
           </h3>
         </div>
-        {template.isActive ? (
-          <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-stone-950">
-            当前启用
-          </span>
-        ) : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          {template.sourceType === "ai_generated" ? <AiGeneratedBadge /> : null}
+          {template.isActive ? (
+            <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-stone-950">
+              当前启用
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-4 grid gap-2 text-sm text-stone-300">
         <span>{formatCycleLength(template.cycleLength)}</span>
         <span>目标：{formatGoalType(template.goalType)}</span>
         <span>
-          {template.currentDayIndex ? `运行到 Day ${template.currentDayIndex}` : "未运行"}
+          {template.currentDayIndex
+            ? `运行到 Day ${template.currentDayIndex}`
+            : "未运行"}
         </span>
         <span>更新：{formatDateTime(template.updatedAt)}</span>
       </div>
@@ -186,10 +191,15 @@ function DraftTemplateCard({
 }) {
   return (
     <article className="rounded-[28px] border border-white/10 bg-white/8 p-5">
-      <p className="text-xs uppercase tracking-[0.2em] text-amber-300">草稿</p>
-      <h3 className="mt-2 text-2xl font-semibold text-white">
-        {template.templateName}
-      </h3>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-amber-300">草稿</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">
+            {template.templateName}
+          </h3>
+        </div>
+        {template.sourceType === "ai_generated" ? <AiGeneratedBadge /> : null}
+      </div>
       <div className="mt-4 grid gap-2 text-sm text-stone-300">
         <span>{formatCycleLength(template.cycleLength)}</span>
         <span>已配置 {template.configuredDayCount} 个训练日</span>
@@ -261,6 +271,14 @@ function CardActions({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function AiGeneratedBadge() {
+  return (
+    <span className="rounded-full border border-amber-300/30 bg-amber-300/15 px-3 py-1 text-xs font-semibold text-amber-100">
+      AI生成
+    </span>
   );
 }
 

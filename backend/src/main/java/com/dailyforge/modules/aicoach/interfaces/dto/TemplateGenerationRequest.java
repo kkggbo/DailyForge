@@ -24,5 +24,9 @@ public record TemplateGenerationRequest(
 
         @Schema(description = "Whether cardio is allowed in this generation", example = "true",
                 requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull Boolean includeCardio) {
+        @NotNull Boolean includeCardio,
+
+        @Schema(description = "One-off additional requirements for this generation only",
+                example = "每周至少保留 1 天完整休息，避免大重量深蹲。")
+        @Size(max = 500) String additionalRequirements) {
 }

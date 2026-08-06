@@ -200,6 +200,7 @@ CREATE TABLE cycle_template_versions (
     template_id BIGINT NOT NULL,
     version_no INT NOT NULL,
     source_type VARCHAR(32) NOT NULL DEFAULT 'manual',
+    source_task_id BIGINT NULL,
     change_note VARCHAR(500) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_cycle_template_versions_template_version UNIQUE (template_id, version_no),

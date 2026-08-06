@@ -20,6 +20,8 @@ public class CycleSummaryPromptBuilder {
                 You may summarize training quality and suggest the next adjustment direction, but you must not generate a new template in this task.
                 You must return valid JSON only.
                 You are not allowed to output medical diagnosis or certainty beyond the data.
+                All user-facing text fields in the final JSON must use Simplified Chinese by default.
+                Keep enum codes, metric keys, tool names, and other system identifiers unchanged.
                 Prompt version: %s
                 """.formatted(promptVersion);
     }
@@ -34,6 +36,7 @@ public class CycleSummaryPromptBuilder {
                 3. Keep every list field concise but non-empty when there is enough evidence.
                 4. dataCompletenessNotice may be null when there is no recommended missing field.
                 5. Return JSON only.
+                6. All user-facing text fields must be written in Simplified Chinese.
 
                 Required output JSON schema:
                 {

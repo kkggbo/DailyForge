@@ -2,12 +2,15 @@ package com.dailyforge.modules.aicoach.interfaces.rest;
 
 import com.dailyforge.common.ApiResponse;
 import com.dailyforge.modules.aicoach.application.service.AiCoachApplicationService;
+import com.dailyforge.modules.aicoach.interfaces.dto.AiTaskHistoryQuery;
 import com.dailyforge.modules.aicoach.interfaces.dto.CycleSummaryRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiAsyncTaskAcceptedResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiCoachCapabilitiesResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiTaskDetailResponse;
+import com.dailyforge.modules.aicoach.interfaces.vo.CycleSummaryHistoryPageResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.CycleSummaryTaskResultResponse;
+import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationHistoryPageResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationTaskResultResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,6 +22,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -94,6 +98,21 @@ public class AiCoachController {
         return ApiResponse.success(aiCoachApplicationService.getTemplateGeneration(taskId));
     }
 
+    @GetMapping("/template-generations/history")
+    @Operation(summary = "Query AI template generation history list")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI template generation history loaded",
+                    content = @Content(schema = @Schema(implementation = TemplateGenerationHistoryPageResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid query"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ApiResponse<TemplateGenerationHistoryPageResponse> getTemplateGenerationHistory(
+            @Valid @ModelAttribute AiTaskHistoryQuery query) {
+        return ApiResponse.success(aiCoachApplicationService.getTemplateGenerationHistory(query));
+    }
+
     @PostMapping("/cycle-summaries")
     @Operation(summary = "Submit one AI cycle summary task")
     @ApiResponses({
@@ -139,5 +158,40 @@ public class AiCoachController {
     public ApiResponse<AiTaskDetailResponse<CycleSummaryTaskResultResponse>> getCycleSummary(
             @PathVariable @Min(1) Long taskId) {
         return ApiResponse.success(aiCoachApplicationService.getCycleSummary(taskId));
+    }
+
+    @GetMapping("/cycle-summaries/history")
+    @Operation(summary = "Query AI cycle summary history list")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI cycle summary history loaded",
+                    content = @Content(schema = @Schema(implementation = CycleSummaryHistoryPageResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid query"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ApiResponse<CycleSummaryHistoryPageResponse> getCycleSummaryHistory(
+            @Valid @ModelAttribute AiTaskHistoryQuery query) {
+        return ApiResponse.success(aiCoachApplicationService.getCycleSummaryHistory(query));
+    }
+
+    @GetMapping("/cycle-summaries/latest-by-cycle-run/{cycleRunId}")
+    @Operation(summary = "Query latest AI cycle summary task by cycle run")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Latest AI cycle summary task detail loaded",
+                    content = @Content(schema = @Schema(implementation = AiTaskDetailResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Cycle run or AI task not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "Cycle run is not completed")
+    })
+    public ApiResponse<AiTaskDetailResponse<CycleSummaryTaskResultResponse>> getLatestCycleSummaryByCycleRun(
+            @PathVariable @Min(1) Long cycleRunId) {
+        return ApiResponse.success(aiCoachApplicationService.getLatestCycleSummaryByCycleRun(cycleRunId));
     }
 }

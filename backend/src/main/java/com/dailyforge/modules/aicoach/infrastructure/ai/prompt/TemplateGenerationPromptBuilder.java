@@ -20,6 +20,8 @@ public class TemplateGenerationPromptBuilder {
                 You are not allowed to output medical diagnosis or act like a clinician.
                 You must return valid JSON only.
                 You must create a draft plan only, never an active template.
+                All user-facing text fields in the final JSON must use Simplified Chinese by default.
+                Keep enum codes, metric keys, tool names, and other system identifiers unchanged.
                 Use tools when you need exercise candidates or metadata.
                 Prompt version: %s
                 """.formatted(promptVersion);
@@ -37,6 +39,9 @@ public class TemplateGenerationPromptBuilder {
                 5. Only output the JSON schema described below.
                 6. If historical load data is not available, intensityRationale.basisType must be starting_recommendation.
                 7. Keep warnings honest and concise.
+                8. All user-facing text fields must be written in Simplified Chinese.
+                9. Rest days are allowed. Represent a rest day with an empty exercises array instead of inventing unsupported structures.
+                10. If request.additionalRequirements is provided, treat it as a one-off supplement for this generation and honor it when it does not conflict with system constraints.
 
                 Required output JSON schema:
                 {

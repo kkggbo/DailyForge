@@ -9,6 +9,7 @@ public record FormalCycleTemplateSummary(
         @Schema(description = "Template name", example = "Push Pull Legs") String templateName,
         @Schema(description = "Cycle length", example = "6") Integer cycleLength,
         @Schema(description = "Goal type", example = "muscle_gain") String goalType,
+        @Schema(description = "Template source type", example = "ai_generated") String sourceType,
         @Schema(description = "Template status", example = "active") String status,
         @Schema(description = "Whether this template is active", example = "true") Boolean isActive,
         @Schema(description = "Current day index for active template", example = "3") Integer currentDayIndex,

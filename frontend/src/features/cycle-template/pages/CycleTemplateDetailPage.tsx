@@ -168,7 +168,7 @@ export function CycleTemplateDetailPage() {
         </div>
       ) : null}
 
-      <CycleTemplateReadOnly detail={detail} />
+      <CycleTemplateReadOnly detail={detail} viewMode="day-tabs" />
 
       <TemplateActionDialog
         open={Boolean(action)}

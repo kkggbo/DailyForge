@@ -13,6 +13,8 @@ type TemplateGenerationFormProps = {
   onSubmit: (form: TemplateGenerationFormValues) => void;
 };
 
+const MAX_ADDITIONAL_REQUIREMENTS = 500;
+
 const inputClass =
   "w-full rounded-2xl border border-white/10 bg-stone-950/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-amber-300/60";
 
@@ -44,6 +46,7 @@ export function TemplateGenerationForm({
     }
 
     const cycleLength = Number(form.cycleLengthText);
+    const additionalRequirementsLength = form.additionalRequirements.trim().length;
 
     if (!Number.isInteger(cycleLength)) {
       setValidationError("周期天数必须是整数。");
@@ -60,6 +63,11 @@ export function TemplateGenerationForm({
       return;
     }
 
+    if (additionalRequirementsLength > MAX_ADDITIONAL_REQUIREMENTS) {
+      setValidationError("补充要求不能超过 500 个字符。");
+      return;
+    }
+
     setValidationError(null);
     onSubmit(form);
   }
@@ -70,9 +78,12 @@ export function TemplateGenerationForm({
         <p className="text-sm uppercase tracking-[0.24em] text-amber-300">
           Template Generation
         </p>
-        <h2 className="mt-3 text-3xl font-semibold text-white">设置本次生成条件</h2>
+        <h2 className="mt-3 text-3xl font-semibold text-white">
+          设置本次生成条件
+        </h2>
         <p className="mt-3 max-w-2xl leading-7 text-stone-300">
-          首版只支持结构化生成，不会直接修改当前启用模板。结果会先落成草稿，之后仍由你确认和编辑。
+          结果会先落为可编辑草稿。你可以保留结构化选项，再用一段自由输入告诉 AI
+          这次有哪些额外偏好、限制或提醒。
         </p>
       </div>
 
@@ -151,7 +162,8 @@ export function TemplateGenerationForm({
               className={`${inputClass} mt-2`}
             />
             <p className="mt-2 text-xs text-stone-500">
-              当前允许范围：{capability.minCycleLength} - {capability.maxCycleLength} 天
+              当前允许范围：{capability.minCycleLength} -{" "}
+              {capability.maxCycleLength} 天
             </p>
           </label>
 
@@ -176,6 +188,37 @@ export function TemplateGenerationForm({
               接受系统安排有氧内容
             </label>
           </div>
+
+          <label className="block lg:col-span-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-stone-300">
+                补充要求 <span className="text-stone-500">Optional</span>
+              </span>
+              <span className="text-xs text-stone-500">
+                {form.additionalRequirements.length}/{MAX_ADDITIONAL_REQUIREMENTS}
+              </span>
+            </div>
+            <textarea
+              value={form.additionalRequirements}
+              maxLength={MAX_ADDITIONAL_REQUIREMENTS}
+              aria-label="Additional requirements"
+              placeholder="例如：每周至少保留 1 天完整休息，避免高冲击跳跃，优先安排上肢推拉训练。"
+              onChange={(event) =>
+                setForm((previous) =>
+                  previous
+                    ? {
+                        ...previous,
+                        additionalRequirements: event.target.value
+                      }
+                    : previous
+                )
+              }
+              className={`${inputClass} mt-2 min-h-32 resize-y`}
+            />
+            <p className="mt-2 text-xs leading-5 text-stone-500">
+              这里的内容只作用于这一次生成，不会写回你的长期资料。
+            </p>
+          </label>
         </div>
       )}
 

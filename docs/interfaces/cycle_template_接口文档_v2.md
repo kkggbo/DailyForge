@@ -342,6 +342,7 @@ MVP 阶段：
         "templateName": "Push Pull Legs",
         "cycleLength": 6,
         "goalType": "muscle_gain",
+        "sourceType": "manual",
         "status": "active",
         "isActive": true,
         "currentDayIndex": 3,
@@ -357,6 +358,7 @@ MVP 阶段：
 - 只查询 `status IN ('active', 'inactive')`
 - 按 `updatedAt DESC` 排序
 - `currentDayIndex` 仅对当前激活模板返回值
+- `sourceType` 取当前版本 `cycle_template_versions.source_type`，当前至少区分 `manual` 与 `ai_generated`
 
 ### 5.2 C2 获取草稿模板列表
 
@@ -376,6 +378,7 @@ MVP 阶段：
         "templateName": "五分化尝试版",
         "cycleLength": 5,
         "configuredDayCount": 3,
+        "sourceType": "ai_generated",
         "createdAt": "2026-07-15T18:00:00",
         "updatedAt": "2026-07-15T19:10:00"
       }
@@ -388,6 +391,7 @@ MVP 阶段：
 
 - 只查询 `status = 'draft'`
 - `configuredDayCount` 继续定义为“当前版本已配置的 day 数”
+- `sourceType` 取当前版本 `cycle_template_versions.source_type`
 
 ### 5.3 C3 获取模板详情
 
@@ -405,6 +409,7 @@ MVP 阶段：
     "templateName": "Push Pull Legs",
     "goalType": "muscle_gain",
     "status": "active",
+    "sourceType": "ai_generated",
     "cycleLength": 6,
     "isActive": true,
     "currentDayIndex": 3,
@@ -461,6 +466,7 @@ MVP 阶段：
 - `draft` / `inactive`：`editableFromDayIndex = 1`
 - `active`：`editableFromDayIndex = currentDayIndex`
 - `isLocked = true` 表示该天不允许编辑
+- `sourceType` 表示当前模板版本来源，前端优先按该语义字段识别 `ai_generated`
 - `canActivate` 取决于：
   - 模板状态是否为 `draft` 或 `inactive`
   - `templateName` 非空

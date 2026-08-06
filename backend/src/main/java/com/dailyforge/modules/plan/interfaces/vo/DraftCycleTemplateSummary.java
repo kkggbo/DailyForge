@@ -9,6 +9,7 @@ public record DraftCycleTemplateSummary(
         @Schema(description = "Template name", example = "New Draft") String templateName,
         @Schema(description = "Cycle length", example = "5") Integer cycleLength,
         @Schema(description = "Configured day count", example = "3") Integer configuredDayCount,
+        @Schema(description = "Template source type", example = "ai_generated") String sourceType,
         @Schema(description = "Created at", example = "2026-07-14T18:00:00") LocalDateTime createdAt,
         @Schema(description = "Updated at", example = "2026-07-14T19:10:00") LocalDateTime updatedAt) {
 }

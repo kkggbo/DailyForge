@@ -167,7 +167,7 @@ public class AiCoachToolSupportService {
             if (lookup == null) {
                 continue;
             }
-            exercises.add(Map.of(
+            exercises.add(linkedMap(
                     "id", lookup.id(),
                     "name", lookup.name(),
                     "exerciseType", lookup.exerciseType(),
@@ -240,19 +240,19 @@ public class AiCoachToolSupportService {
                 for (ItemSnapshot item : exercise.items()) {
                     List<Map<String, Object>> metrics = new ArrayList<>();
                     for (MetricSnapshot metric : item.metrics()) {
-                        metrics.add(Map.of(
+                        metrics.add(linkedMap(
                                 "metricKey", metric.metricKey(),
                                 "metricValueNumber", metric.metricValueNumber(),
                                 "sortOrder", metric.sortOrder()));
                     }
-                    items.add(Map.of(
+                    items.add(linkedMap(
                             "itemIndex", item.itemIndex(),
                             "itemType", item.itemType(),
                             "itemName", item.itemName(),
                             "note", item.note(),
                             "metrics", metrics));
                 }
-                exercises.add(Map.of(
+                exercises.add(linkedMap(
                         "sortOrder", exercise.sortOrder(),
                         "exerciseId", exercise.exerciseId(),
                         "exerciseNameSnapshot", exercise.exerciseNameSnapshot(),
@@ -260,7 +260,7 @@ public class AiCoachToolSupportService {
                         "note", exercise.note(),
                         "items", items));
             }
-            days.add(Map.of(
+            days.add(linkedMap(
                     "dayIndex", day.dayIndex(),
                     "dayName", day.dayName(),
                     "exercises", exercises));
@@ -344,7 +344,7 @@ public class AiCoachToolSupportService {
                 for (TrainingSessionExerciseItemEntity item : itemByExerciseId.getOrDefault(exercise.getId(), List.of())) {
                     List<Map<String, Object>> metricValues = new ArrayList<>();
                     for (TrainingSessionExerciseItemMetricEntity metric : metricByItemId.getOrDefault(item.getId(), List.of())) {
-                        metricValues.add(Map.of(
+                        metricValues.add(linkedMap(
                                 "metricKey", metric.getMetricKey(),
                                 "plannedValueNumber", metric.getPlannedValueNumber(),
                                 "actualValueNumber", metric.getActualValueNumber(),
@@ -525,6 +525,17 @@ public class AiCoachToolSupportService {
             }
         }
         return false;
+    }
+
+    private Map<String, Object> linkedMap(Object... keyValues) {
+        if (keyValues.length % 2 != 0) {
+            throw new IllegalArgumentException("keyValues length must be even");
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (int index = 0; index < keyValues.length; index += 2) {
+            result.put((String) keyValues[index], keyValues[index + 1]);
+        }
+        return result;
     }
 
     private record CycleRunAggregate(

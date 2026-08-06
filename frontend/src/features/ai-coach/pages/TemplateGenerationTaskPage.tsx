@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { getTemplateGenerationTask } from "../api/ai-coach";
@@ -79,6 +79,15 @@ export function TemplateGenerationTaskPage() {
     };
   }, [accessToken, rawTaskId]);
 
+  const additionalRequirements = useMemo(() => {
+    const snapshotValue = task?.requestSnapshot?.additionalRequirements?.trim();
+    if (snapshotValue) {
+      return snapshotValue;
+    }
+
+    return null;
+  }, [task]);
+
   if (isLoading && !task) {
     return <LoadingState label="正在加载模板生成任务..." />;
   }
@@ -89,6 +98,12 @@ export function TemplateGenerationTaskPage() {
         <Link to="/ai-coach/template-generation" className={backLinkClass}>
           返回模板生成
         </Link>
+        <Link
+          to="/ai-coach/history?tab=template-generations"
+          className={backLinkClass}
+        >
+          查看生成历史
+        </Link>
         <Link to="/ai-coach" className={backLinkClass}>
           返回 AI Coach
         </Link>
@@ -97,6 +112,18 @@ export function TemplateGenerationTaskPage() {
       {pageError ? <Notice tone="error">{pageError}</Notice> : null}
 
       {task ? <AiTaskStatusPanel task={task} /> : null}
+
+      {additionalRequirements ? (
+        <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
+          <p className="text-sm uppercase tracking-[0.24em] text-amber-300">
+            Additional Requirements
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold text-white">补充要求</h2>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-stone-300">
+            {additionalRequirements}
+          </p>
+        </section>
+      ) : null}
 
       {task?.taskStatus === "succeeded" && task.result ? (
         <>

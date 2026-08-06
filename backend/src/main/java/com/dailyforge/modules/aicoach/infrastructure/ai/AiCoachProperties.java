@@ -12,7 +12,7 @@ public class AiCoachProperties {
     private String baseUrl = "https://api.deepseek.com";
     private String apiKey = "";
     private Duration timeout = Duration.ofSeconds(120);
-    private int maxToolRounds = 6;
+    private int maxToolRounds = 50;
     private int maxRepairAttempts = 2;
     private String templateGenerationPromptVersion = "template_generation_v1";
     private String cycleSummaryPromptVersion = "cycle_summary_v1";

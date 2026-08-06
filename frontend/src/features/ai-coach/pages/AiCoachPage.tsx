@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { getAiCoachCapabilities } from "../api/ai-coach";
 import { AiCoachCapabilityCard } from "../components/AiCoachCapabilityCard";
@@ -38,7 +39,10 @@ export function AiCoachPage() {
       } catch (error) {
         if (!cancelled) {
           setPageError(
-            getAiCoachErrorMessage(error, "加载 AI Coach 状态失败，请稍后再试。")
+            getAiCoachErrorMessage(
+              error,
+              "加载 AI Coach 状态失败，请稍后再试。"
+            )
           );
         }
       } finally {
@@ -69,7 +73,8 @@ export function AiCoachPage() {
           结构化 AI 训练助手
         </h1>
         <p className="mt-4 max-w-3xl leading-8 text-stone-300">
-          这里不是开放式聊天，而是两个清晰的 AI 场景入口：生成训练模板草稿，或为最近一轮已完成循环做结构化总结。
+          这里不是开放式聊天，而是两个明确的 AI 入口：生成训练模板草稿，
+          或为最近一轮已完成循环输出周期总结。你也可以随时回看历史任务。
         </p>
         {capabilities ? (
           <div className="mt-6 flex flex-wrap gap-2 text-xs text-stone-200">
@@ -137,6 +142,33 @@ export function AiCoachPage() {
         </div>
       ) : null}
 
+      <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-amber-300">
+              History
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold text-white">
+              查看已提交任务
+            </h2>
+            <p className="mt-3 max-w-2xl leading-7 text-stone-300">
+              模板生成和周期总结都会保留历史记录。你可以回看已完成结果，也能追踪仍在进行中的任务。
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <HistoryLink
+              to="/ai-coach/history?tab=template-generations"
+              label="模板生成历史"
+            />
+            <HistoryLink
+              to="/ai-coach/history?tab=cycle-summaries"
+              label="周期总结历史"
+            />
+          </div>
+        </div>
+      </section>
+
       {capabilities?.templateGeneration.missingRequiredFields.length ? (
         <AiCoachMissingFieldsNotice
           fields={capabilities.templateGeneration.missingRequiredFields}
@@ -195,5 +227,16 @@ function InfoTag({ children }: { children: ReactNode }) {
     <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1">
       {children}
     </span>
+  );
+}
+
+function HistoryLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="inline-flex rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+    >
+      {label}
+    </Link>
   );
 }
