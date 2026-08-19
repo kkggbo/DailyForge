@@ -28,6 +28,15 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - `ai_coach` 通过 Spring AI + OpenAI 兼容客户端接入 DeepSeek，支持 tool calling、多轮补数、结果格式校验与任务历史追踪。
 - AI 任务历史、最近工具调用中文名、模板来源标识等信息已经同步到后端接口和前端展示层。
 
+## Agent 协作与 Skill
+
+项目采用「主控会话 + 固定角色 Subagent」的协作方式，并沉淀了一套可复用的 Skill：
+
+- `docs/dsh_agent_roles.md`：8 个固定角色（主控 / 前端架构师 / 后端构建师 / 审查员 / 数据层 / DTO 映射 / 测试 / Git 管家）在 DSH 下的 subagent 下发模板与职责边界。
+- `.dsh/skills/`：51 个 DSH Skill，覆盖前端 / 后端 / 数据层 / 测试 / 审查 / 提交流程，由 Codex `skill-drafts` 迁移而来。
+- `scripts/convert-codex-skills-to-dsh.ps1` 与 `scripts/skill-whenToUse.json`：Codex → DSH skill 转换脚本与中文路由提示映射。
+- 协作规则以 `AGENTS.md` 与 `docs/agent协作规范.md` 为准。
+
 ## 技术栈
 
 ### 前端
@@ -118,4 +127,6 @@ pnpm dev
 - `docs/interfaces/`：接口文档
 - `docs/backend/`：后端设计与改造文档
 - `docs/frontend/`：前端设计文档
+- `docs/dsh_agent_roles.md`：DSH Subagent 角色定义
+- `.dsh/skills/`：DSH Skill（51 个）
 - `change-log/`：每日开发日志
