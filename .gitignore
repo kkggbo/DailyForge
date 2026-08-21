@@ -19,3 +19,8 @@ Thumbs.db
 # Agent
 .codex/
 skill-drafts/
+
+# Local build caches & debug data
+.m2/
+dbdata/
+*.tsbuildinfo
