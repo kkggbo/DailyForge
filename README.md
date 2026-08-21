@@ -121,6 +121,17 @@ pnpm dev
 - AI 教练：首页入口与 `/ai-coach/**`
 - Swagger 文档：请以当前后端安全配置和网关映射为准，不再在 README 中写死旧路径
 
+## 生产部署
+
+项目已具备 Docker 生产部署能力：
+
+- `deploy/docker-compose.prod.yml`：生产编排（nginx + backend + mysql + redis），仅 nginx 暴露 80 端口。
+- `deploy/deploy.sh`：一键部署（起基础设施 → 跑迁移 → 构建启动）。
+- `deploy/.env.example`：环境变量模板（数据库密码 / JWT 密钥 / AI Key）。
+- `deploy/DEPLOY.md`：从零到跑通的部署说明（Ubuntu 24.04 + IP 访问）。
+
+详细步骤见 `deploy/DEPLOY.md`。
+
 ## 文档索引
 
 - `docs/prd/`：产品需求文档
@@ -129,4 +140,5 @@ pnpm dev
 - `docs/frontend/`：前端设计文档
 - `docs/dsh_agent_roles.md`：DSH Subagent 角色定义
 - `.dsh/skills/`：DSH Skill（51 个）
+- `deploy/`：生产部署资产与说明
 - `change-log/`：每日开发日志
