@@ -140,3 +140,32 @@ docker compose -f deploy/docker-compose.prod.yml exec -T mysql \
 - **DB 连接**：`application-prod.yml` 的 DB URL 已包含 `allowPublicKeyRetrieval=true&useSSL=false`，避免 MySQL 8 的 `caching_sha2_password` 连接失败；数据库密码通过 compose 的 `SPRING_DATASOURCE_PASSWORD` 环境变量注入。
 - **当前是 HTTP + IP 访问**：上域名 + HTTPS 时需改 `frontend/nginx.conf` 并完成 ICP 备案。
 - **安全**：正式对外前，建议配置 SSH 密钥登录、开启服务器基础监控和账单预警。
+
+## 11. 通过 SSH 隧道用 IDEA 连接数据库
+
+MySQL 只绑定了 `127.0.0.1:3306`（不暴露公网）。本地用 IDEA 的 Database 模块通过 SSH 隧道连接：
+
+1. 服务器上更新代码并重建 mysql：
+
+   ```bash
+   docker compose -f deploy/docker-compose.prod.yml up -d mysql
+   ```
+
+2. IDEA：`Database` 工具窗口 → `+` → `Data Source` → `MySQL`。
+
+3. 填连接参数：
+   - Host `127.0.0.1`、Port `3306`、Database `dailyforge`
+   - User `dailyforge`（或 `root`）、Password 对应 `.env` 里的 `MYSQL_PASSWORD`（或 `MYSQL_ROOT_PASSWORD`）
+
+4. 切到 `SSH/SSL` 标签页 → 勾选 `Use SSH tunnel`：
+   - Host 填服务器公网 IP、Port `22`、User `root`、认证方式选密码或密钥
+
+5. `Test Connection`，通过即可用。
+
+其他工具（DBeaver / Navicat）同理；若工具无内置 SSH 隧道，手动开隧道：
+
+```bash
+ssh -N -L 3307:127.0.0.1:3306 root@<服务器IP>
+```
+
+然后客户端连 `localhost:3307`。

@@ -23,7 +23,9 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    # MySQL is internal-only; no host port is exposed.
+    # 只绑定本机回环（127.0.0.1），供 SSH 隧道访问；不暴露公网。
+    ports:
+      - "127.0.0.1:3306:3306"
 
   redis:
     image: redis:7
