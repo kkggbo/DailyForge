@@ -47,9 +47,6 @@ services:
     environment:
       TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
-      # application-prod.yml 的 DB URL 缺 allowPublicKeyRetrieval/useSSL，
-      # 这里用 Spring relaxed binding 覆盖，避免 MySQL 8 caching_sha2_password 连不上。
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/dailyforge?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-dailyforge}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       DAILYFORGE_JWT_SECRET: ${JWT_SECRET}

@@ -137,6 +137,6 @@ docker compose -f deploy/docker-compose.prod.yml exec -T mysql \
 
 - **首次部署**：空库时 `run-migrations.sh` 会自动建表 + 灌种子数据；已建库后重复执行迁移可能报「表已存在」，属正常（迁移是一次性的）。
 - **后续新增迁移**（如 V8）：重新执行 `./deploy/run-migrations.sh` 即可。
-- **DB URL 覆盖**：`application-prod.yml` 里的 DB URL 缺 `allowPublicKeyRetrieval=true&useSSL=false`，会导致 MySQL 8 连不上。当前用 `docker-compose.prod.yml` 里的 `SPRING_DATASOURCE_URL` 覆盖解决，后续建议直接修 `application-prod.yml`。
+- **DB 连接**：`application-prod.yml` 的 DB URL 已包含 `allowPublicKeyRetrieval=true&useSSL=false`，避免 MySQL 8 的 `caching_sha2_password` 连接失败；数据库密码通过 compose 的 `SPRING_DATASOURCE_PASSWORD` 环境变量注入。
 - **当前是 HTTP + IP 访问**：上域名 + HTTPS 时需改 `frontend/nginx.conf` 并完成 ICP 备案。
 - **安全**：正式对外前，建议配置 SSH 密钥登录、开启服务器基础监控和账单预警。
