@@ -116,9 +116,10 @@ pnpm dev
 
 ## 主要页面入口
 
-- 训练模板：`/cycle-templates`
-- 训练工作台：`/workout`
-- AI 教练：首页入口与 `/ai-coach/**`
+- 控制台：`/app`
+- 训练模板：`/cycle-templates`（含 AI 生成模板入口）
+- 训练工作台：`/workout`（含 AI 周期总结与历史入口）
+- 个人资料：`/profile`（含编辑与身体指标历史）
 - Swagger 文档：请以当前后端安全配置和网关映射为准，不再在 README 中写死旧路径
 
 ## 生产部署
