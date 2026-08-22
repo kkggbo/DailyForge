@@ -20,7 +20,7 @@ export function ActiveTemplatePanel({ activeTemplate }: ActiveTemplatePanelProps
     return (
       <section className="rounded-[28px] border border-dashed border-white/15 bg-white/6 p-6">
         <p className="text-sm uppercase tracking-[0.24em] text-amber-300">
-          Active Cycle
+          当前启用
         </p>
         <h2 className="mt-3 text-2xl font-semibold text-white">当前没有启用模板</h2>
         <p className="mt-2 text-sm leading-6 text-stone-300">
@@ -35,7 +35,7 @@ export function ActiveTemplatePanel({ activeTemplate }: ActiveTemplatePanelProps
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.24em] text-amber-200">
-            Active Cycle
+            当前启用
           </p>
           <h2 className="mt-3 text-3xl font-semibold text-white">
             {activeTemplate.templateName}
@@ -97,10 +97,19 @@ export function TemplateList({
     );
   }
 
+  const sortedFormalTemplates = formalTemplates
+    ? [...formalTemplates].sort((a, b) => {
+        if (a.isActive === b.isActive) {
+          return 0;
+        }
+        return a.isActive ? -1 : 1;
+      })
+    : formalTemplates;
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {type === "formal"
-        ? formalTemplates?.map((template) => (
+        ? sortedFormalTemplates?.map((template) => (
             <FormalTemplateCard
               key={template.templateId}
               template={template}
@@ -138,16 +147,16 @@ function FormalTemplateCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
-            {formatStatus(template.status)}
+            {template.isActive ? "正式模板" : formatStatus(template.status)}
           </p>
           <h3 className="mt-2 text-2xl font-semibold text-white">
             {template.templateName}
           </h3>
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
           {template.sourceType === "ai_generated" ? <AiGeneratedBadge /> : null}
           {template.isActive ? (
-            <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-stone-950">
+            <span className="whitespace-nowrap rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-stone-950">
               当前启用
             </span>
           ) : null}
@@ -276,7 +285,7 @@ function CardActions({
 
 function AiGeneratedBadge() {
   return (
-    <span className="rounded-full border border-amber-300/30 bg-amber-300/15 px-3 py-1 text-xs font-semibold text-amber-100">
+    <span className="whitespace-nowrap rounded-full border border-amber-300/30 bg-amber-300/15 px-3 py-1 text-xs font-semibold text-amber-100">
       AI生成
     </span>
   );
