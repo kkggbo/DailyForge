@@ -35,7 +35,7 @@ type AuthContextValue = {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
-  redeemInviteCode: (payload: RedeemInviteCodePayload) => Promise<void>;
+  redeemInviteCode: (payload: RedeemInviteCodePayload) => Promise<string>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -212,6 +212,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
               }
             : previous
         );
+
+        return response.accountTier;
       }
     }),
     [currentUser, isBootstrapping, session]

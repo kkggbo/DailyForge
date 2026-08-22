@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
+import { getAccountTierLabel } from "../../features/auth/lib/account-tier";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -78,7 +79,7 @@ export function AppShell() {
                   {currentUser?.userName ?? "未登录"}
                 </p>
                 <p className="truncate text-xs text-stone-400">
-                  {currentUser?.accountTier ?? "guest"}
+                  {currentUser ? getAccountTierLabel(currentUser.accountTier) : "guest"}
                 </p>
               </div>
               {isAuthenticated ? (
