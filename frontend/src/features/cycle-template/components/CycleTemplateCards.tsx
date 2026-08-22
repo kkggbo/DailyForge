@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 import {
   formatCycleLength,
   formatDateTime,
-  formatGoalType,
-  formatStatus
+  formatGoalType
 } from "../lib/cycle-template-formatters";
 import type {
   CurrentActiveTemplateResponse,
@@ -147,7 +146,7 @@ function FormalTemplateCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
-            {template.isActive ? "正式模板" : formatStatus(template.status)}
+            正式模板
           </p>
           <h3 className="mt-2 text-2xl font-semibold text-white">
             {template.templateName}
