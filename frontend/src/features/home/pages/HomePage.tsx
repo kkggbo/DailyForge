@@ -1,11 +1,50 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 
-const nextModules = [
-  "个人资料与身体指标 profile",
-  "循环模板 cycle template",
-  "训练日 session 打卡",
-  "历史统计与趋势图"
+const gettingStartedSteps = [
+  {
+    title: "完善个人资料",
+    description: "补充身体指标与训练目标，让计划更贴合你。",
+    to: "/profile"
+  },
+  {
+    title: "创建并启用训练模板",
+    description: "用循环模板定义你的训练分化节奏。",
+    to: "/cycle-templates"
+  },
+  {
+    title: "开始训练打卡",
+    description: "按当天计划记录完成、跳过与原因。",
+    to: "/workout"
+  },
+  {
+    title: "用 AI 教练",
+    description: "生成模板草稿，或分析已完成周期。",
+    to: "/ai-coach"
+  }
+];
+
+const moduleCards = [
+  {
+    title: "训练模板",
+    description: "草稿、正式模板与启用切换。",
+    to: "/cycle-templates"
+  },
+  {
+    title: "训练工作台",
+    description: "Day 导航、打卡与历史记录。",
+    to: "/workout"
+  },
+  {
+    title: "AI 教练",
+    description: "AI 生成模板与周期总结。",
+    to: "/ai-coach"
+  },
+  {
+    title: "个人资料",
+    description: "基础档案与身体指标。",
+    to: "/profile"
+  }
 ];
 
 export function HomePage() {
@@ -13,67 +52,63 @@ export function HomePage() {
 
   return (
     <section className="space-y-8">
-      <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[36px] border border-white/10 bg-white/6 p-8 backdrop-blur">
-          <p className="text-sm uppercase tracking-[0.28em] text-amber-300">Dashboard</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-            {currentUser?.userName}，基础联调已经就位。
-          </h1>
-          <p className="mt-4 max-w-2xl leading-8 text-stone-300">
-            你现在可以把这个页面作为前端开发起点：鉴权状态、用户摘要、受保护路由、退出登录和邀请码升级都已经具备。训练工作台会按当前循环的真实进度创建或恢复当日记录。
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/profile" className="rounded-full bg-amber-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
-              进入个人资料
-            </Link>
-            <Link to="/profile/ai-completion?scene=ai-plan&redirect=/app" className="rounded-full border border-white/10 px-5 py-3 font-medium text-stone-100 transition hover:bg-white/8">
-              查看 AI 补录页
-            </Link>
-            <Link to="/workout" className="rounded-full border border-amber-300/30 bg-amber-300/10 px-5 py-3 font-medium text-amber-100 transition hover:bg-amber-300/20">
-              进入训练工作台
-            </Link>
-          </div>
-        </div>
+      <div className="rounded-[36px] border border-white/10 bg-white/6 p-8 backdrop-blur">
+        <p className="text-sm uppercase tracking-[0.28em] text-amber-300">控制台</p>
+        <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
+          你好，{currentUser?.userName ?? "训练者"}。
+        </h1>
+        <p className="mt-4 max-w-2xl leading-8 text-stone-300">
+          开始今天的训练，或先完善你的训练计划。下面是从入门到进阶的完整路径。
+        </p>
+      </div>
 
-        <div className="rounded-[36px] border border-amber-300/15 bg-black/25 p-8 backdrop-blur">
-          <p className="text-sm text-stone-400">账户摘要</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <SummaryCard label="用户 ID" value={String(currentUser?.userId ?? "-")} />
-            <SummaryCard label="邮箱" value={currentUser?.email ?? "-"} />
-            <SummaryCard label="平台角色" value={currentUser?.platformRole ?? "-"} />
-            <SummaryCard label="账户层级" value={currentUser?.accountTier ?? "-"} />
-            <SummaryCard label="状态" value={currentUser?.status ?? "-"} />
-          </div>
+      <div>
+        <p className="text-sm uppercase tracking-[0.24em] text-amber-300">快速入门</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {gettingStartedSteps.map((step, index) => (
+            <Link
+              key={step.title}
+              to={step.to}
+              className="rounded-[28px] border border-white/10 bg-white/5 p-5 transition hover:bg-white/8"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
+                第 {index + 1} 步
+              </p>
+              <p className="mt-2 text-base font-medium text-white">{step.title}</p>
+              <p className="mt-1 text-sm leading-6 text-stone-300">{step.description}</p>
+            </Link>
+          ))}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
-          <p className="text-sm uppercase tracking-[0.24em] text-amber-300">下一步建议</p>
-          <ul className="mt-4 space-y-3 text-stone-300">
-            {nextModules.map((item) => <li key={item}>{item}</li>)}
-          </ul>
+      <div>
+        <p className="text-sm uppercase tracking-[0.24em] text-amber-300">功能入口</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {moduleCards.map((card) => (
+            <Link
+              key={card.title}
+              to={card.to}
+              className="rounded-[28px] border border-white/10 bg-white/5 p-5 transition hover:bg-white/8"
+            >
+              <p className="text-base font-medium text-white">{card.title}</p>
+              <p className="mt-1 text-sm leading-6 text-stone-300">{card.description}</p>
+            </Link>
+          ))}
         </div>
+      </div>
 
-        <div className="rounded-[32px] border border-white/10 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.24em] text-amber-300">权限升级</p>
-          <p className="mt-4 leading-7 text-stone-300">
-            如果你当前账户还是普通层级，可以先去邀请码页面兑换 AI 访问资格，验证后端的账户层级变更链路。
-          </p>
-          <Link to="/invite-code" className="mt-6 inline-flex rounded-full bg-amber-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
-            去兑换邀请码
-          </Link>
-        </div>
+      <div className="rounded-[32px] border border-amber-300/20 bg-stone-950/70 p-6">
+        <p className="text-sm uppercase tracking-[0.24em] text-amber-300">解锁 AI 权限</p>
+        <p className="mt-4 leading-7 text-stone-300">
+          AI 教练功能需要邀请码解锁。已有邀请码的话，兑换后即可使用 AI 生成模板与周期总结。
+        </p>
+        <Link
+          to="/invite-code"
+          className="mt-6 inline-flex rounded-full bg-amber-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-amber-300"
+        >
+          去兑换邀请码
+        </Link>
       </div>
     </section>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{label}</p>
-      <p className="mt-2 break-all text-base font-medium text-white">{value}</p>
-    </article>
   );
 }
