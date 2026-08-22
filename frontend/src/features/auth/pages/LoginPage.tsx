@@ -7,6 +7,12 @@ type LoginLocationState = {
   message?: string;
 };
 
+const pillars = [
+  { title: "训练计划", description: "用循环模板定义分化节奏，按实际完成情况持续修正。" },
+  { title: "训练打卡", description: "动作级记录完成、跳过与原因，为下一次迭代提供上下文。" },
+  { title: "AI 建议", description: "基于体征与训练反馈，逐步补上个性化建议能力。" }
+];
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,14 +43,26 @@ export function LoginPage() {
     <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur">
         <p className="text-sm uppercase tracking-[0.28em] text-amber-300">
-          Welcome Back
+          DailyForge
         </p>
         <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-          登录 DailyForge，继续管理你的训练节奏。
+          把混乱的训练记录，锻造成可执行、可复盘、可迭代的日常系统。
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-stone-300">
-          当前前端已经接通真实鉴权链路。登录后你可以继续完成资料引导、邀请码兑换和后续训练相关功能。
+          登录后继续管理你的训练计划、训练打卡，以及基于你数据的 AI 建议。
         </p>
+
+        <div className="mt-6 grid gap-3">
+          {pillars.map((pillar) => (
+            <article
+              key={pillar.title}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <p className="text-sm font-medium text-amber-300">{pillar.title}</p>
+              <p className="mt-1 text-sm leading-6 text-stone-300">{pillar.description}</p>
+            </article>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-[32px] border border-amber-300/20 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">

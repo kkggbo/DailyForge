@@ -15,7 +15,6 @@ import { CycleTemplateDetailPage } from "../features/cycle-template/pages/CycleT
 import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTemplateEditPage";
 import { CycleTemplatePage } from "../features/cycle-template/pages/CycleTemplatePage";
 import { HomePage } from "../features/home/pages/HomePage";
-import { LandingPage } from "../features/home/pages/LandingPage";
 import { hasCompletedProfileOnboarding } from "../features/profile/lib/onboarding-storage";
 import { ProfileAiCompletionPage } from "../features/profile/pages/ProfileAiCompletionPage";
 import { ProfileOnboardingPage } from "../features/profile/pages/ProfileOnboardingPage";
@@ -37,7 +36,27 @@ function ProtectedOutlet() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
+function GuestOnlyOutlet() {
+  const { isAuthenticated, isBootstrapping } = useAuth();
+
+  if (isBootstrapping) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm text-stone-200">
+          正在同步账号状态...
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />;
   }
 
   return <Outlet />;
@@ -58,16 +77,21 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       {
-        path: "/",
-        element: <LandingPage />
+        element: <GuestOnlyOutlet />,
+        children: [
+          {
+            path: "/",
+            element: <LoginPage />
+          },
+          {
+            path: "/register",
+            element: <RegisterPage />
+          }
+        ]
       },
       {
         path: "/login",
-        element: <LoginPage />
-      },
-      {
-        path: "/register",
-        element: <RegisterPage />
+        element: <Navigate to="/" replace />
       },
       {
         element: <ProtectedOutlet />,

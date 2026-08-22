@@ -22,7 +22,7 @@ export function AppShell() {
       <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 pb-10 pt-6 sm:px-8 lg:px-10">
         <header className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-black/20 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
-            <Link to="/" className="inline-flex items-center gap-3">
+            <Link to={isAuthenticated ? "/app" : "/"} className="inline-flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 font-semibold text-stone-950 shadow-[0_0_30px_rgba(251,191,36,0.3)]">
                 DF
               </span>
@@ -39,9 +39,6 @@ export function AppShell() {
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <nav className="flex flex-wrap items-center gap-2">
-              <NavLink to="/" className={navLinkClass}>
-                首页
-              </NavLink>
               {isAuthenticated ? (
                 <>
                   <NavLink to="/app" className={navLinkClass}>
@@ -65,7 +62,7 @@ export function AppShell() {
                 </>
               ) : (
                 <>
-                  <NavLink to="/login" className={navLinkClass}>
+                  <NavLink to="/" className={navLinkClass}>
                     登录
                   </NavLink>
                   <NavLink to="/register" className={navLinkClass}>

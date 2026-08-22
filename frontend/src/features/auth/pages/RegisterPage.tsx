@@ -136,15 +136,14 @@ export function RegisterPage() {
           Create Account
         </p>
         <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-          先把账户建好，我们就能直接进入 DailyForge 的训练记录和资料引导。
+          创建账号，开始记录和迭代你的训练。
         </h1>
         <div className="mt-6 space-y-4 text-stone-300">
           <p>
-            当前注册表单已经对齐后端接口字段，包括 `email`、`password`、
-            `confirmPassword`、`userName` 和 `inviteCode`。
+            注册后即可进入训练模板、训练打卡与个人资料引导。
           </p>
           <p>
-            如果暂时没有邀请码，也可以先注册普通账号，后续登录后再到邀请码页面兑换 AI 权限。
+            暂时没有邀请码也可以先注册普通账号，登录后再到「邀请码」页面兑换 AI 权限。
           </p>
         </div>
       </div>
