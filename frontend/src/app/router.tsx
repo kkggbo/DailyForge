@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { useAuth } from "./providers/AuthProvider";
-import { AiCoachPage } from "../features/ai-coach/pages/AiCoachPage";
 import { AiCoachHistoryPage } from "../features/ai-coach/pages/AiCoachHistoryPage";
 import { CycleSummaryPage } from "../features/ai-coach/pages/CycleSummaryPage";
 import { CycleSummaryTaskPage } from "../features/ai-coach/pages/CycleSummaryTaskPage";
@@ -108,7 +107,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/ai-coach",
-            element: <AiCoachPage />
+            element: <Navigate to="/ai-coach/template-generation" replace />
           },
           {
             path: "/ai-coach/history",

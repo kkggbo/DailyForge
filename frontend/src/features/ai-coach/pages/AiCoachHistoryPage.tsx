@@ -106,8 +106,8 @@ export function AiCoachHistoryPage() {
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap gap-3">
-        <Link to="/ai-coach" className={backLinkClass}>
-          返回 AI Coach
+        <Link to="/app" className={backLinkClass}>
+          返回控制台
         </Link>
         <Link to="/ai-coach/template-generation" className={backLinkClass}>
           进入模板生成

@@ -10,7 +10,14 @@ import {
 import { errorMessage } from "../../workout/lib/workout";
 import type { DayDetail, Workspace } from "../../workout/types/workout";
 
-const gettingStartedSteps = [
+type QuickStartStep = {
+  title: string;
+  description: string;
+  to?: string;
+  actions?: Array<{ label: string; to: string }>;
+};
+
+const gettingStartedSteps: QuickStartStep[] = [
   {
     title: "完善个人资料",
     description: "补充身体指标与训练目标，让计划更贴合你。",
@@ -19,7 +26,10 @@ const gettingStartedSteps = [
   {
     title: "创建并启用训练模板",
     description: "用循环模板定义你的训练分化节奏。",
-    to: "/cycle-templates"
+    actions: [
+      { label: "手动创建模板", to: "/cycle-templates/create" },
+      { label: "AI 生成模板", to: "/ai-coach/template-generation" }
+    ]
   },
   {
     title: "开始训练打卡",
@@ -28,8 +38,8 @@ const gettingStartedSteps = [
   },
   {
     title: "用 AI 教练",
-    description: "生成模板草稿，或分析已完成周期。",
-    to: "/ai-coach"
+    description: "为已完成周期生成总结与下一轮调整建议。",
+    to: "/ai-coach/cycle-summary"
   }
 ];
 
@@ -177,19 +187,44 @@ function QuickStart() {
     <div>
       <p className="text-sm uppercase tracking-[0.24em] text-amber-300">快速入门</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {gettingStartedSteps.map((step, index) => (
-          <Link
-            key={step.title}
-            to={step.to}
-            className="rounded-[28px] border border-white/10 bg-white/5 p-5 transition hover:bg-white/8"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
-              第 {index + 1} 步
-            </p>
-            <p className="mt-2 text-base font-medium text-white">{step.title}</p>
-            <p className="mt-1 text-sm leading-6 text-stone-300">{step.description}</p>
-          </Link>
-        ))}
+        {gettingStartedSteps.map((step, index) => {
+          const stepLabel = (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
+                第 {index + 1} 步
+              </p>
+              <p className="mt-2 text-base font-medium text-white">{step.title}</p>
+              <p className="mt-1 text-sm leading-6 text-stone-300">{step.description}</p>
+            </>
+          );
+          const cardClass =
+            "rounded-[28px] border border-white/10 bg-white/5 p-5 transition hover:bg-white/8";
+
+          if (step.actions) {
+            return (
+              <div key={step.title} className={cardClass}>
+                {stepLabel}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {step.actions.map((action) => (
+                    <Link
+                      key={action.label}
+                      to={action.to}
+                      className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-stone-100 transition hover:bg-white/12"
+                    >
+                      {action.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <Link key={step.title} to={step.to ?? "/app"} className={cardClass}>
+              {stepLabel}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

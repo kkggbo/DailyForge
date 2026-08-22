@@ -112,8 +112,8 @@ export function TemplateGenerationPage() {
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap gap-3">
-        <Link to="/ai-coach" className={secondaryLinkClass}>
-          返回 AI Coach
+        <Link to="/cycle-templates" className={secondaryLinkClass}>
+          返回训练模板
         </Link>
         <Link
           to="/ai-coach/history?tab=template-generations"
@@ -142,8 +142,8 @@ export function TemplateGenerationPage() {
         <AiCoachUnavailableState
           title="当前账号暂时不能使用模板生成"
           description="入口仍然可见，但当前账号还没有调用 AI 模板生成的权限。"
-          actionLabel="返回 AI Coach"
-          actionTo="/ai-coach"
+          actionLabel="返回训练模板"
+          actionTo="/cycle-templates"
         />
       ) : null}
 

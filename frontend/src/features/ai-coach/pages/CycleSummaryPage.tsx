@@ -91,9 +91,6 @@ export function CycleSummaryPage() {
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap gap-3">
-        <Link to="/ai-coach" className={backLinkClass}>
-          返回 AI Coach
-        </Link>
         <Link
           to="/ai-coach/history?tab=cycle-summaries"
           className={backLinkClass}
@@ -123,8 +120,8 @@ export function CycleSummaryPage() {
         <AiCoachUnavailableState
           title="当前账号暂时不能使用周期总结"
           description="入口仍然保留，但当前账号还没有发起 AI 周期总结任务的权限。"
-          actionLabel="返回 AI Coach"
-          actionTo="/ai-coach"
+          actionLabel="返回训练工作台"
+          actionTo="/workout"
         />
       ) : null}
 

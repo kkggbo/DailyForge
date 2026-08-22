@@ -95,9 +95,6 @@ export function CycleSummaryTaskPage() {
         >
           查看总结历史
         </Link>
-        <Link to="/ai-coach" className={backLinkClass}>
-          返回 AI Coach
-        </Link>
       </div>
 
       {pageError ? <Notice tone="error">{pageError}</Notice> : null}

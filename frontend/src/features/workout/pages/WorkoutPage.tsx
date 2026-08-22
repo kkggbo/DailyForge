@@ -304,9 +304,14 @@ export function WorkoutPage() {
             不会创建训练记录。
           </p>
         </div>
-        <Link to="/cycle-templates" className={secondaryButton}>
-          管理训练模板
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/ai-coach/history?tab=cycle-summaries" className={secondaryButton}>
+            周期总结历史
+          </Link>
+          <Link to="/cycle-templates" className={secondaryButton}>
+            管理训练模板
+          </Link>
+        </div>
       </header>
 
       {workspace.workspaceState === "no_active_template" ? <NoTemplate /> : null}
