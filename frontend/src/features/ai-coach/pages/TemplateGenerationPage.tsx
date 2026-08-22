@@ -14,6 +14,7 @@ import {
   formatCycleLengthRange
 } from "../lib/ai-coach-formatters";
 import { normalizeOptionalText } from "../lib/ai-coach-mappers";
+import { generateUuid } from "../../../shared/lib/uuid";
 import type {
   AiCoachCapabilities,
   TemplateGenerationForm as TemplateGenerationFormValues
@@ -81,7 +82,7 @@ export function TemplateGenerationPage() {
 
     try {
       const acceptedTask = await createTemplateGenerationTask(accessToken, {
-        clientRequestId: crypto.randomUUID(),
+        clientRequestId: generateUuid(),
         sceneType: form.sceneType,
         goalType: form.goalType,
         cycleLength: Number(form.cycleLengthText),

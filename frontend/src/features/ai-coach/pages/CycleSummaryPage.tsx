@@ -6,6 +6,7 @@ import { AiCoachMissingFieldsNotice } from "../components/AiCoachMissingFieldsNo
 import { AiCoachUnavailableState } from "../components/AiCoachUnavailableState";
 import { CycleSummaryLaunchCard } from "../components/CycleSummaryLaunchCard";
 import { getAiCoachErrorMessage } from "../lib/ai-coach-enums";
+import { generateUuid } from "../../../shared/lib/uuid";
 import type { AiCoachCapabilities } from "../types/ai-coach";
 
 const backLinkClass =
@@ -67,7 +68,7 @@ export function CycleSummaryPage() {
 
     try {
       const acceptedTask = await createCycleSummaryTask(accessToken, {
-        clientRequestId: crypto.randomUUID(),
+        clientRequestId: generateUuid(),
         cycleRunId: capabilities.cycleSummary.latestCompletedCycleRunId
       });
 
