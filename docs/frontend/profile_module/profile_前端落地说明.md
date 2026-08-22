@@ -1,32 +1,34 @@
 # DailyForge Frontend Profile 模块落地说明
 
-> 日期：2026-07-12  
+> 日期：2026-08-23  
 > 对应前端目录：`frontend/src/features/profile`
 
 ## 1. 本次已实现范围
 
-- `ProfilePage`：个人资料主页面，包含“基础档案”和“身体指标”两个 Tab。
+- `ProfilePage`：个人资料只读总览页（基础档案 + 最新身体指标），顶部提供「更新个人信息」「查看身体指标历史记录」两个入口。
+- `ProfileEditPage`：编辑页（基础档案表单 + 身体指标录入）。
+- `BodyMetricHistoryPage`：身体指标历史页（分页列表 + 删除最新记录）。
 - `ProfileOnboardingPage`：首次登录后的两步引导页。
 - `ProfileAiCompletionPage`：AI 场景补录页，支持 `scene` 与 `redirect`。
 - `profile.ts`：完整封装 `profile` 模块后端接口。
-- `http.ts`：补充 query 参数支持和结构化错误抛出能力。
+- `http.ts` 与 `uuid.ts`：query 参数 / 结构化错误 / UUID 生成能力。
 - `AppShell` / `router`：接入个人资料导航与受保护路由。
 - onboarding 本地状态：按用户维度记录是否已完成首次引导。
+
+> 已移除：`ProfileTabNav`（tab 切换）与 `CompletionSummaryBanner`（资料完成度 banner）。
 
 ## 2. 当前路由行为
 
 - `/profile`
-  - 个人资料主入口。
+  - 个人资料只读总览。
+- `/profile/edit`
+  - 编辑基础档案 + 新增身体指标记录。
+- `/profile/metrics/history`
+  - 身体指标历史记录。
 - `/profile/onboarding`
-  - 首次登录后，从 `/app` 自动跳转进入。
-  - 完成或跳过后写入本地标记，再回到 `/app`。
+  - 首次登录后，从 `/app` 自动跳转进入；完成或跳过后写入本地标记，再回到 `/app`。
 - `/profile/ai-completion`
-  - 作为独立补录页使用。
-  - 支持：
-    - `scene=ai-plan`
-    - `scene=ai-nutrition`
-    - `scene=ai-summary`
-    - `redirect=/some/path`
+  - 独立补录页，支持 `scene` 与 `redirect`。
 
 ## 3. 目录职责
 
@@ -49,18 +51,11 @@
 
 ## 4. 关键交互约定
 
-- 登录成功后仍然先进入 `/app`。
-- `/app` 会检查当前用户是否已完成 onboarding。
-- 未完成时自动跳到 `/profile/onboarding`。
-- `BasicProfileForm` 保存成功后刷新：
-  - `basicProfile`
-  - `completionSummary`
-- `BodyMetricForm` 新增成功后刷新：
-  - `basicProfile`
-  - `completionSummary`
-  - `snapshot`
-  - `history`
-- 删除最新记录成功后也刷新上述四块数据。
+- 登录成功后仍然先进入 `/app`，未完成 onboarding 时自动跳到 `/profile/onboarding`。
+- 总览页只读展示；编辑与历史拆到独立页面。
+- `BasicProfileForm`（编辑页）保存成功后刷新 `basicProfile`。
+- `BodyMetricForm`（编辑页）新增成功后刷新 `snapshot`。
+- 历史页删除最新记录成功后重新加载第一页。
 
 ## 5. 当前实现选择
 

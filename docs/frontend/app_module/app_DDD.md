@@ -1,7 +1,7 @@
 # DailyForge Frontend App 模块详细设计
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/app`
 
 ---
@@ -48,37 +48,75 @@ src/app
 
 ### 3.2 当前路由规则
 
+公开路由（`GuestOnlyOutlet` 包裹，已登录跳 `/app`）：
+
 | 路径 | 组件 | 说明 |
 |------|------|------|
-| `/` | `LandingPage` | 公开首页 |
-| `/login` | `LoginPage` | 登录页 |
+| `/` | `LoginPage` | 登录即首页 |
 | `/register` | `RegisterPage` | 注册页 |
-| `/app` | `HomePage` | 登录后首页 |
+
+重定向：
+
+| 路径 | 目标 | 说明 |
+|------|------|------|
+| `/login` | `/` | 旧登录地址重定向到首页 |
+
+受保护路由（`ProtectedOutlet` 包裹，未登录跳 `/`）：
+
+| 路径 | 组件 | 说明 |
+|------|------|------|
+| `/app` | `AppEntryPage` | 未完成 profile 引导则跳 `/profile/onboarding`，否则 `HomePage` |
 | `/invite-code` | `RedeemInviteCodePage` | 邀请码兑换页 |
+| `/ai-coach` | 重定向 | 重定向到 `/ai-coach/template-generation` |
+| `/ai-coach/history` | `AiCoachHistoryPage` | tab 参数：template-generations / cycle-summaries |
+| `/ai-coach/template-generation` | `TemplateGenerationPage` | AI 模板生成 |
+| `/ai-coach/template-generation/tasks/:taskId` | `TemplateGenerationTaskPage` | AI 模板生成任务详情 |
+| `/ai-coach/cycle-summary` | `CycleSummaryPage` | AI 周期总结 |
+| `/ai-coach/cycle-summary/tasks/:taskId` | `CycleSummaryTaskPage` | AI 周期总结任务详情 |
+| `/profile` | `ProfilePage` | 只读总览 |
+| `/profile/edit` | `ProfileEditPage` | 基础档案 + 身体指标录入 |
+| `/profile/metrics/history` | `BodyMetricHistoryPage` | 历史 + 删除最新 |
+| `/profile/onboarding` | `ProfileOnboardingPage` | 引导页 |
+| `/profile/ai-completion` | `ProfileAiCompletionPage` | AI 补录 |
+| `/cycle-templates` | `CycleTemplatePage` | 训练模板列表 |
+| `/cycle-templates/create` | `CycleTemplateCreatePage` | 新建模板 |
+| `/cycle-templates/:templateId` | `CycleTemplateDetailPage` | 模板详情 |
+| `/cycle-templates/:templateId/edit` | `CycleTemplateEditPage` | 模板编辑 |
+| `/workout` | `WorkoutPage` | 训练工作台 |
+| `/workout/history/:sessionId` | `WorkoutHistoryDetailPage` | 训练历史详情 |
 
 ### 3.3 ProtectedOutlet 实现逻辑
 
-`ProtectedOutlet` 是当前第一版前端鉴权守卫。
+`ProtectedOutlet` 是受保护路由鉴权守卫。
 
 执行逻辑：
 
 1. 如果 `isBootstrapping=true`，显示加载占位。
-2. 如果 bootstrap 结束但 `isAuthenticated=false`，跳转 `/login`。
+2. 如果 bootstrap 结束但 `isAuthenticated=false`，跳转 `/`。
 3. 只有登录态成立时才渲染子路由。
 
-### 3.4 当前优点
+### 3.4 GuestOnlyOutlet 实现逻辑
+
+`GuestOnlyOutlet` 是公开路由守卫，已实现，用于包裹 `/`、`/register` 这类仅访客可访问的页面。
+
+执行逻辑：
+
+1. 如果 `isBootstrapping=true`，显示加载占位。
+2. 如果 `isAuthenticated=true`，跳转 `/app`（已登录用户不再停留在登录 / 注册页）。
+3. 只有未登录时才渲染子路由。
+
+### 3.5 当前优点
 
 - 守卫逻辑集中
 - 不需要每个页面都重复鉴权判断
 - 便于后续加入角色判断或账户层级判断
 
-### 3.5 后续扩展建议
+### 3.6 后续扩展建议
 
 后续可以扩展出：
 
 - `RoleProtectedOutlet`
 - `TierProtectedOutlet`
-- `GuestOnlyOutlet`
 
 ---
 
@@ -108,16 +146,17 @@ src/app
 
 未登录时展示：
 
-- 首页
-- 登录
-- 注册
+- 登录（→ `/`）
+- 注册（→ `/register`）
 
 已登录时展示：
 
-- 首页
-- 控制台
-- 邀请码
-- 用户摘要
+- 控制台（→ `/app`）
+- 训练模板（→ `/cycle-templates`）
+- 训练工作台（→ `/workout`）
+- 个人资料（→ `/profile`）
+- 邀请码（→ `/invite-code`）
+- 用户摘要（用户名 + 账户层级标签）
 - 退出按钮
 
 ### 4.4 与鉴权状态的关系
@@ -166,7 +205,7 @@ src/app
 | `login` | 登录 |
 | `register` | 注册 |
 | `logout` | 退出登录 |
-| `redeemInviteCode` | 兑换邀请码 |
+| `redeemInviteCode` | 兑换邀请码，返回 `Promise<string>`（兑换后的 accountTier） |
 
 ### 5.4 bootstrap 机制
 
@@ -186,14 +225,17 @@ src/app
 
 ### 5.6 设计边界
 
-当前 `AuthProvider` 还没有处理：
+`AuthProvider` 已经处理：
 
-- access token 自动续签
-- 请求级 401 重试
+- access token 自动续签：通过 `refreshSession` 结合 `shouldRefreshSession`（到期前 60s 阈值）在 bootstrap 阶段与定时器中进行自动续签；`/api/auth/me` 遇到可续签的 401 错误也会先刷新再重试。
+
+当前尚未处理：
+
+- 通用请求级 401 自动重试（目前仅 `loadCurrentUser` 对 `/api/auth/me` 做了刷新重试）
 - 登录态变更跨标签页同步
 - 登录后自动重定向来源页
 
-这些都可以在第二阶段扩展。
+这些可以在后续阶段扩展。
 
 ---
 

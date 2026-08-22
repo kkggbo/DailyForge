@@ -1,8 +1,9 @@
 # DailyForge Frontend Exercise 模块详细设计
 
-> 版本：v2.0  
-> 日期：2026-07-17  
-> 模块归属：`frontend/src/features/exercise`
+> 版本：v2.1  
+> 日期：2026-08-23  
+> 模块归属：`frontend/src/features/exercise`  
+> 现状复核（2026-08-23）：本模块作为系统动作查询能力层，当前主要消费方为 `cycle-template` 的动作选择器（`ExercisePickerDialog`），其余能力与本文档描述一致。
 
 ---
 

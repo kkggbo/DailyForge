@@ -1,7 +1,7 @@
 # DailyForge Frontend AI Coach 模块详细设计
 
-> 版本：v1.0
-> 日期：2026-08-01
+> 版本：v1.1
+> 日期：2026-08-23
 > 模块归属：`frontend/src/features/ai-coach`
 > 契约来源：`docs/interfaces/ai_coach_接口文档.md`
 
@@ -29,10 +29,11 @@
 
 当前版本的前端设计目标：
 
-1. 让用户在单独的 AI Coach 入口中查看自己是否具备 AI 使用权限
-2. 让用户在发起 AI 请求前就能看到资料完整度和缺失项提示
-3. 让用户通过异步任务页查看生成中、失败和成功结果，而不是等待同步阻塞
-4. 让模板生成结果与 `cycle_template` 模块平滑衔接，让周期总结结果与 `workout` 模块平滑衔接
+1. 让用户在发起 AI 请求前就能看到资料完整度和缺失项提示
+2. 让用户通过异步任务页查看生成中、失败和成功结果，而不是等待同步阻塞
+3. 让模板生成结果与 `cycle_template` 模块平滑衔接，让周期总结结果与 `workout` 模块平滑衔接
+
+> 说明：`ai_coach` 已不再有独立的 hub 首页（原 `AiCoachPage` 已删除）。AI 能力入口分散到所属业务模块：模板生成入口在 `cycle-template` 页，周期总结入口在 `workout` 页；`/ai-coach` 现在重定向到模板生成页。
 
 ---
 
@@ -74,22 +75,14 @@
 
 ## 4. 与现有前端的关系
 
-当前仓库还没有正式的 `frontend/src/features/ai-coach` 目录，但已经存在旧的 AI 占位入口：
+当前 `frontend/src/features/ai-coach` 已落地为正式业务模块，包含模板生成、周期总结与任务历史三类页面。入口策略如下：
 
-- `frontend/src/features/cycle-template/components/AiGeneratePanel.tsx`
+- 模板生成入口：`cycle-template` 页顶部的「AI 生成草稿」按钮 → `/ai-coach/template-generation`；`home` 快速入门第 2 步也提供「AI 生成模板」按钮。
+- 周期总结入口：`workout` 周期完成时提供「AI 周期总结」；`cycle-template` 之外的周期总结历史入口在 `workout` 顶部。
+- 任务历史：`/ai-coach/history`（两个 tab：模板生成历史 / 周期总结历史）。
+- 顶部导航已不再有独立的「AI Coach」入口（`AppShell` 已移除）。
 
-该组件当前只是旧占位实现，特点是：
-
-- 仍走旧的 `cycle_template` AI 占位接口
-- 不符合新的 `ai_coach` 异步任务契约
-- 不具备能力检查、资料缺失提示、任务轮询和结构化结果页
-
-因此本模块落地后，前端应完成以下迁移：
-
-1. 新建正式的 `ai-coach` feature
-2. 在导航中新增 `AI Coach` 入口
-3. 将 `cycle-template` 页面中的 AI 入口改为跳转到 `ai_coach`
-4. 不再继续扩展旧的 `AiGeneratePanel.tsx`
+旧的 `AiGeneratePanel.tsx` 占位实现已由正式 `ai_coach` 模块取代。
 
 ---
 
@@ -100,9 +93,9 @@ src/features/ai-coach
 ├─ api
 │  └─ ai-coach.ts
 ├─ components
-│  ├─ AiCoachCapabilityCard.tsx
 │  ├─ AiCoachUnavailableState.tsx
 │  ├─ AiCoachMissingFieldsNotice.tsx
+│  ├─ AiTaskHistoryList.tsx
 │  ├─ TemplateGenerationForm.tsx
 │  ├─ TemplateGenerationResult.tsx
 │  ├─ GenerationRationalePanel.tsx
@@ -113,10 +106,9 @@ src/features/ai-coach
 │  ├─ ai-coach-enums.ts
 │  ├─ ai-coach-formatters.ts
 │  ├─ ai-coach-mappers.ts
-│  ├─ ai-coach-polling.ts
-│  └─ ai-coach-storage.ts
+│  └─ ai-coach-polling.ts
 ├─ pages
-│  ├─ AiCoachPage.tsx
+│  ├─ AiCoachHistoryPage.tsx
 │  ├─ TemplateGenerationPage.tsx
 │  ├─ TemplateGenerationTaskPage.tsx
 │  ├─ CycleSummaryPage.tsx
@@ -127,17 +119,18 @@ src/features/ai-coach
 
 说明：
 
-- 目录风格保持与现有 `profile`、`workout`、`cycle-template` 一致
-- 首版不强制新增 `hooks` 目录，轮询逻辑先放在 `lib/ai-coach-polling.ts`
-- 如后续页面逻辑膨胀，再拆出 `useAiTaskPolling` 等 hooks
+- 目录风格保持与现有 `profile`、`workout`、`cycle-template` 一致。
+- 已删除 `AiCoachPage.tsx`（原独立 hub 首页）和 `AiCoachCapabilityCard.tsx`（能力卡随 hub 页一并移除）。
+- 轮询逻辑放在 `lib/ai-coach-polling.ts`。
 
 ---
 
 ## 6. 路由设计
 
-建议新增以下受保护路由，统一挂在 `ProtectedOutlet` 下：
+受保护路由（统一挂在 `ProtectedOutlet` 下）：
 
-- `/ai-coach`
+- `/ai-coach`（重定向到 `/ai-coach/template-generation`）
+- `/ai-coach/history`
 - `/ai-coach/template-generation`
 - `/ai-coach/template-generation/tasks/:taskId`
 - `/ai-coach/cycle-summary`
@@ -145,18 +138,15 @@ src/features/ai-coach
 
 各路由职责如下：
 
-### 6.1 `AiCoachPage`
+### 6.1 `AiCoachHistoryPage`
 
-路由：`/ai-coach`
+路由：`/ai-coach/history`（tab 参数：template-generations / cycle-summaries）
 
 作用：
 
-- AI Coach 首页
-- 加载 `GET /api/ai-coach/capabilities`
-- 展示两个能力入口：
-  - AI 生成模板
-  - AI 分析周期
-- 展示可用性、资料完整度和最近可分析循环摘要
+- 集中回看模板生成与周期总结任务历史。
+- 展示两个 tab：模板生成历史、周期总结历史。
+- 顶部提供返回控制台与进入模板生成 / 周期总结的链接。
 
 ### 6.2 `TemplateGenerationPage`
 
@@ -204,19 +194,19 @@ src/features/ai-coach
 
 ## 7. 页面入口设计
 
-当前前端应至少提供三个入口：
+当前前端入口：
 
-1. 顶部导航入口
-   - 在 `AppShell.tsx` 中新增 `AI Coach`
-2. 模板模块入口
-   - 在 `cycle-template` 首页的 AI 入口中跳转到 `/ai-coach/template-generation`
+1. 模板模块入口
+   - 在 `cycle-template` 页顶部「AI 生成草稿」按钮跳转到 `/ai-coach/template-generation`
+2. 控制台入口
+   - `home` 快速入门第 2 步提供「AI 生成模板」按钮；第 4 步「用 AI 教练」跳转 `/ai-coach/cycle-summary`
 3. 训练模块入口
-   - 在 `workout` 的循环完成页中跳转到 `/ai-coach/cycle-summary`
+   - 在 `workout` 的循环完成页跳转 `/ai-coach/cycle-summary`；顶部提供「周期总结历史」入口
 
 入口策略：
 
-- 顶部导航是稳定主入口
-- 业务页入口是场景快捷入口
+- 不再有顶部导航主入口（`AppShell` 已移除「AI Coach」）
+- 业务页入口是主要入口
 - 无 AI 权限时入口仍可见，但进入后显示明确提示，而不是静默消失
 
 ---
@@ -419,23 +409,14 @@ export type CycleSummaryTaskResult = {
 
 ## 10. 页面数据流
 
-## 10.1 `AiCoachPage`
+## 10.1 `AiCoachHistoryPage`
 
-初始化请求：
+初始化请求（按 tab）：
 
-1. `GET /api/ai-coach/capabilities`
+- 模板生成历史：`GET /api/ai-coach/template-generations/history`
+- 周期总结历史：`GET /api/ai-coach/cycle-summaries/history`
 
-页面基于同一份能力数据渲染：
-
-- 模板生成能力卡
-- 周期总结能力卡
-- 缺失字段提示
-- 最近 completed cycle 摘要
-
-说明：
-
-- 首页不提前创建任务
-- 首页不加载生成结果或总结结果
+页面基于当前 tab 渲染对应历史列表，支持分页；点击进入对应 task 详情页。
 
 ## 10.2 `TemplateGenerationPage`
 
@@ -473,7 +454,7 @@ export type CycleSummaryTaskResult = {
 - 草稿模板预览
 - AI 设计说明
 - “去编辑草稿”按钮
-- “返回 AI Coach”按钮
+- “返回训练模板”按钮（→ `/cycle-templates`）
 
 ## 10.4 `CycleSummaryPage`
 
@@ -516,7 +497,7 @@ export type CycleSummaryTaskResult = {
 
 - 去模板页
 - 返回训练工作台
-- 返回 AI Coach 首页
+- 查看总结历史
 
 ---
 
@@ -564,7 +545,7 @@ export type CycleSummaryTaskResult = {
 用途：
 
 - 刷新恢复
-- 返回 AI Coach 首页时展示“最近任务”快捷入口
+- 返回历史页时展示“最近任务”快捷入口
 
 如首版实现压力较大，也可以先不落地本地持久化，只保留 URL 恢复能力。
 
@@ -755,12 +736,12 @@ export type CycleSummaryTaskResult = {
 
 每个页面都应显式覆盖以下状态：
 
-## 16.1 `AiCoachPage`
+## 16.1 `AiCoachHistoryPage`
 
-- `loading`
+- `loading template history`
+- `loading cycle history`
 - `error`
-- `available`
-- `unavailable`
+- `empty`
 
 ## 16.2 `TemplateGenerationPage`
 
@@ -803,13 +784,15 @@ export type CycleSummaryTaskResult = {
 
 ## 17. 实现顺序建议
 
+> 本模块已按下列顺序完成落地（2026-08-23 后，独立 hub 页已删除，历史页取代其位置）。
+
 建议前端开发顺序如下：
 
 1. 新增 `types/ai-coach.ts`
 2. 新增 `api/ai-coach.ts`
 3. 新增 `lib/ai-coach-enums.ts`、`formatters.ts`、`polling.ts`
-4. 在 `router.tsx` 和 `AppShell.tsx` 中接入 `AI Coach` 路由与导航
-5. 实现 `AiCoachPage`
+4. 在 `router.tsx` 接入 AI 相关路由与跳转
+5. 实现 `AiCoachHistoryPage`
 6. 实现 `TemplateGenerationPage`
 7. 实现 `TemplateGenerationTaskPage`
 8. 实现 `CycleSummaryPage`
@@ -819,7 +802,7 @@ export type CycleSummaryTaskResult = {
 原因：
 
 - 先稳住类型和 API 契约
-- 再做首页与发起页
+- 再做发起页与历史页
 - 最后做轮询页和旧入口迁移
 
 ---
@@ -831,7 +814,6 @@ export type CycleSummaryTaskResult = {
 - 聊天式 AI 页面
 - 流式输出 UI
 - WebSocket / SSE 推送
-- 历史 AI 任务列表页
 - 用户主动取消任务
 - 多个 completed cycle 手动选择器
 - 直接在 AI 结果页内编辑模板
@@ -841,7 +823,7 @@ export type CycleSummaryTaskResult = {
 
 ## 19. 本次设计结论
 
-`ai_coach` 前端模块应作为一个独立的正式业务模块落地，而不是继续寄生在 `cycle_template` 中做占位扩展。
+`ai_coach` 前端模块已作为独立正式业务模块落地，围绕 `capabilities + async task` 两层模型实现；AI 能力入口分散到所属业务模块（`cycle-template` / `workout`），不再有独立 hub 首页。
 
 本次设计的核心结论如下：
 
@@ -849,6 +831,6 @@ export type CycleSummaryTaskResult = {
 2. `ai_coach` 只负责发起、轮询、展示和跳转，不负责编辑模板或训练记录。
 3. 模板生成结果与设计说明必须分开展示，并保持只读边界。
 4. 周期总结当前只做结构化建议展示，不向下游自动执行任何变更。
-5. 现有 `cycle-template` 中的旧 AI 占位面板应视为待迁移旧实现，不再继续扩展。
+5. 旧 `AiGeneratePanel.tsx` 占位实现已被正式 `ai_coach` 模块取代。
 
 如后续进入实现阶段，本文档可直接作为 `ai_coach` 前端开发与联调的执行基线。

@@ -1,7 +1,7 @@
 # DailyForge Frontend Cycle Template 模块详细设计 v2
 
-> 版本：v2.0  
-> 日期：2026-07-15  
+> 版本：v2.1  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/cycle-template`
 
 ---
@@ -101,7 +101,22 @@
 
 - 正式模板 / 草稿模板列表入口
 - 展示当前激活模板摘要
-- 提供“新建草稿”与“AI 生成草稿”入口
+- 顶部提供三个入口：「新建草稿」「AI 生成草稿」「AI 生成历史」
+
+顶部入口跳转：
+
+- 「新建草稿」→ `/cycle-templates/create`
+- 「AI 生成草稿」→ `/ai-coach/template-generation`
+- 「AI 生成历史」→ `/ai-coach/history?tab=template-generations`
+
+卡片展示现状（2026-08-23 复核）：
+
+- 正式模板列表按 `isActive` 排序，启用模板置顶
+- 激活模板面板 eyebrow 已由「Active Cycle」改为「当前启用」
+- 所有正式模板卡 eyebrow 统一显示「正式模板」，草稿卡显示「草稿」
+- 仅启用模板右上角显示「当前启用」徽标
+- `sourceType === "ai_generated"` 的模板卡显示「AI生成」徽标
+- 「AI生成」与「当前启用」徽标均已加 `whitespace-nowrap`，避免换行
 
 本页受 v2 影响较小，主要变化在于：
 

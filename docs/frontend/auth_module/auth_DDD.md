@@ -1,7 +1,7 @@
 # DailyForge Frontend Auth 模块详细设计
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/auth`
 
 ---
@@ -28,7 +28,8 @@ src/features/auth
 ├─ api
 │  └─ auth.ts
 ├─ lib
-│  └─ auth-storage.ts
+│  ├─ auth-storage.ts
+│  └─ account-tier.ts         # 账户层级友好标签映射（新增）
 └─ pages
    ├─ LoginPage.tsx
    ├─ RegisterPage.tsx
@@ -156,7 +157,6 @@ flowchart TD
 4. 前端写入本地会话
 5. 更新内存中的当前用户
 6. 跳转 `/app`
-
 ### 6.3 启动恢复流程
 
 1. 应用启动
@@ -175,27 +175,33 @@ flowchart TD
 ### 6.5 邀请码兑换流程
 
 1. 用户输入邀请码
-2. 调用 `redeemInviteCode`
-3. 成功后提示兑换成功
-4. 更新 `currentUser.accountTier`
+2. 调用 `redeemInviteCode`（返回兑换后的 `accountTier`）
+3. 成功后展示「已升级到某层级」提示
+4. `AuthProvider` 更新 `currentUser.accountTier`
 
 ---
 
-## 7. 当前边界与风险
+## 7. 账户层级展示
 
-### 7.1 无 token 自动刷新
+`lib/account-tier.ts` 提供账户层级的友好标签映射（在邀请码页和 `AppShell` 顶部使用）：
 
-当前如果 access token 过期，页面侧不会自动续签，用户需要重新登录。
+- `basic` → 普通用户
+- `invited_ai` → AI 体验版
+- `premium` → 尊享版
 
-### 7.2 登录错误只有文本 message
+---
+
+## 8. 当前边界与风险
+
+### 8.1 access token 自动续签
+
+`AuthProvider` 已内置 access token 到期前的续签逻辑（`refreshAccessToken`），并处理 token 即将过期时的自动刷新。
+
+### 8.2 登录错误只有文本 message
 
 当前错误展示基于 `Error.message`，没有基于 `code` 做细粒度 UI 分支。
 
-### 7.3 本地存储仅适合当前阶段
+### 8.3 本地存储仅适合当前阶段
 
 当前把 token 放在 `localStorage`，对初始化阶段足够，但后续若要更强调安全性，需要重新评估。
-
-### 7.4 源码中存在中文乱码
-
-当前页面源码中的部分中文字符串已有编码异常，后续应统一清理。
 

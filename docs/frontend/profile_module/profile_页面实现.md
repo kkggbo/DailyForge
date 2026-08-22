@@ -1,7 +1,7 @@
 # DailyForge Frontend Profile 页面实现说明
 
-> 版本：v1.1  
-> 日期：2026-07-14  
+> 版本：v1.2  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/profile/pages`
 
 ---
@@ -26,105 +26,87 @@
 
 ### 2.1 页面目标
 
-这是用户日常维护个人资料的主页面。
+个人资料的只读总览页：汇总「基础档案」和「最新身体指标」两块信息（不再是编辑页）。
 
 ### 2.2 页面结构
 
 页面由以下区域组成：
 
-1. 标题与说明区
-2. 完成度摘要区
-3. Tab 切换区
-4. 当前 Tab 内容区
+1. 标题与说明区（含两个入口按钮）
+2. 基础档案只读卡（`BasicProfileSummaryCard`）
+3. 最新身体指标卡（`BodyMetricSummaryCard`）
 
 ### 2.3 标题与说明区
 
 展示：
 
 - 页面标题 `个人资料`
-- 当前模块说明文案
-- `ProfileTabNav`
+- 模块说明文案
+- 入口按钮：
+  - `更新个人信息`（主按钮，→ `/profile/edit`）
+  - `查看身体指标历史记录`（次按钮，→ `/profile/metrics/history`）
 
-### 2.4 完成度摘要区
+### 2.4 基础档案只读卡
 
-通过 `CompletionSummaryBanner` 展示：
+组件：`BasicProfileSummaryCard`
 
-- 基础档案是否可用于 AI
-- 是否已有体重记录
-- 当前体重
-- 缺失的关键字段
+展示字段：性别、出生日期、身高、训练目标、训练经验、当前体重，以及伤病与注意事项（长文本）。
 
-### 2.5 基础档案 Tab
+### 2.5 最新身体指标卡
 
-组件：
+组件：`BodyMetricSummaryCard`
 
-- `BasicProfileForm`
+展示最新快照的 11 项指标与最近更新时间。
 
-当前实现规则：
+## 3. `ProfileEditPage`
 
-- 生日默认回填为 `2000-01-01`
-- 日期使用原生日期控件
-- 日期控件采用浅色方案，暗色背景下图标可见
-- 身高必须为整数
-- 身高输入隐藏浏览器默认增减按钮
-- 下拉框统一深色样式
+路由：
 
-### 2.6 身体指标 Tab
+- `/profile/edit`
 
-组件：
+### 3.1 页面目标
 
-1. `BodyMetricSummaryCard`
-2. `BodyMetricForm`
-3. `BodyMetricHistoryList`
+个人资料的编辑页，集中维护基础档案并新增身体指标记录。
 
-当前实现规则：
+### 3.2 页面结构
 
-- 新增记录表单默认回填当前身体指标快照。
-- 用户如果只想改体重或少数几个字段，不需要重复抄写上次数据。
-- 表单旁提供“清空”按钮，允许从空白状态重新填写。
+自上而下：
 
-### 2.7 身体指标录入表单行为
+1. 标题区（含「返回个人资料」按钮）
+2. `BasicProfileForm`（保存基础档案）
+3. `BodyMetricForm`（新增身体指标记录，默认回填当前快照，可清空）
 
-当前实现细节：
+### 3.3 提交行为
 
-- 页面上不展示 `recordDate`。
-- 提交时自动使用用户本地当天日期作为 `recordDate`。
-- 小数字段步进统一为 `0.1`。
-- `bodyAge` 仍然按整数输入。
-- 当所有指标字段都为空时，不显示备注栏。
-- 一旦任一指标有值，备注栏自动出现。
-
-### 2.8 历史记录区
-
-展示：
-
-- 最近记录分页列表
-- `isLatest=true` 的记录显示“最新记录”标签
-- 仅最新记录显示删除入口
-
-### 2.9 删除最新记录交互
-
-组件：
-
-- `DeleteLatestMetricDialog`
-
-当前实现规则：
-
-1. 点击“删除最新记录”后先打开确认弹窗。
-2. 确认后调用 `DELETE /api/profile/body-metrics/latest`。
-3. 成功后关闭弹窗并刷新摘要、快照、历史、基础档案。
-4. 失败时：
-   - 页面级错误区会显示错误
-   - 弹窗内部也会显示错误
-
-当前已处理的业务错误码：
-
-- `BODY_METRIC_LATEST_ALREADY_DELETED`
-- `BODY_METRIC_NOT_FOUND`
+- 保存基础档案成功后刷新 `basicProfile`，表单显示成功提示。
+- 新增身体指标成功后刷新 `snapshot`，表单显示成功提示。
+- 保存后不自动跳转，用户通过「返回个人资料」回到 `/profile`。
 
 ---
 
-## 3. `ProfileOnboardingPage`
+## 4. `BodyMetricHistoryPage`
+
+路由：
+
+- `/profile/metrics/history`
+
+### 4.1 页面目标
+
+按时间查看身体指标历史记录，并支持删除最新一条。
+
+### 4.2 页面结构
+
+1. 标题区（含「返回个人资料」按钮）
+2. `BodyMetricHistoryList`（分页列表，最新记录标注 + 删除入口）
+3. `DeleteLatestMetricDialog`（删除二次确认）
+
+### 4.3 删除行为
+
+删除成功后重新加载第一页；失败时在弹窗内展示业务错误文案。
+
+---
+
+## 5. `ProfileOnboardingPage`
 
 路由：
 
@@ -174,7 +156,7 @@
 
 ---
 
-## 4. `ProfileAiCompletionPage`
+## 6. `ProfileAiCompletionPage`
 
 路由：
 
@@ -221,45 +203,37 @@
 
 ---
 
-## 5. 请求与刷新链路
+## 7. 请求与刷新链路
 
-### 5.1 `ProfilePage` 首屏请求
+### 7.1 `ProfilePage`（总览）首屏请求
 
 并行请求：
 
 1. `GET /api/profile/basic`
-2. `GET /api/profile/completion-summary`
-3. `GET /api/profile/body-metrics/current`
-4. `GET /api/profile/body-metrics?page=1&pageSize=20`
+2. `GET /api/profile/body-metrics/current`
 
-### 5.2 保存基础档案后
+### 7.2 `ProfileEditPage`（编辑）首屏请求
 
-刷新：
+并行请求：
 
-- `basicProfile`
-- `completionSummary`
+1. `GET /api/profile/basic`
+2. `GET /api/profile/body-metrics/current`
 
-### 5.3 新增身体指标后
+### 7.3 `BodyMetricHistoryPage`（历史）首屏请求
 
-刷新：
+请求：
 
-- `basicProfile`
-- `completionSummary`
-- `snapshot`
-- `history`
+1. `GET /api/profile/body-metrics?page=1&pageSize=20`
 
-### 5.4 删除最新记录后
+### 7.4 保存 / 新增 / 删除后的刷新
 
-刷新：
-
-- `basicProfile`
-- `completionSummary`
-- `snapshot`
-- `history`
+- 保存基础档案 → 刷新 `basicProfile`
+- 新增身体指标 → 刷新 `snapshot`
+- 删除最新记录 → 重新加载历史第一页
 
 ---
 
-## 6. 页面级体验优化汇总
+## 8. 页面级体验优化汇总
 
 本轮已落地的体验优化：
 

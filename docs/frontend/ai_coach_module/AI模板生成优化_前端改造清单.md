@@ -1,5 +1,9 @@
 # AI模板生成优化前端改造清单
 
+> 版本：v1.1  
+> 日期：2026-08-23  
+> 已于 2026-08-23 复核，现状见 [ai_coach_DDD.md](./ai_coach_DDD.md) 与 [cycle_template_DDD.md](../cycle_template_module/cycle_template_DDD.md)。
+
 ## 1. 背景与目标
 
 本次改造目标是让 AI 模板生成、历史展示、模板详情的前端体验更清晰，减少重复状态提示，并与后端新增字段完成契约对齐。

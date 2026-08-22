@@ -1,7 +1,7 @@
 # DailyForge Frontend Workout 模块详细设计
 
-> 版本：v1.0
-> 日期：2026-07-29
+> 版本：v1.1
+> 日期：2026-08-23
 > 模块归属：`frontend/src/features/workout`
 > 契约来源：`docs/interfaces/workout_接口文档.md`
 
@@ -28,7 +28,7 @@ src/features/workout
 3. Day 导航统一调用 W3，导航处理不调用 W2，因此浏览历史或未来 Day 不会创建 session。
 4. 编辑器维护本地字符串输入态，提交时生成全量 `SavePayload`：空文本和空数字显式映射为 `null`，动作、执行项与参数均覆盖 session 快照。
 5. W4 与 W5 复用同一 payload。W5 成功后采用 `completedDay` 替换当前详情，保留 `selectedDayIndex`，不跳到 `nextCurrentDayIndex`。
-6. W8 成功后重新执行 W1，再自动执行 W2 初始化新的 Day 1；W9 的 `WORKOUT_AI_NOT_IMPLEMENTED` 仅显示占位提示。
+6. W8 成功后重新执行 W1，再自动执行 W2 初始化新的 Day 1；周期总结入口现指向 `/ai-coach/cycle-summary`（以及历史入口 `/ai-coach/history?tab=cycle-summaries`），不再有本地「AI 占位」行为。
 
 ## 服务端权威字段
 

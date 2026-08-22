@@ -1,19 +1,16 @@
 # DailyForge Frontend Home 模块详细设计
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/home`
 
 ---
 
 ## 1. 模块目标
 
-`home` 模块当前承担两类页面：
+`home` 模块当前只承载一个页面：登录后控制台首页 `HomePage`（`/app`）。
 
-- 未登录用户看到的项目首页
-- 已登录用户看到的临时控制台首页
-
-这个模块目前仍偏占位性质，但它承担了前端第一版“入口引导”和“联调落点”的职责。
+原来的未登录项目首页 `LandingPage` 已删除；未登录用户现在看到的是登录页 `/`（`auth` 模块的 `LoginPage`），产品介绍已并入该登录页。
 
 ---
 
@@ -22,58 +19,18 @@
 ```text
 src/features/home
 └─ pages
-   ├─ LandingPage.tsx
    └─ HomePage.tsx
 ```
 
 ---
 
-## 3. LandingPage
+## 3. 已删除：LandingPage
 
-对应文件：
+`LandingPage` 已删除，不再作为未登录首页存在。
 
-- [LandingPage.tsx](/D:/Computer%20Science/DailyForge/frontend/src/features/home/pages/LandingPage.tsx)
+未登录用户现在看到的首页是登录页 `/`（`auth` 模块的 `LoginPage`），原 `LandingPage` 的产品介绍内容已并入该登录页（含产品介绍 + 三张特性卡）。
 
-### 3.1 页面目标
-
-当前首页的核心目标不是营销，而是：
-
-- 展示 DailyForge 当前产品定位
-- 说明前端第一版已经接通的能力
-- 为新用户和已登录用户提供不同入口
-
-### 3.2 页面结构
-
-页面主要由两部分组成：
-
-1. 顶部主视觉区
-2. 下方三张功能说明卡片
-
-顶部主视觉区又分左右布局：
-
-- 左侧：品牌标题、价值说明、主 CTA
-- 右侧：当前已接通能力列表
-
-### 3.3 动态行为
-
-页面通过 `useAuth()` 读取 `isAuthenticated`，决定主按钮目标：
-
-- 已登录：跳转 `/app`
-- 未登录：跳转 `/register`
-
-### 3.4 `pillars` 数据
-
-页面内定义了三个当前产品方向：
-
-- 训练计划
-- 训练打卡
-- AI 建议
-
-这是当前产品能力的轻量表达，也能作为后续首页继续扩展的基础。
-
-### 3.5 当前定位
-
-当前 `LandingPage` 更像“产品占位首页 + 联调入口页”，不是最终营销首页。
+因此 `home` 模块不再承担未登录入口职责。
 
 ---
 
@@ -85,60 +42,60 @@ src/features/home
 
 ### 4.1 页面目标
 
-登录后的 `/app` 当前主要承担：
+登录后的 `/app` 控制台首页，负责：
 
 - 作为登录成功后的跳转落点
-- 显示当前用户基本信息
-- 提示下一阶段业务模块的开发方向
+- 展示欢迎信息与 AI 解锁入口
+- 根据当前训练状态渲染不同的后续行动内容
 
 ### 4.2 页面结构
 
-页面分为两个大区域：
+页面顶部为双栏区域：
 
-1. 顶部双栏摘要区
-2. 下方双栏行动区
+- 左侧：欢迎卡（`WelcomeCard`），显示「控制台」标签、`你好，{userName}` 问候语与一句引导文案
+- 右侧：AI 解锁卡（`AiUnlockCard`），仅当 `currentUser.accountTier` 不是 AI 层级（`invited_ai` / `premium`）时显示，引导用户去 `/invite-code` 兑换邀请码
 
-顶部双栏摘要区：
+顶部之下按 `workspace.workspaceState` 三态条件渲染，并在加载与出错时分别显示加载占位 / 错误面板（含重新加载按钮）：
 
-- 左侧：欢迎说明和当前前端状态说明
-- 右侧：用户摘要卡片区
+1. `no_active_template`（无激活循环）→ 快速入门卡（`QuickStart`）
+2. `active` → 今天训练卡（`TodayCard`）
+3. `cycle_completed` → 循环完成卡（`CycleCompleteCard`）
 
-下方双栏行动区：
+### 4.3 快速入门卡（QuickStart）
 
-- 左侧：后续建议开发模块列表
-- 右侧：邀请码升级入口
+4 步引导：
 
-### 4.3 SummaryCard 组件
+1. 完善个人资料（→ `/profile`）
+2. 创建并启用训练模板（两个按钮：手动创建模板 → `/cycle-templates/create`，AI 生成模板 → `/ai-coach/template-generation`）
+3. 开始训练打卡（→ `/workout`）
+4. 用 AI 教练（→ `/ai-coach/cycle-summary`）
 
-页面内部定义了一个局部组件 `SummaryCard`，用于展示：
+### 4.4 今天训练卡（TodayCard）
 
-- 用户 ID
-- 邮箱
-- 平台角色
-- 账户层级
-- 状态
+展示当前训练日信息：
 
-当前没有抽成共享组件，是因为还只在一个页面使用。
+- 模板名（`workspace.templateName`）+ 轮次（`workspace.runNo`，若存在）
+- `Day {currentDayIndex} · {dayName}`，休息日追加「· 休息日」
+- 非休息日：显示今日动作列表（`exerciseName`），并提供「进入训练工作台」按钮（→ `/workout`）
+- 休息日：显示「今天休息，没有计划动作」，并提供「完成今日打卡」按钮（调用 `completeSession` 以空动作打卡）与「进入训练工作台」按钮
+- 打卡成功后显示「今日休息日打卡完成」提示并重新加载工作台
 
-### 4.4 当前作用边界
+### 4.5 循环完成卡（CycleCompleteCard）
 
-当前控制台首页还不是正式业务首页，不承载：
+显示「这一轮训练已完成」标题与模板名，说明当前循环已结束，引导用户去 `/workout` 沿用当前模板重新开始、切换模板或进行 AI 周期总结。
 
-- 训练计划概览
-- 今日训练入口
-- 身体指标摘要
-- 统计图表
+### 4.6 数据加载
 
-它只是用来证明“登录后受保护页面链路可用”。
+页面通过 `getWorkspace` 读取工作台状态；当 `workspaceState === "active"` 时再调用 `initializeCurrentDay` 获取今日训练日。若 `initializeCurrentDay` 抛出 `WORKOUT_CYCLE_COMPLETED`，则重新拉取 `getWorkspace` 得到 `cycle_completed` 状态。
 
 ---
 
 ## 5. 模块与鉴权的关系
 
-`home` 模块两个页面都依赖 `useAuth()`：
+`HomePage` 依赖 `useAuth()`，读取：
 
-- `LandingPage` 读取 `isAuthenticated`
-- `HomePage` 读取 `currentUser`
+- `currentUser`：欢迎卡用户名与 AI 层级判断
+- `accessToken`：用于调用工作台相关接口（`getWorkspace` / `initializeCurrentDay` / `completeSession`）
 
 因此它与 `app/providers/AuthProvider` 是紧耦合的应用入口层模块。
 
@@ -146,28 +103,18 @@ src/features/home
 
 ## 6. 后续演进建议
 
-### 6.1 LandingPage
+### 6.1 HomePage
 
-后续可以增强为：
+`HomePage` 已具备今日训练状态、当前循环模板摘要与 AI 解锁入口，后续可继续演进为更完整的工作台：
 
-- 更完整的产品首页
-- 功能预览区
-- MVP 路线图
-- 体验申请入口
-
-### 6.2 HomePage
-
-后续建议逐步演进为真实工作台：
-
-1. 今日训练状态
-2. 当前循环模板摘要
-3. 最近身体指标
-4. 训练完成率
-5. AI 建议入口
+1. 最近身体指标
+2. 训练完成率统计
+3. 更丰富的 AI 建议入口
+4. 多循环 / 历史循环切换
 
 ---
 
 ## 7. 当前已知问题
 
-当前页面源码中也存在部分中文乱码，需要后续统一清理，否则控制台和首页文案会受影响。
+此前的源码中文乱码问题已解决，当前 `HomePage` 文案均为正常中文，无已知乱码问题。
 

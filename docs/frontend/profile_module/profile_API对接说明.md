@@ -1,7 +1,7 @@
 # DailyForge Frontend Profile API 对接说明
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/profile/api`
 
 ---
@@ -202,9 +202,9 @@ type ProfileCompletionSummaryResponse = {
 
 ---
 
-## 3. 前端 API 文件建议
+## 3. 前端 API 文件现状
 
-建议在 `profile.ts` 中导出：
+`profile.ts` 已导出以下函数：
 
 ```ts
 getBasicProfile(accessToken)
@@ -215,6 +215,8 @@ createBodyMetric(accessToken, payload)
 deleteLatestBodyMetric(accessToken)
 getProfileCompletionSummary(accessToken)
 ```
+
+> 说明：`getProfileCompletionSummary` 仍保留，但个人资料总览 / 编辑 / 历史三页已不再调用它（完成度 banner 已移除），当前主要由 AI 补录等场景使用。
 
 ---
 
@@ -272,30 +274,12 @@ weightKg -> 体重
 
 ---
 
-## 6. 当前前端基础设施的改造建议
+## 6. 前端基础设施现状
 
-为了顺畅对接 `profile`，建议在真正写代码前对现有基础设施做两点增强。
+`profile` 对接所需的两点基础设施已落地（不再是「建议」）：
 
-### 6.1 `shared/api/http.ts` 支持 query 参数
-
-目前 `request` 只适合静态路径。  
-`profile` 会首次用到分页查询，因此建议新增：
-
-- query 参数拼接工具
-
-### 6.2 `shared/api/http.ts` 返回结构化错误
-
-当前只抛 `Error(message)`，不保留 `code`。  
-而 `profile` 模块有明确业务错误码，建议升级为：
-
-```ts
-type ApiRequestError = Error & {
-  code?: string;
-  status?: number;
-};
-```
-
-这样页面才能做真正可控的错误分支。
+- `shared/api/http.ts` 已支持 query 参数拼接。
+- `shared/api/http.ts` 已抛出结构化 `ApiRequestError`（含 `code` / `status`）。
 
 ---
 

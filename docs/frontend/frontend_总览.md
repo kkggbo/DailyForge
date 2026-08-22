@@ -1,7 +1,7 @@
 # DailyForge Frontend 技术总览
 
-> 版本：v1.0  
-> 日期：2026-07-12  
+> 版本：v1.1  
+> 日期：2026-08-23  
 > 归属目录：`docs/frontend`
 
 ---
@@ -42,35 +42,33 @@
 
 ### 2.2 业务模块层 `features`
 
-当前已存在：
+当前已存在 7 个业务模块：
 
-- `auth`
-- `home`
+- `auth` — 登录 / 注册 / 邀请码兑换
+- `home` — 登录后控制台首页 `/app`
+- `profile` — 个人资料总览 / 编辑 / 身体指标历史 / 引导 / AI 补录
+- `exercise` — 系统动作库（供模板编辑器中的动作选择器使用）
+- `cycle-template` — 训练模板（草稿 / 正式 / 详情 / 编辑）
+- `workout` — 训练工作台 / 历史详情
+- `ai-coach` — AI 模板生成 / AI 周期总结 / 任务历史（无独立 hub 页）
 
-后续预期新增：
-
-- `profile`
-- `cycle-template`
-- `training-session`
-- `stats`
-
-每个业务模块内部优先采用：
+每个业务模块普遍包含以下目录（按需出现，并非每个模块都有全部）：
 
 - `api`
-- `lib`
-- `pages`
-
-如果后续模块变大，再增加：
-
 - `components`
 - `hooks`
+- `lib`
+- `pages`
 - `types`
+
+其中 `home` 目前只有 `pages`；`exercise` 没有 `pages`，仅作为模板编辑器的动作选择数据源使用。
 
 ### 2.3 共享层 `shared`
 
-用于存放横跨多个模块复用的能力。当前仅有：
+用于存放横跨多个模块复用的能力。当前有：
 
-- `shared/api/http.ts`
+- `shared/api/http.ts` — `request<T>` 统一 API 封装
+- `shared/lib/uuid.ts` — `generateUuid()`（兼容非安全上下文，供 AI 任务 `clientRequestId` 使用）
 
 后续可以扩展为：
 
@@ -83,16 +81,48 @@
 
 ## 3. 当前路由地图
 
-```text
-/
-├─ /                   LandingPage
-├─ /login              LoginPage
-├─ /register           RegisterPage
-├─ /app                HomePage               (受保护)
-└─ /invite-code        RedeemInviteCodePage   (受保护)
-```
+公开路由（`GuestOnlyOutlet` 包裹，已登录会跳 `/app`）：
 
-受保护页面统一经过 `ProtectedOutlet`。
+| 路径 | 组件 | 说明 |
+|------|------|------|
+| `/` | `LoginPage` | 登录即首页（含产品介绍） |
+| `/register` | `RegisterPage` | 注册页 |
+
+重定向：
+
+| 路径 | 目标 | 说明 |
+|------|------|------|
+| `/login` | `/` | 旧登录地址重定向到首页 |
+
+受保护路由（`ProtectedOutlet` 包裹，未登录跳 `/`）：
+
+| 路径 | 组件 | 说明 |
+|------|------|------|
+| `/app` | `AppEntryPage` | 未完成 profile 引导则跳 `/profile/onboarding`，否则 `HomePage` |
+| `/invite-code` | `RedeemInviteCodePage` | 邀请码兑换页 |
+| `/ai-coach` | 重定向 | 重定向到 `/ai-coach/template-generation` |
+| `/ai-coach/history` | `AiCoachHistoryPage` | tab 参数：template-generations / cycle-summaries |
+| `/ai-coach/template-generation` | `TemplateGenerationPage` | AI 模板生成 |
+| `/ai-coach/template-generation/tasks/:taskId` | `TemplateGenerationTaskPage` | AI 模板生成任务详情 |
+| `/ai-coach/cycle-summary` | `CycleSummaryPage` | AI 周期总结 |
+| `/ai-coach/cycle-summary/tasks/:taskId` | `CycleSummaryTaskPage` | AI 周期总结任务详情 |
+| `/profile` | `ProfilePage` | 只读总览 |
+| `/profile/edit` | `ProfileEditPage` | 基础档案 + 身体指标录入 |
+| `/profile/metrics/history` | `BodyMetricHistoryPage` | 历史 + 删除最新 |
+| `/profile/onboarding` | `ProfileOnboardingPage` | 引导页 |
+| `/profile/ai-completion` | `ProfileAiCompletionPage` | AI 补录 |
+| `/cycle-templates` | `CycleTemplatePage` | 训练模板列表 |
+| `/cycle-templates/create` | `CycleTemplateCreatePage` | 新建模板 |
+| `/cycle-templates/:templateId` | `CycleTemplateDetailPage` | 模板详情 |
+| `/cycle-templates/:templateId/edit` | `CycleTemplateEditPage` | 模板编辑 |
+| `/workout` | `WorkoutPage` | 训练工作台 |
+| `/workout/history/:sessionId` | `WorkoutHistoryDetailPage` | 训练历史详情 |
+
+路由守卫：
+
+- `ProtectedOutlet`：未登录跳 `/`
+- `GuestOnlyOutlet`：已登录跳 `/app`
+- `AppEntryPage`：未完成 profile onboarding 跳 `/profile/onboarding`
 
 ---
 
@@ -105,9 +135,14 @@ flowchart TD
     ROUTER --> APP_SHELL["AppShell 应用壳层"]
     ROUTER --> HOME_PAGES["home pages"]
     ROUTER --> AUTH_PAGES["auth pages"]
+    ROUTER --> PROFILE_PAGES["profile pages"]
+    ROUTER --> CYCLE_TEMPLATE_PAGES["cycle-template pages"]
+    ROUTER --> WORKOUT_PAGES["workout pages"]
+    ROUTER --> AI_COACH_PAGES["ai-coach pages"]
     AUTH_PROVIDER --> AUTH_API["features/auth/api/auth.ts"]
     AUTH_PROVIDER --> AUTH_STORAGE["features/auth/lib/auth-storage.ts"]
     AUTH_API --> HTTP["shared/api/http.ts"]
+    CYCLE_TEMPLATE_PAGES --> EXERCISE_API["features/exercise/api/exercise.ts"]
 ```
 
 ---

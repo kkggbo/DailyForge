@@ -1,7 +1,7 @@
 # DailyForge Frontend Profile 模块详细设计
 
-> 版本：v1.1  
-> 日期：2026-07-14  
+> 版本：v1.2  
+> 日期：2026-08-23  
 > 模块归属：`frontend/src/features/profile`
 
 ---
@@ -59,12 +59,11 @@ src/features/profile
 ├─ api
 │  └─ profile.ts
 ├─ components
-│  ├─ ProfileTabNav.tsx
+│  ├─ BasicProfileSummaryCard.tsx   # 只读基础档案卡（新增）
 │  ├─ BasicProfileForm.tsx
 │  ├─ BodyMetricSummaryCard.tsx
 │  ├─ BodyMetricForm.tsx
 │  ├─ BodyMetricHistoryList.tsx
-│  ├─ CompletionSummaryBanner.tsx
 │  └─ DeleteLatestMetricDialog.tsx
 ├─ lib
 │  ├─ profile-enums.ts
@@ -72,16 +71,22 @@ src/features/profile
 │  ├─ profile-mappers.ts
 │  └─ onboarding-storage.ts
 ├─ pages
-│  ├─ ProfilePage.tsx
+│  ├─ ProfilePage.tsx              # 只读总览
+│  ├─ ProfileEditPage.tsx          # 编辑（新增）
+│  ├─ BodyMetricHistoryPage.tsx    # 身体指标历史（新增）
 │  ├─ ProfileOnboardingPage.tsx
 │  └─ ProfileAiCompletionPage.tsx
 └─ types
    └─ profile.ts
 ```
 
+> 已删除组件：`ProfileTabNav`、`CompletionSummaryBanner`（资料完成度 banner 与 tab 切换已移除）。
+
 ---
 
 ## 5. 当前页面与路由
+
+用户日常个人资料现在拆成三个页面：
 
 ### 5.1 `ProfilePage`
 
@@ -89,10 +94,28 @@ src/features/profile
 
 作用：
 
-- 正常的个人资料管理主页面。
-- 包含 `基础档案` 和 `身体指标` 两个 Tab。
+- 只读总览页，汇总「基础档案」和「最新身体指标」两块信息。
+- 顶部提供两个入口按钮：「更新个人信息」（→ `/profile/edit`）和「查看身体指标历史记录」（→ `/profile/metrics/history`）。
+- 不再有 Tab 切换，也不再展示资料完成度 banner。
 
-### 5.2 `ProfileOnboardingPage`
+### 5.2 `ProfileEditPage`
+
+路由：`/profile/edit`
+
+作用：
+
+- 编辑页，自上而下包含 `BasicProfileForm`（基础档案）和 `BodyMetricForm`（新增身体指标记录）。
+- 保存成功后仍停留在本页并刷新对应数据；用户通过「返回个人资料」回到 `/profile`。
+
+### 5.3 `BodyMetricHistoryPage`
+
+路由：`/profile/metrics/history`
+
+作用：
+
+- 身体指标历史记录页，展示分页历史列表，并支持删除最新一条记录（`DeleteLatestMetricDialog`）。
+
+### 5.4 `ProfileOnboardingPage`
 
 路由：`/profile/onboarding`
 
@@ -101,7 +124,7 @@ src/features/profile
 - 首次登录后的资料引导页。
 - 为轻量引导，不是强制门槛。
 
-### 5.3 `ProfileAiCompletionPage`
+### 5.5 `ProfileAiCompletionPage`
 
 路由：`/profile/ai-completion`
 
@@ -253,86 +276,62 @@ type BodyMetricLogItemResponse = {
 
 ## 9. 页面状态与数据流
 
-### 9.1 `ProfilePage` 初始加载
+### 9.1 `ProfilePage`（总览）初始加载
 
 并行请求：
 
 1. `GET /api/profile/basic`
-2. `GET /api/profile/completion-summary`
-3. `GET /api/profile/body-metrics/current`
-4. `GET /api/profile/body-metrics?page=1&pageSize=20`
+2. `GET /api/profile/body-metrics/current`
 
-### 9.2 基础档案保存后
+> 总览页不再调用 `getProfileCompletionSummary`，也不再拉取历史列表。
 
-刷新：
+### 9.2 `ProfileEditPage`（编辑）初始加载
 
-1. `basicProfile`
-2. `completionSummary`
+并行请求：
 
-### 9.3 身体指标新增后
+1. `GET /api/profile/basic`
+2. `GET /api/profile/body-metrics/current`
 
-刷新：
+保存基础档案后刷新 `basicProfile`；新增身体指标后刷新 `snapshot`。
 
-1. `basicProfile`
-2. `completionSummary`
-3. `snapshot`
-4. `history`
+### 9.3 `BodyMetricHistoryPage`（历史）初始加载
 
-### 9.4 删除最新记录后
+请求：
 
-刷新：
+1. `GET /api/profile/body-metrics?page=1&pageSize=20`
 
-1. `basicProfile`
-2. `completionSummary`
-3. `snapshot`
-4. `history`
+删除最新记录后重新加载第一页。
+
+> 说明：`getProfileCompletionSummary` 接口仍然保留在 `api/profile.ts` 中（供 AI 补录等场景使用），只是个人资料总览/编辑/历史三页不再调用它。
 
 ---
 
-## 10. `ProfilePage` 当前实现规则
+## 10. 三个资料页当前实现规则
 
-### 10.1 顶部信息区
+### 10.1 `ProfilePage`（总览）
 
-显示：
+顶部信息区显示：
 
-- 页面标题
+- 页面标题 `个人资料`
 - 资料说明文案
-- `ProfileTabNav`
-- `CompletionSummaryBanner`
+- 两个入口按钮：`更新个人信息`（主按钮，→ `/profile/edit`）、`查看身体指标历史记录`（次按钮，→ `/profile/metrics/history`）
 
-### 10.2 基础档案 Tab
+内容区自上而下：
 
-使用 `BasicProfileForm`。
+1. `BasicProfileSummaryCard`（只读基础档案：性别/出生日期/身高/训练目标/训练经验/当前体重，以及伤病与注意事项）
+2. `BodyMetricSummaryCard`（最新身体指标快照：体重/体脂率/BMI/骨骼肌率/身体水分/基础代谢/腰围/臀围/腰臀比/身体年龄/体型）
 
-提交按钮文案：
+### 10.2 `ProfileEditPage`（编辑）
 
-- `保存基础档案`
+自上而下：
 
-### 10.3 身体指标 Tab
+1. `BasicProfileForm`（提交按钮 `保存基础档案`）
+2. `BodyMetricForm`（提交按钮 `新增身体指标记录`，默认回填当前快照，可「清空」）
 
-由三部分组成：
+### 10.3 `BodyMetricHistoryPage`（历史）
 
-1. `BodyMetricSummaryCard`
-2. `BodyMetricForm`
-3. `BodyMetricHistoryList`
-
-当前实现新增的细节：
-
-- 表单默认回填当前快照中的指标值，减少重复输入。
-- 用户可通过“清空”按钮改为从空表单重新填写。
-- 回填只发生在 `/profile` 资料页，不影响 onboarding 和 AI 补录页。
-
-### 10.4 删除最新记录交互
-
-使用 `DeleteLatestMetricDialog` 二次确认。
-
-当前实现规则：
-
-- 删除失败时，不只写页面级错误。
-- 弹窗内部也会显示错误提示，避免被遮罩层挡住。
-- 对以下错误码做了中文业务提示映射：
-  - `BODY_METRIC_LATEST_ALREADY_DELETED`
-  - `BODY_METRIC_NOT_FOUND`
+- `BodyMetricHistoryList`：分页展示，`isLatest=true` 的记录标「最新记录」且提供删除入口。
+- `DeleteLatestMetricDialog`：删除二次确认，删除失败时弹窗内显示业务文案（`BODY_METRIC_LATEST_ALREADY_DELETED` / `BODY_METRIC_NOT_FOUND`）。
 
 ---
 
