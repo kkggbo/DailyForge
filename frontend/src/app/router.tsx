@@ -16,7 +16,9 @@ import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTem
 import { CycleTemplatePage } from "../features/cycle-template/pages/CycleTemplatePage";
 import { HomePage } from "../features/home/pages/HomePage";
 import { hasCompletedProfileOnboarding } from "../features/profile/lib/onboarding-storage";
+import { BodyMetricHistoryPage } from "../features/profile/pages/BodyMetricHistoryPage";
 import { ProfileAiCompletionPage } from "../features/profile/pages/ProfileAiCompletionPage";
+import { ProfileEditPage } from "../features/profile/pages/ProfileEditPage";
 import { ProfileOnboardingPage } from "../features/profile/pages/ProfileOnboardingPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { WorkoutHistoryDetailPage } from "../features/workout/pages/WorkoutHistoryDetailPage";
@@ -131,6 +133,14 @@ export const router = createBrowserRouter([
           {
             path: "/profile",
             element: <ProfilePage />
+          },
+          {
+            path: "/profile/edit",
+            element: <ProfileEditPage />
+          },
+          {
+            path: "/profile/metrics/history",
+            element: <BodyMetricHistoryPage />
           },
           {
             path: "/profile/onboarding",
