@@ -26,11 +26,7 @@ export function CycleSummaryLaunchCard({
         当前版本会基于最近一轮已完成循环发起总结任务，结果只返回结构化建议，不会自动修改模板。
       </p>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <InfoCard
-          label="循环 ID"
-          value={String(capability.latestCompletedCycleRunId ?? "--")}
-        />
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <InfoCard
           label="最近完成时间"
           value={formatAiDateTime(capability.latestCompletedAt)}

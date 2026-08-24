@@ -19,9 +19,7 @@ export function CycleSummaryResult({ result }: CycleSummaryResultProps) {
           {result.executionOverview}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-stone-200">
-          <Tag>{`循环 ID #${result.cycleRunId}`}</Tag>
-          <Tag>{`${result.cycleLength} 天周期`}</Tag>
-          <Tag>{`模板 ID #${result.templateId}`}</Tag>
+          <Tag>{`第 ${result.runNo} 轮 · ${result.cycleLength} 天周期`}</Tag>
         </div>
       </section>
 

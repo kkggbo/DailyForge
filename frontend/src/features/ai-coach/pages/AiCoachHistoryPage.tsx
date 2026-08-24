@@ -183,7 +183,7 @@ export function AiCoachHistoryPage() {
 }
 
 function renderTemplateHistoryHeading(record: TemplateGenerationHistoryItem) {
-  return record.templateName ?? `模板生成任务 #${record.taskId}`;
+  return record.templateName ?? "模板生成任务";
 }
 
 function renderTemplateHistoryMeta(record: TemplateGenerationHistoryItem) {
@@ -203,17 +203,15 @@ function renderTemplateHistoryMeta(record: TemplateGenerationHistoryItem) {
 function renderCycleHistoryHeading(record: CycleSummaryHistoryItem) {
   return record.templateName
     ? `${record.templateName} · 第 ${record.runNo ?? "--"} 轮`
-    : `周期总结任务 #${record.taskId}`;
+    : "周期总结任务";
 }
 
 function renderCycleHistoryMeta(record: CycleSummaryHistoryItem) {
   return (
     <>
-      <Tag>Cycle Run #{record.cycleRunId}</Tag>
       <Tag>
         {record.cycleLength ? `${record.cycleLength} 天` : "周期长度待定"}
       </Tag>
-      {record.templateId ? <Tag>模板 #{record.templateId}</Tag> : null}
     </>
   );
 }

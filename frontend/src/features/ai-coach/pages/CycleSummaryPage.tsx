@@ -129,7 +129,7 @@ export function CycleSummaryPage() {
         <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
           <h2 className="text-2xl font-semibold text-white">暂时没有可分析的已完成循环</h2>
           <p className="mt-3 max-w-2xl leading-7 text-stone-300">
-            当前至少需要存在一轮 `completed` 状态的循环，AI 才能基于它输出总结。
+            当前至少需要存在一轮「已完成」状态的循环，AI 才能基于它输出总结。
           </p>
         </section>
       ) : null}

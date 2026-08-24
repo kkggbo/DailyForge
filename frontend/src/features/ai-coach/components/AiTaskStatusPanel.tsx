@@ -28,7 +28,7 @@ export function AiTaskStatusPanel({ task }: AiTaskStatusPanelProps) {
             {formatAiTaskStatus(task.taskStatus)}
           </h2>
           <p className="mt-2 text-sm text-stone-300">
-            任务编号 #{task.taskId} · {task.taskType}
+            {task.taskType === "cycle_summary" ? "周期总结任务" : "模板生成任务"}
           </p>
         </div>
 
