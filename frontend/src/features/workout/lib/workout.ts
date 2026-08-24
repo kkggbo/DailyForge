@@ -21,6 +21,7 @@ const metricLabels: Record<MetricKey, string> = {
   weight_kg: "重量",
   reps: "次数",
   duration_seconds: "时长",
+  duration_minutes: "时长",
   distance_km: "距离",
   speed_kmh: "速度",
   pace_seconds_per_km: "配速",
@@ -39,6 +40,7 @@ const sessionLabels: Record<SessionStatus, string> = {
 const integerMetricKeys = new Set<MetricKey>([
   "reps",
   "duration_seconds",
+  "duration_minutes",
   "rest_seconds",
   "intensity_level"
 ]);
@@ -51,6 +53,33 @@ export function formatTime(value: string | null) {
 
 export function metricLabel(key: MetricKey) {
   return metricLabels[key];
+}
+
+export function metricUnitLabel(unit: string | null) {
+  if (unit === null) {
+    return "";
+  }
+
+  switch (unit) {
+    case "seconds":
+      return "秒";
+    case "minutes":
+      return "分钟";
+    case "count":
+      return "次";
+    case "sec/km":
+      return "秒/公里";
+    case "percent":
+      return "%";
+    case "km":
+      return "km";
+    case "km/h":
+      return "km/h";
+    case "rpe":
+      return "";
+    default:
+      return unit;
+  }
 }
 
 export function sessionLabel(status: SessionStatus) {

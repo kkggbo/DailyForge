@@ -31,11 +31,20 @@ export const metricMetas: MetricMeta[] = [
   },
   {
     key: "duration_seconds",
-    label: "时长",
+    label: "时长（秒）",
     unitLabel: "秒",
     step: "1",
     min: 1,
     max: 86400,
+    allowedStructureTypes: ["set_based", "single_segment"]
+  },
+  {
+    key: "duration_minutes",
+    label: "时长（分钟）",
+    unitLabel: "分钟",
+    step: "1",
+    min: 0,
+    max: 1440,
     allowedStructureTypes: ["set_based", "single_segment"]
   },
   {

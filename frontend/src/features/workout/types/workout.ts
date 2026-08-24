@@ -1,4 +1,4 @@
-﻿export type WorkspaceState = "no_active_template" | "active" | "cycle_completed";
+export type WorkspaceState = "no_active_template" | "active" | "cycle_completed";
 export type DayState = "completed" | "current" | "upcoming";
 export type ViewMode = "editable" | "readonly" | "preview";
 export type SessionStatus = "in_progress" | "completed" | "cancelled";
@@ -7,7 +7,7 @@ export type ExerciseStatus = "completed" | "partial_completed" | "skipped" | "fa
 export type FailureReason = "too_tired" | "equipment_unavailable" | "pain_or_discomfort" | "time_not_enough" | "plan_too_hard" | "other";
 export type StructureType = "set_based" | "single_segment";
 export type ItemType = "set" | "segment";
-export type MetricKey = "weight_kg" | "reps" | "duration_seconds" | "distance_km" | "speed_kmh" | "pace_seconds_per_km" | "incline_percent" | "rest_seconds" | "rpe" | "intensity_level";
+export type MetricKey = "weight_kg" | "reps" | "duration_seconds" | "duration_minutes" | "distance_km" | "speed_kmh" | "pace_seconds_per_km" | "incline_percent" | "rest_seconds" | "rpe" | "intensity_level";
 
 export type DayNavItem = { dayIndex: number; dayName: string; isRestDay: boolean; dayState: DayState; sessionId: number | null; sessionStatus: SessionStatus | null };
 export type Metric = { sortOrder: number; metricKey: MetricKey; metricUnit: string; plannedValueNumber: number | null; actualValueNumber: number | null };
