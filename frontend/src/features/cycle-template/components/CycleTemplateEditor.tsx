@@ -171,6 +171,7 @@ export function CycleTemplateEditor({
   const [exerciseMetaById, setExerciseMetaById] = useState<Record<number, ExerciseCardMeta>>(
     {}
   );
+  const [expandedOverride, setExpandedOverride] = useState<Record<string, boolean>>({});
 
   const exerciseIdsInForm = useMemo(
     () =>
@@ -387,6 +388,57 @@ export function CycleTemplateEditor({
     closePicker();
   }
 
+  function handleExerciseExpandedChange(localId: string, expanded: boolean) {
+    setExpandedOverride((current) => ({ ...current, [localId]: expanded }));
+  }
+
+  function setAllExercisesExpanded(expanded: boolean) {
+    if (!activeDay) {
+      return;
+    }
+
+    setExpandedOverride((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        activeDay.exercises.map((exercise) => [exercise.localId, expanded])
+      )
+    }));
+  }
+
+  function handleSubmitClick() {
+    onSubmit();
+    expandFirstErroneousExercise();
+  }
+
+  function expandFirstErroneousExercise() {
+    if (!activeDay) {
+      return;
+    }
+
+    const dayPosition = activeDay.dayIndex - 1;
+    const firstErroneousExercise = activeDay.exercises.find((_, exerciseIndex) => {
+      const prefix = `day.${dayPosition}.exercise.${exerciseIndex}.`;
+      return Object.keys(fieldErrors).some(
+        (key) => key.startsWith(prefix) && Boolean(fieldErrors[key])
+      );
+    });
+
+    if (!firstErroneousExercise) {
+      return;
+    }
+
+    setExpandedOverride((current) => ({
+      ...current,
+      [firstErroneousExercise.localId]: true
+    }));
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`exercise-${firstErroneousExercise.localId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[28px] border border-white/10 bg-white/8 p-5 shadow-2xl shadow-black/20 backdrop-blur">
@@ -470,7 +522,7 @@ export function CycleTemplateEditor({
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={onSubmit}
+              onClick={handleSubmitClick}
               className={primaryButtonClass}
             >
               {isSubmitting ? "保存中..." : submitLabel}
@@ -508,6 +560,9 @@ export function CycleTemplateEditor({
             exerciseMetaById={exerciseMetaById}
             lockedBeforeDayIndex={lockedBeforeDayIndex}
             fieldErrors={fieldErrors}
+            expandedOverride={expandedOverride}
+            onExerciseExpandedChange={handleExerciseExpandedChange}
+            onSetAllExpanded={setAllExercisesExpanded}
             onDayChange={onDayChange}
             onOpenAppendPicker={openAppendPicker}
             onOpenReplacePicker={openReplacePicker}
@@ -553,6 +608,9 @@ function CycleTemplateDayEditor({
   exerciseMetaById,
   lockedBeforeDayIndex,
   fieldErrors,
+  expandedOverride,
+  onExerciseExpandedChange,
+  onSetAllExpanded,
   onDayChange,
   onOpenAppendPicker,
   onOpenReplacePicker,
@@ -572,6 +630,9 @@ function CycleTemplateDayEditor({
   exerciseMetaById: Record<number, ExerciseCardMeta>;
   lockedBeforeDayIndex: number;
   fieldErrors: CycleTemplateFieldErrors;
+  expandedOverride: Record<string, boolean>;
+  onExerciseExpandedChange: (localId: string, expanded: boolean) => void;
+  onSetAllExpanded: (expanded: boolean) => void;
   onDayChange: (
     dayIndex: number,
     patch: Partial<CycleTemplateEditorForm["days"][number]>
@@ -630,6 +691,9 @@ function CycleTemplateDayEditor({
   ) => void;
 }) {
   const isDayLocked = day.dayIndex < lockedBeforeDayIndex;
+  const allExpanded =
+    day.exercises.length > 0 &&
+    day.exercises.every((exercise) => expandedOverride[exercise.localId] === true);
 
   return (
     <div className="mt-6 space-y-5">
@@ -646,14 +710,25 @@ function CycleTemplateDayEditor({
           <FieldError message={fieldErrors[`day.${day.dayIndex - 1}.dayName`]} />
         </label>
 
-        <button
-          type="button"
-          disabled={isDayLocked}
-          onClick={() => onOpenAppendPicker(day.dayIndex)}
-          className={primaryButtonClass}
-        >
-          添加动作
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {day.exercises.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => onSetAllExpanded(!allExpanded)}
+              className={secondaryButtonClass}
+            >
+              {allExpanded ? "全部收起" : "全部展开"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={isDayLocked}
+            onClick={() => onOpenAppendPicker(day.dayIndex)}
+            className={primaryButtonClass}
+          >
+            添加动作
+          </button>
+        </div>
       </div>
 
       {isDayLocked ? (
@@ -677,6 +752,10 @@ function CycleTemplateDayEditor({
               exerciseMeta={exercise.exerciseId ? exerciseMetaById[exercise.exerciseId] : undefined}
               locked={isDayLocked}
               fieldErrors={fieldErrors}
+              expanded={expandedOverride[exercise.localId]}
+              onExpandedChange={(nextExpanded) =>
+                onExerciseExpandedChange(exercise.localId, nextExpanded)
+              }
               onRequestReplace={() => onOpenReplacePicker(day.dayIndex, exercise.localId)}
               onUpdateExercise={(patch) =>
                 onUpdateExercise(day.dayIndex, exercise.localId, patch)
