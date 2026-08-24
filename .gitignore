@@ -1,6 +1,7 @@
 # Java / Maven
 backend/target/
 backend/.mvn/repository/
+.mvn/repository/
 frontend/node_modules/
 frontend/dist/
 .pnpm-store/
