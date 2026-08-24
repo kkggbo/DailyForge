@@ -83,6 +83,14 @@ class AiCoachToolSupportServiceTest {
     }
 
     @Test
+    void getTemplateGenerationConstraintsShouldAllowDurationMinutes() {
+        Map<String, Object> constraints = service.getTemplateGenerationConstraints();
+
+        List<String> allowedMetricKeys = (List<String>) constraints.get("allowedMetricKeys");
+        assertThat(allowedMetricKeys).contains("duration_minutes");
+    }
+
+    @Test
     void getCycleRunSessionsDetailShouldKeepNullActualMetricValue() {
         // Given
         when(cycleRunMapper.selectById(CYCLE_RUN_ID)).thenReturn(cycleRun());

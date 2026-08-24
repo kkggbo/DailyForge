@@ -1,5 +1,6 @@
 package com.dailyforge.modules.plan.domain.service;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.dailyforge.common.BusinessException;
@@ -148,6 +149,24 @@ class ExerciseStructurePolicyServiceTest {
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("cycle template metric value is invalid");
+    }
+
+    @Test
+    void validateDayRequestsShouldAcceptDurationMinutesMetricKey() {
+        var request = buildDayRequest(new CycleTemplateExerciseRequest(
+                1,
+                2L,
+                "single_segment",
+                null,
+                List.of(new CycleTemplateItemRequest(
+                        1,
+                        "segment",
+                        null,
+                        null,
+                        List.of(new CycleTemplateMetricRequest(1, "duration_minutes", new BigDecimal("30")))))));
+
+        assertThatCode(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(2L, singleSegmentExercise)))
+                .doesNotThrowAnyException();
     }
 
     private List<CycleTemplateDayRequest> buildDayRequest(CycleTemplateExerciseRequest exerciseRequest) {

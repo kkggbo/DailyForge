@@ -24,7 +24,7 @@ public class WorkoutSessionPolicyDomainService {
     private static final Set<String> FAILURE_REASONS =
             Set.of("too_tired", "equipment_unavailable", "pain_or_discomfort", "time_not_enough", "plan_too_hard", "other");
     private static final Set<String> INTEGER_METRIC_KEYS =
-            Set.of("reps", "duration_seconds", "rest_seconds", "intensity_level");
+            Set.of("reps", "duration_seconds", "duration_minutes", "rest_seconds", "intensity_level");
     private static final Set<String> DECIMAL_METRIC_KEYS =
             Set.of("weight_kg", "distance_km", "speed_kmh", "pace_seconds_per_km", "incline_percent", "rpe");
     private static final BigDecimal MAX_METRIC_VALUE = new BigDecimal("99999999.99");

@@ -171,6 +171,7 @@ Authorization: Bearer <accessToken>
 - `weight_kg`
 - `reps`
 - `duration_seconds`
+- `duration_minutes`
 - `distance_km`
 - `speed_kmh`
 - `pace_seconds_per_km`

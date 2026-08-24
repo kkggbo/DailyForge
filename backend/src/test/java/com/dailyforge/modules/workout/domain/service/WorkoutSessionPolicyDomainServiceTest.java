@@ -160,6 +160,38 @@ class WorkoutSessionPolicyDomainServiceTest {
                 .hasMessage("workout session exercise payload does not match the session snapshot");
     }
 
+    @Test
+    void validateFullSaveShouldAllowIntegerDurationMinutesValue() {
+        List<TrainingSessionExerciseItemMetricEntity> metrics = List.of(metric(301L, "duration_minutes"));
+        WorkoutSessionSaveRequest request = request("completed", List.of(
+                metricRequest("duration_minutes", "30")));
+
+        assertThatCode(() -> policyService.validateFullSave(
+                request,
+                "workout",
+                List.of(sessionExercise),
+                Map.of(sessionExercise.getId(), List.of(sessionItem)),
+                Map.of(sessionItem.getId(), metrics),
+                true)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateFullSaveShouldRejectFractionalDurationMinutesValue() {
+        List<TrainingSessionExerciseItemMetricEntity> metrics = List.of(metric(301L, "duration_minutes"));
+        WorkoutSessionSaveRequest request = request("completed", List.of(
+                metricRequest("duration_minutes", "30.5")));
+
+        assertThatThrownBy(() -> policyService.validateFullSave(
+                request,
+                "workout",
+                List.of(sessionExercise),
+                Map.of(sessionExercise.getId(), List.of(sessionItem)),
+                Map.of(sessionItem.getId(), metrics),
+                true))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("workout metric value is invalid");
+    }
+
     private WorkoutSessionSaveRequest request(
             String exerciseStatus,
             List<WorkoutSessionExerciseMetricSaveRequest> metricRequests) {

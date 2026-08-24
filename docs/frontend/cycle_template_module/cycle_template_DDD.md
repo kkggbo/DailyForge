@@ -273,6 +273,7 @@ export type MetricKey =
   | "weight_kg"
   | "reps"
   | "duration_seconds"
+  | "duration_minutes"
   | "distance_km"
   | "speed_kmh"
   | "pace_seconds_per_km"
@@ -509,6 +510,7 @@ type MetricMeta = {
 - `weight_kg`
 - `reps`
 - `duration_seconds`
+- `duration_minutes`
 - `distance_km`
 - `speed_kmh`
 - `pace_seconds_per_km`
@@ -528,7 +530,7 @@ type MetricMeta = {
 建议第一版过滤策略：
 
 - `set_based` 默认优先展示：`weight_kg`、`reps`、`duration_seconds`、`rest_seconds`、`rpe`
-- `single_segment` 默认优先展示：`duration_seconds`、`distance_km`、`speed_kmh`、`pace_seconds_per_km`、`incline_percent`、`intensity_level`
+- `single_segment` 默认优先展示：`duration_seconds`、`duration_minutes`、`distance_km`、`speed_kmh`、`pace_seconds_per_km`、`incline_percent`、`intensity_level`
 
 ---
 

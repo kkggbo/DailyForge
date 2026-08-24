@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public record WorkoutSessionExerciseMetricSaveRequest(
         @Schema(description = "Metric key from the item snapshot", example = "weight_kg",
                 requiredMode = Schema.RequiredMode.REQUIRED,
-                allowableValues = {"weight_kg", "reps", "duration_seconds", "distance_km", "speed_kmh",
+                allowableValues = {"weight_kg", "reps", "duration_seconds", "duration_minutes", "distance_km", "speed_kmh",
                         "pace_seconds_per_km", "incline_percent", "rest_seconds", "rpe", "intensity_level"})
         @NotBlank @Size(max = 64) String metricKey,
 

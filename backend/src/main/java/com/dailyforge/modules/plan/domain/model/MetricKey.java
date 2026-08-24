@@ -6,6 +6,7 @@ public enum MetricKey {
     WEIGHT_KG("weight_kg", "kg"),
     REPS("reps", "count"),
     DURATION_SECONDS("duration_seconds", "seconds"),
+    DURATION_MINUTES("duration_minutes", "minutes"),
     DISTANCE_KM("distance_km", "km"),
     SPEED_KMH("speed_kmh", "km/h"),
     PACE_SECONDS_PER_KM("pace_seconds_per_km", "sec/km"),

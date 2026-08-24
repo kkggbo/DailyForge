@@ -134,6 +134,7 @@ public class AiCoachToolSupportService {
                 MetricKey.WEIGHT_KG.getValue(),
                 MetricKey.REPS.getValue(),
                 MetricKey.DURATION_SECONDS.getValue(),
+                MetricKey.DURATION_MINUTES.getValue(),
                 MetricKey.DISTANCE_KM.getValue(),
                 MetricKey.SPEED_KMH.getValue(),
                 MetricKey.PACE_SECONDS_PER_KM.getValue(),
