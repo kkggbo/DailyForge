@@ -172,6 +172,22 @@ export function CycleTemplateEditor({
     {}
   );
   const [expandedOverride, setExpandedOverride] = useState<Record<string, boolean>>({});
+  const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
+
+  // Scroll to the erroneous exercise once it is mounted. A cross-day target
+  // first switches the selected day, so the element may not exist until the
+  // next render; re-running on `activeDay` handles that handoff.
+  useEffect(() => {
+    if (scrollTargetId === null) {
+      return;
+    }
+
+    const element = document.getElementById(`exercise-${scrollTargetId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      setScrollTargetId(null);
+    }
+  }, [scrollTargetId, activeDay]);
 
   const exerciseIdsInForm = useMemo(
     () =>
@@ -411,32 +427,27 @@ export function CycleTemplateEditor({
   }
 
   function expandFirstErroneousExercise() {
-    if (!activeDay) {
-      return;
+    for (const day of form.days) {
+      const dayPosition = day.dayIndex - 1;
+      const firstErroneousExercise = day.exercises.find((_, exerciseIndex) => {
+        const prefix = `day.${dayPosition}.exercise.${exerciseIndex}.`;
+        return Object.keys(fieldErrors).some(
+          (key) => key.startsWith(prefix) && Boolean(fieldErrors[key])
+        );
+      });
+
+      if (firstErroneousExercise) {
+        if (selectedDayIndex !== day.dayIndex) {
+          onSelectedDayIndexChange(day.dayIndex);
+        }
+        setExpandedOverride((current) => ({
+          ...current,
+          [firstErroneousExercise.localId]: true
+        }));
+        setScrollTargetId(firstErroneousExercise.localId);
+        return;
+      }
     }
-
-    const dayPosition = activeDay.dayIndex - 1;
-    const firstErroneousExercise = activeDay.exercises.find((_, exerciseIndex) => {
-      const prefix = `day.${dayPosition}.exercise.${exerciseIndex}.`;
-      return Object.keys(fieldErrors).some(
-        (key) => key.startsWith(prefix) && Boolean(fieldErrors[key])
-      );
-    });
-
-    if (!firstErroneousExercise) {
-      return;
-    }
-
-    setExpandedOverride((current) => ({
-      ...current,
-      [firstErroneousExercise.localId]: true
-    }));
-
-    window.requestAnimationFrame(() => {
-      document
-        .getElementById(`exercise-${firstErroneousExercise.localId}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
   }
 
   return (

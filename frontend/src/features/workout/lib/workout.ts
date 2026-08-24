@@ -77,6 +77,8 @@ export function metricUnitLabel(unit: string | null) {
       return "km/h";
     case "rpe":
       return "";
+    case "level":
+      return "级";
     default:
       return unit;
   }

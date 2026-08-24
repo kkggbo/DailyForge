@@ -18,7 +18,7 @@ import {
   SessionEditor,
   SessionReadOnly
 } from "../components/WorkoutPanel";
-import { errorMessage, formatTime } from "../lib/workout";
+import { errorMessage, formatTime, metricLabel, metricUnitLabel } from "../lib/workout";
 import type {
   DayDetail,
   RecentWorkouts,
@@ -492,8 +492,8 @@ function Preview({
                       key={metric.metricKey}
                       className="rounded-full bg-white/8 px-3 py-1"
                     >
-                      {metric.metricKey}: {metric.plannedValueNumber ?? "未设定"}{" "}
-                      {metric.metricUnit}
+                      {metricLabel(metric.metricKey)}：{metric.plannedValueNumber ?? "未设定"}{" "}
+                      {metricUnitLabel(metric.metricUnit)}
                     </span>
                   ))}
                 </div>
