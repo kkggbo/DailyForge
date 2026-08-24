@@ -27,6 +27,9 @@ export function MetricEditor({
 }: MetricEditorProps) {
   const options = getMetricOptionsByStructureType(structureType);
   const metricMeta = getMetricMeta(metric.metricKey);
+  const selectedIsLegacy =
+    metric.metricKey !== "" && !options.some((option) => option.key === metric.metricKey);
+  const legacyLabel = metricMeta?.label ?? metric.metricKey;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/6 p-3">
@@ -47,6 +50,11 @@ export function MetricEditor({
                 {option.label}
               </option>
             ))}
+            {selectedIsLegacy ? (
+              <option value={metric.metricKey} disabled>
+                {legacyLabel}（已停用）
+              </option>
+            ) : null}
           </select>
           <FieldError message={errorKey} />
         </label>

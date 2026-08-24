@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
 import { getAccountTierLabel } from "../../features/auth/lib/account-tier";
+import { BackToTop } from "./BackToTop";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -98,6 +99,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <BackToTop />
     </div>
   );
 }

@@ -56,7 +56,7 @@ export function formatMetricKey(metricKey: MetricKey) {
 
 export function formatMetricValue(metric: CycleTemplateMetricResponse) {
   const meta = getMetricMeta(metric.metricKey);
-  const unitLabel = metric.metricUnit ?? meta?.unitLabel;
+  const unitLabel = meta?.unitLabel ?? metric.metricUnit;
 
   if (unitLabel) {
     return `${metric.metricValueNumber} ${unitLabel}`;

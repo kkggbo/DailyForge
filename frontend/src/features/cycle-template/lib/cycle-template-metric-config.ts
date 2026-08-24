@@ -8,6 +8,7 @@ export type MetricMeta = {
   min?: number;
   max?: number;
   allowedStructureTypes: StructureType[];
+  hidden?: boolean;
 };
 
 export const metricMetas: MetricMeta[] = [
@@ -99,7 +100,8 @@ export const metricMetas: MetricMeta[] = [
     step: "0.5",
     min: 0,
     max: 10,
-    allowedStructureTypes: ["set_based"]
+    allowedStructureTypes: ["set_based"],
+    hidden: true
   },
   {
     key: "intensity_level",
@@ -127,7 +129,7 @@ export function getMetricOptionsByStructureType(structureType: StructureType | n
     return [];
   }
 
-  return metricMetas.filter((meta) =>
-    meta.allowedStructureTypes.includes(structureType)
+  return metricMetas.filter(
+    (meta) => !meta.hidden && meta.allowedStructureTypes.includes(structureType)
   );
 }
