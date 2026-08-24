@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { ExerciseStructureEditor } from "./ExerciseStructureEditor";
 import type { EditorExerciseForm } from "../types/cycle-template";
 
@@ -43,16 +44,29 @@ function renderEditor(options: RenderOptions = {}) {
     onMoveMetric: vi.fn()
   };
 
-  render(
-    <ExerciseStructureEditor
-      dayIndex={0}
-      exerciseIndex={0}
-      exercise={exercise}
-      locked={options.locked ?? false}
-      fieldErrors={options.fieldErrors ?? {}}
-      {...handlers}
-    />
-  );
+  function Harness() {
+    const [currentExercise, setCurrentExercise] = useState(exercise);
+
+    return (
+      <ExerciseStructureEditor
+        dayIndex={0}
+        exerciseIndex={0}
+        exercise={currentExercise}
+        locked={options.locked ?? false}
+        fieldErrors={options.fieldErrors ?? {}}
+        {...handlers}
+        onUpdateExercise={(patch) => {
+          handlers.onUpdateExercise(patch);
+          setCurrentExercise((previous) => ({
+            ...previous,
+            ...patch
+          }));
+        }}
+      />
+    );
+  }
+
+  render(<Harness />);
 
   return handlers;
 }
