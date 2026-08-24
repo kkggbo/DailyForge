@@ -168,7 +168,8 @@ export function AiCoachHistoryPage() {
           title="周期总结历史"
           description="回看已生成的周期总结，或继续追踪还在处理中和等待中的总结任务。"
           emptyMessage="还没有周期总结历史。完成一次 AI 周期总结后会显示在这里。"
-          taskLinkLabel="查看总结任务"
+          taskLinkLabel="查看总结详情"
+          primaryAction
           isLoading={isLoadingCycleHistory}
           error={cycleHistoryError}
           data={cycleHistory}

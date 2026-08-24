@@ -26,6 +26,7 @@ type AiTaskHistoryListProps<TRecord extends HistoryRecordBase> = {
   description: string;
   emptyMessage: string;
   taskLinkLabel: string;
+  primaryAction?: boolean;
   isLoading: boolean;
   error: string | null;
   data: AiTaskHistoryPage<TRecord> | null;
@@ -40,6 +41,7 @@ export function AiTaskHistoryList<TRecord extends HistoryRecordBase>({
   description,
   emptyMessage,
   taskLinkLabel,
+  primaryAction = false,
   isLoading,
   error,
   data,
@@ -110,7 +112,11 @@ export function AiTaskHistoryList<TRecord extends HistoryRecordBase>({
                 <div className="mt-4 flex justify-end">
                   <Link
                     to={getTaskLink(record)}
-                    className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+                    className={
+                      primaryAction
+                        ? "rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
+                        : "rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+                    }
                   >
                     {taskLinkLabel}
                   </Link>

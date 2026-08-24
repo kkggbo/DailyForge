@@ -15,7 +15,7 @@ export function CycleSummaryResult({ result }: CycleSummaryResultProps) {
         <h2 className="mt-3 text-3xl font-semibold text-white">
           {result.templateName} · 第 {result.runNo} 轮
         </h2>
-        <p className="mt-3 max-w-3xl leading-7 text-stone-300">
+        <p className="mt-3 leading-7 text-stone-300">
           {result.executionOverview}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-stone-200">

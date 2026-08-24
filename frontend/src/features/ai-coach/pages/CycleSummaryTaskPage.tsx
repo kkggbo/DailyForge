@@ -86,8 +86,8 @@ export function CycleSummaryTaskPage() {
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap gap-3">
-        <Link to="/ai-coach/cycle-summary" className={backLinkClass}>
-          返回周期总结
+        <Link to="/workout" className={backLinkClass}>
+          返回训练工作台
         </Link>
         <Link
           to="/ai-coach/history?tab=cycle-summaries"
@@ -111,9 +111,6 @@ export function CycleSummaryTaskPage() {
               className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
             >
               查看对应模板
-            </Link>
-            <Link to="/workout" className={backLinkClass}>
-              返回训练工作台
             </Link>
           </div>
         </>

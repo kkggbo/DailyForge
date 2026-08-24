@@ -27,7 +27,7 @@ import type {
 } from "../types/workout";
 
 const secondaryButton =
-  "inline-flex rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12";
+  "inline-flex items-center rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12";
 
 export function WorkoutPage() {
   const navigate = useNavigate();
