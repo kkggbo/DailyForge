@@ -369,6 +369,7 @@ export function WorkoutPage() {
               isSaving={isSaving}
               isCompleting={isCompleting}
               error={actionError}
+              message={message}
               onSave={save}
               onComplete={complete}
             />
@@ -388,6 +389,7 @@ function DayPanel({
   isSaving,
   isCompleting,
   error,
+  message,
   onSave,
   onComplete
 }: {
@@ -395,6 +397,7 @@ function DayPanel({
   isSaving: boolean;
   isCompleting: boolean;
   error: string | null;
+  message: string | null;
   onSave: (payload: SavePayload) => void;
   onComplete: (payload: SavePayload) => void;
 }) {
@@ -435,6 +438,7 @@ function DayPanel({
           isSaving={isSaving}
           isCompleting={isCompleting}
           error={error}
+          message={message}
           onSave={onSave}
           onComplete={onComplete}
         />
