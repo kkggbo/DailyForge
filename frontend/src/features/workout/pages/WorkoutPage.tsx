@@ -18,7 +18,7 @@ import {
   SessionEditor,
   SessionReadOnly
 } from "../components/WorkoutPanel";
-import { errorMessage, formatTime, metricLabel, metricUnitLabel } from "../lib/workout";
+import { errorMessage, metricLabel, metricUnitLabel } from "../lib/workout";
 import type {
   DayDetail,
   RecentWorkouts,
@@ -38,7 +38,6 @@ export function WorkoutPage() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDay, setIsLoadingDay] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
   const [isOpeningCycleSummary, setIsOpeningCycleSummary] = useState(false);
@@ -163,26 +162,23 @@ export function WorkoutPage() {
     }
   }
 
-  async function save(payload: SavePayload) {
+  async function save(payload: SavePayload): Promise<boolean> {
     if (!accessToken || !detail?.session) {
-      return;
+      return false;
     }
 
-    setIsSaving(true);
     setActionError(null);
-    setMessage(null);
 
     try {
-      const response = await saveSession(
+      await saveSession(
         accessToken,
         detail.session.sessionId,
         payload
       );
-      setMessage(`已保存于 ${formatTime(response.savedAt)}。`);
+      return true;
     } catch (error) {
       setActionError(errorMessage(error, "保存训练记录失败，请稍后重试。"));
-    } finally {
-      setIsSaving(false);
+      return false;
     }
   }
 
@@ -366,10 +362,8 @@ export function WorkoutPage() {
           ) : detail ? (
             <DayPanel
               detail={detail}
-              isSaving={isSaving}
               isCompleting={isCompleting}
               error={actionError}
-              message={message}
               onSave={save}
               onComplete={complete}
             />
@@ -386,19 +380,15 @@ export function WorkoutPage() {
 
 function DayPanel({
   detail,
-  isSaving,
   isCompleting,
   error,
-  message,
   onSave,
   onComplete
 }: {
   detail: DayDetail;
-  isSaving: boolean;
   isCompleting: boolean;
   error: string | null;
-  message: string | null;
-  onSave: (payload: SavePayload) => void;
+  onSave: (payload: SavePayload) => Promise<boolean>;
   onComplete: (payload: SavePayload) => void;
 }) {
   const editableSession = detail.viewMode === "editable" ? detail.session : null;
@@ -419,7 +409,7 @@ function DayPanel({
                 ? "未来训练计划预览，不会创建 session。"
                 : detail.viewMode === "readonly"
                   ? "已完成记录仅供查看，不能编辑。"
-                  : "必要时记录与计划不一致的实际值后，可手动保存或完成打卡。"}
+                  : "点击指标卡片填写实际值，内容会自动保存；完成后点击完成打卡。"}
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-stone-300">
@@ -435,10 +425,8 @@ function DayPanel({
       {editableSession ? (
         <SessionEditor
           session={editableSession}
-          isSaving={isSaving}
           isCompleting={isCompleting}
           error={error}
-          message={message}
           onSave={onSave}
           onComplete={onComplete}
         />

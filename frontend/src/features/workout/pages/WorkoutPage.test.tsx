@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { WorkoutPage } from "./WorkoutPage";
@@ -254,18 +254,18 @@ describe("WorkoutPage", () => {
     expect(initializeCurrentDayMock).toHaveBeenCalledTimes(1);
   });
 
-  it("saves the full editable session payload", async () => {
+  it("auto-saves the editable session after inline metric editing", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await screen.findByRole("heading", { name: "Bench Press" });
-    await user.selectOptions(screen.getByLabelText("Bench Press 完成状态"), "completed");
-    await user.click(screen.getByRole("button", { name: "记录实际值" }));
+    await user.click(screen.getByRole("button", { name: /重量/ }));
     await user.type(screen.getByPlaceholderText("实际值"), "60");
+    await user.tab();
+    await user.selectOptions(screen.getByLabelText("Bench Press 完成状态"), "completed");
     await user.click(screen.getByRole("button", { name: "添加感受/备注" }));
     await user.type(screen.getByLabelText("感受/备注"), "三头提前疲劳");
     await user.type(screen.getByLabelText("训练备注"), "下轮降低热身量");
-    await user.click(screen.getByRole("button", { name: "手动保存" }));
 
     await waitFor(() => {
       expect(saveSessionMock).toHaveBeenCalledWith(
@@ -293,7 +293,7 @@ describe("WorkoutPage", () => {
           ]
         })
       );
-    });
+    }, { timeout: 5000 });
   });
 
   it("repopulates the merged inputs from feedback and notes", async () => {
@@ -320,7 +320,7 @@ describe("WorkoutPage", () => {
     expect(screen.getByLabelText("感受/备注")).toHaveValue("动作反馈");
     await user.click(screen.getByRole("button", { name: "收起感受/备注" }));
   });
-  it("keeps actual metric inputs collapsed by default and saves null actual values", async () => {
+  it("auto-saves null actual values without inline editing", async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -328,7 +328,6 @@ describe("WorkoutPage", () => {
     expect(screen.queryByPlaceholderText("实际值")).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Bench Press 完成状态"), "completed");
-    await user.click(screen.getByRole("button", { name: "手动保存" }));
 
     await waitFor(() => {
       expect(saveSessionMock).toHaveBeenCalledWith(
@@ -353,20 +352,22 @@ describe("WorkoutPage", () => {
           ]
         })
       );
-    });
+    }, { timeout: 5000 });
   });
 
-  it("blocks saving invalid actual metric values", async () => {
+  it("blocks completion with invalid actual metric values", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await screen.findByRole("heading", { name: "Bench Press" });
-    await user.click(screen.getByRole("button", { name: "记录实际值" }));
+    await user.click(screen.getByRole("button", { name: /重量/ }));
     await user.type(screen.getByPlaceholderText("实际值"), "-10");
-    await user.click(screen.getByRole("button", { name: "手动保存" }));
+    await user.tab();
+    await user.selectOptions(screen.getByLabelText("Bench Press 完成状态"), "completed");
+    await user.click(screen.getByRole("button", { name: "完成训练打卡" }));
 
     expect(await screen.findByText("重量：请输入大于或等于 0 的数字。")).toBeInTheDocument();
-    expect(saveSessionMock).not.toHaveBeenCalled();
+    expect(completeSessionMock).not.toHaveBeenCalled();
   });
 
   it("shows failure reason only for non-completed exercise states", async () => {
