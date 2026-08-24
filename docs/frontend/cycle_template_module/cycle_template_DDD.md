@@ -281,6 +281,9 @@ export type MetricKey =
   | "rest_seconds"
   | "rpe"
   | "intensity_level";
+
+// 注：`rpe` 已隐藏——前端指标下拉不再提供选择，AI 生成不再使用；
+// 后端仍兼容该键，仅作历史数据兼容保留。
 ```
 
 ```ts
