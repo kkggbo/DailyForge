@@ -8,6 +8,7 @@ import {
 } from "../api/ai-coach";
 import { AiCoachMissingFieldsNotice } from "../components/AiCoachMissingFieldsNotice";
 import { AiCoachUnavailableState } from "../components/AiCoachUnavailableState";
+import { ProfileCompletionModal } from "../components/ProfileCompletionModal";
 import { TemplateGenerationForm } from "../components/TemplateGenerationForm";
 import { getAiCoachErrorMessage } from "../lib/ai-coach-enums";
 import {
@@ -31,6 +32,7 @@ export function TemplateGenerationPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
 
   useEffect(() => {
     if (!accessToken) {
@@ -71,6 +73,21 @@ export function TemplateGenerationPage() {
       cancelled = true;
     };
   }, [accessToken]);
+
+  async function refreshCapabilities() {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      setCapabilities(await getAiCoachCapabilities(accessToken));
+      setPageError(null);
+    } catch (error) {
+      setPageError(
+        getAiCoachErrorMessage(error, "刷新资料状态失败，请稍后再试。")
+      );
+    }
+  }
 
   async function handleSubmit(form: TemplateGenerationFormValues) {
     if (!accessToken || !capabilities) {
@@ -171,8 +188,16 @@ export function TemplateGenerationPage() {
           scene="ai-plan"
           redirectPath="/ai-coach/template-generation"
           description="模板生成会严格检查必要资料。先补齐这些信息，再回来发起任务。"
+          onAction={() => setIsCompletionModalOpen(true)}
         />
       ) : null}
+
+      <ProfileCompletionModal
+        open={isCompletionModalOpen}
+        scene="ai-plan"
+        onClose={() => setIsCompletionModalOpen(false)}
+        onCompleted={refreshCapabilities}
+      />
 
       {capabilities?.templateGeneration.available &&
       capabilities.templateGeneration.ready ? (

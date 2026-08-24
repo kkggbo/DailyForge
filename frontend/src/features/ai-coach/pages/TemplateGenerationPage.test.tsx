@@ -7,10 +7,18 @@ import type { AiCoachCapabilities } from "../types/ai-coach";
 const navigateMock = vi.fn();
 const {
   getAiCoachCapabilitiesMock,
-  createTemplateGenerationTaskMock
+  createTemplateGenerationTaskMock,
+  getBasicProfileMock,
+  getProfileCompletionSummaryMock,
+  updateBasicProfileMock,
+  createBodyMetricMock
 } = vi.hoisted(() => ({
   getAiCoachCapabilitiesMock: vi.fn(),
-  createTemplateGenerationTaskMock: vi.fn()
+  createTemplateGenerationTaskMock: vi.fn(),
+  getBasicProfileMock: vi.fn(),
+  getProfileCompletionSummaryMock: vi.fn(),
+  updateBasicProfileMock: vi.fn(),
+  createBodyMetricMock: vi.fn()
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -30,6 +38,13 @@ vi.mock("../../../app/providers/AuthProvider", () => ({
 vi.mock("../api/ai-coach", () => ({
   getAiCoachCapabilities: getAiCoachCapabilitiesMock,
   createTemplateGenerationTask: createTemplateGenerationTaskMock
+}));
+
+vi.mock("../../profile/api/profile", () => ({
+  getBasicProfile: getBasicProfileMock,
+  getProfileCompletionSummary: getProfileCompletionSummaryMock,
+  updateBasicProfile: updateBasicProfileMock,
+  createBodyMetric: createBodyMetricMock
 }));
 
 const readyCapabilities: AiCoachCapabilities = {
@@ -88,6 +103,42 @@ describe("TemplateGenerationPage", () => {
 
     expect(await screen.findByText("当前体重")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "生成草稿任务" })).not.toBeInTheDocument();
+  });
+
+  it("opens an in-page completion modal instead of navigating when clicking 去补充资料", async () => {
+    const user = userEvent.setup();
+    getAiCoachCapabilitiesMock.mockResolvedValue({
+      ...readyCapabilities,
+      templateGeneration: {
+        ...readyCapabilities.templateGeneration,
+        ready: false,
+        missingRequiredFields: ["gender"]
+      }
+    } satisfies AiCoachCapabilities);
+    getBasicProfileMock.mockResolvedValue({});
+    getProfileCompletionSummaryMock.mockResolvedValue({
+      basicProfileReady: false,
+      hasWeightRecord: false,
+      currentWeightKg: null,
+      missingBasicProfileFields: ["gender"],
+      aiPlanReady: false,
+      aiPlanMissingFields: ["gender"],
+      aiNutritionReady: false,
+      aiNutritionMissingFields: [],
+      aiSummaryReady: false,
+      aiSummaryMissingFields: []
+    });
+
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: "去补充资料" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "去补充资料" }));
+
+    expect(
+      await screen.findByText("补充资料以生成更贴合的训练计划")
+    ).toBeInTheDocument();
+    expect(screen.getByText("第 1 步：基础档案")).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("submits a generation task and navigates to the task detail page", async () => {
