@@ -91,6 +91,27 @@ class AiCoachToolSupportServiceTest {
     }
 
     @Test
+    void getTemplateGenerationConstraintsShouldNotAllowRpe() {
+        Map<String, Object> constraints = service.getTemplateGenerationConstraints();
+
+        List<String> allowedMetricKeys = (List<String>) constraints.get("allowedMetricKeys");
+        assertThat(allowedMetricKeys).doesNotContain("rpe");
+    }
+
+    @Test
+    void getTemplateGenerationConstraintsShouldExposeMetricKeysByStructureType() {
+        Map<String, Object> constraints = service.getTemplateGenerationConstraints();
+
+        Map<String, List<String>> byStructureType =
+                (Map<String, List<String>>) constraints.get("allowedMetricKeysByStructureType");
+        assertThat(byStructureType.get("set_based"))
+                .containsExactly("weight_kg", "reps", "duration_seconds", "duration_minutes", "rest_seconds");
+        assertThat(byStructureType.get("single_segment"))
+                .containsExactly("duration_seconds", "duration_minutes", "distance_km", "speed_kmh",
+                        "pace_seconds_per_km", "incline_percent", "intensity_level");
+    }
+
+    @Test
     void getCycleRunSessionsDetailShouldKeepNullActualMetricValue() {
         // Given
         when(cycleRunMapper.selectById(CYCLE_RUN_ID)).thenReturn(cycleRun());

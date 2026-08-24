@@ -10,12 +10,16 @@ import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationTaskResultResponse;
 import com.dailyforge.modules.exercise.application.model.SystemExerciseLookupResult;
 import com.dailyforge.modules.exercise.application.service.SystemExerciseLookupService;
+import com.dailyforge.modules.plan.domain.model.MetricKey;
+import com.dailyforge.modules.plan.domain.model.StructureType;
 import com.dailyforge.modules.plan.domain.service.CycleTemplatePolicyService;
 import com.dailyforge.modules.plan.domain.service.ExerciseStructurePolicyService;
 import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateDayRequest;
+import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateExerciseRequest;
+import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateItemRequest;
+import com.dailyforge.modules.plan.interfaces.dto.CycleTemplateMetricRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +81,10 @@ public class AiOutputValidationDomainService {
             exerciseStructurePolicyService.validateDayRequests(output.days(), exerciseMap);
         } catch (BusinessException exception) {
             errors.add(exception.getMessage());
+            throw invalid(errors);
+        }
+        validateMetricStructureCompatibility(output.days(), errors);
+        if (!errors.isEmpty()) {
             throw invalid(errors);
         }
         return new TemplateGenerationValidatedResult(
@@ -234,6 +242,49 @@ public class AiOutputValidationDomainService {
             }
         }
         return exerciseMap;
+    }
+
+    private void validateMetricStructureCompatibility(
+            List<CycleTemplateDayRequest> days,
+            List<String> errors) {
+        if (days == null) {
+            return;
+        }
+        for (int dayIndex = 0; dayIndex < days.size(); dayIndex++) {
+            CycleTemplateDayRequest day = days.get(dayIndex);
+            if (day == null || day.exercises() == null) {
+                continue;
+            }
+            for (int exerciseIndex = 0; exerciseIndex < day.exercises().size(); exerciseIndex++) {
+                CycleTemplateExerciseRequest exercise = day.exercises().get(exerciseIndex);
+                if (exercise == null || exercise.structureType() == null || exercise.items() == null) {
+                    continue;
+                }
+                StructureType structureType = StructureType.fromValue(exercise.structureType());
+                if (structureType == null) {
+                    continue;
+                }
+                List<String> allowed = MetricKey.allowedFor(structureType).stream()
+                        .map(MetricKey::getValue)
+                        .toList();
+                for (CycleTemplateItemRequest item : exercise.items()) {
+                    if (item == null || item.metrics() == null) {
+                        continue;
+                    }
+                    for (CycleTemplateMetricRequest metric : item.metrics()) {
+                        if (metric == null || metric.metricKey() == null) {
+                            continue;
+                        }
+                        if (!allowed.contains(metric.metricKey())) {
+                            errors.add("day[" + dayIndex + "].exercise[" + exerciseIndex
+                                    + "] structureType '" + exercise.structureType()
+                                    + "' does not allow metricKey '" + metric.metricKey()
+                                    + "'; allowed for " + exercise.structureType() + ": " + allowed);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void validateText(String value, String fieldName, List<String> errors) {

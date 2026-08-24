@@ -8,6 +8,7 @@ import com.dailyforge.modules.exercise.infrastructure.persistence.entity.Exercis
 import com.dailyforge.modules.exercise.infrastructure.persistence.mapper.ExerciseQueryMapper;
 import com.dailyforge.modules.exercise.interfaces.dto.ExerciseSystemListQuery;
 import com.dailyforge.modules.plan.domain.model.MetricKey;
+import com.dailyforge.modules.plan.domain.model.StructureType;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.DaySnapshot;
 import com.dailyforge.modules.plan.domain.service.CycleTemplateVersionDomainService.ExerciseSnapshot;
@@ -33,6 +34,7 @@ import com.dailyforge.modules.workout.infrastructure.persistence.mapper.Training
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -130,20 +132,23 @@ public class AiCoachToolSupportService {
         result.put("cycleLength", Map.of("min", 1, "max", 7));
         result.put("allowedStructureTypes", List.of("set_based", "single_segment"));
         result.put("allowedItemTypes", List.of("set", "segment"));
-        result.put("allowedMetricKeys", List.of(
-                MetricKey.WEIGHT_KG.getValue(),
-                MetricKey.REPS.getValue(),
-                MetricKey.DURATION_SECONDS.getValue(),
-                MetricKey.DURATION_MINUTES.getValue(),
-                MetricKey.DISTANCE_KM.getValue(),
-                MetricKey.SPEED_KMH.getValue(),
-                MetricKey.PACE_SECONDS_PER_KM.getValue(),
-                MetricKey.INCLINE_PERCENT.getValue(),
-                MetricKey.REST_SECONDS.getValue(),
-                MetricKey.RPE.getValue(),
-                MetricKey.INTENSITY_LEVEL.getValue()));
+        result.put("allowedMetricKeys", Arrays.stream(MetricKey.values())
+                .filter(key -> !key.isHidden())
+                .map(MetricKey::getValue)
+                .toList());
+        result.put("allowedMetricKeysByStructureType", buildAllowedMetricKeysByStructureType());
         result.put("goalTypes", List.of("fat_loss", "muscle_gain", "health_maintenance"));
         result.put("sceneTypes", List.of("gym", "home"));
+        return result;
+    }
+
+    private Map<String, List<String>> buildAllowedMetricKeysByStructureType() {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        for (StructureType structureType : StructureType.values()) {
+            result.put(structureType.getValue(), MetricKey.allowedFor(structureType).stream()
+                    .map(MetricKey::getValue)
+                    .toList());
+        }
         return result;
     }
 

@@ -504,12 +504,21 @@ public interface AiModelClient {
       "pace_seconds_per_km",
       "incline_percent",
       "rest_seconds",
-      "rpe",
       "intensity_level"
-    ]
+    ],
+    "allowedMetricKeysByStructureType": {
+      "set_based": ["weight_kg", "reps", "duration_seconds", "duration_minutes", "rest_seconds"],
+      "single_segment": ["duration_seconds", "duration_minutes", "distance_km", "speed_kmh", "pace_seconds_per_km", "incline_percent", "intensity_level"]
+    }
   }
 }
 ```
+
+说明：
+
+- `allowedMetricKeys` 已移除 `rpe`：RPE 在编辑页仍保留兼容（枚举不删），但 AI 生成模板时不再输出 RPE，避免给单段动作（椭圆机/动感单车/上坡快走等 `single_segment`）错误配置 RPE 指标。
+- `allowedMetricKeysByStructureType` 给出"结构类型 → 允许指标"映射，与前端 `cycle-template-metric-config.ts` 的 `allowedStructureTypes` 一致（同样排除 RPE）。模型应据此按动作 `structureType` 选择指标。
+- 后端 `AiOutputValidationDomainService` 会对 AI 输出做"指标-结构"校验：若某指标不属于其 `structureType` 允许集合，则返回 `AI_OUTPUT_INVALID` 并触发 JSON 修复重试（仅 AI 生成路径生效，不改变 `ExerciseStructurePolicyService` 的人工保存校验）。
 
 ### 9.2 首轮不直接塞完整动作库
 
