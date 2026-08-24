@@ -50,7 +50,7 @@ dailyforge:
   ai:
     enabled: true
     provider: deepseek
-    model: deepseek-v4-pro
+    model: deepseek-v4-flash
     base-url: https://api.deepseek.com
     api-key: ${DAILYFORGE_AI_API_KEY:replace-with-your-ai-api-key}
     timeout: PT120S
