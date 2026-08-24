@@ -24,8 +24,7 @@ export function BackToTop() {
       type="button"
       aria-label="回到顶部"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className="fixed bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-amber-400 text-xl font-semibold text-stone-950 shadow-2xl shadow-black/40 transition hover:bg-amber-300"
-      style={{ right: "max(1rem, calc((100vw - 80rem) / 2 + 1rem))" }}
+      className="fixed bottom-6 left-1/2 z-40 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-amber-400 text-xl font-semibold text-stone-950 shadow-2xl shadow-black/40 transition hover:bg-amber-300"
     >
       <span aria-hidden="true">↑</span>
     </button>
