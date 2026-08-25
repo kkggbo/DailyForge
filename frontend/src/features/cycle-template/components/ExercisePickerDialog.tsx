@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   formatExerciseStructureType,
   formatExerciseType,
@@ -52,6 +53,126 @@ export function ExercisePickerDialog({
   const selectedCategory =
     categories.find((category) => category.categoryCode === selectedCategoryCode) ?? null;
   const muscles = selectedCategory?.children ?? [];
+  const [mobilePane, setMobilePane] = useState<"categories" | "results">("categories");
+
+  const categoriesPane = (
+    <div className="min-h-0 overflow-y-auto border-r border-white/10 bg-white/[0.03] p-4">
+      <p className="px-2 text-xs uppercase tracking-[0.2em] text-stone-500">
+        一级分类
+      </p>
+      <div className="mt-4 space-y-2">
+        {isLoadingFilters ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-300">
+            正在加载分类...
+          </div>
+        ) : categories.length > 0 ? (
+          categories.map((category) => (
+            <button
+              key={category.categoryCode}
+              type="button"
+              onClick={() => onCategoryChange(category.categoryCode)}
+              className={[
+                "w-full rounded-2xl px-4 py-3 text-left text-sm transition",
+                category.categoryCode === selectedCategoryCode
+                  ? "bg-amber-400 text-stone-950"
+                  : "bg-white/5 text-stone-200 hover:bg-white/10"
+              ].join(" ")}
+            >
+              {category.categoryName}
+            </button>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/12 bg-white/5 px-4 py-4 text-sm text-stone-300">
+            当前没有可用分类。
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const resultsPane = (
+    <div className="min-h-0 overflow-y-auto p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+            当前分类
+          </p>
+          <p className="mt-1 text-lg font-semibold text-white">
+            {selectedCategory?.categoryName ?? "未选择"}
+          </p>
+        </div>
+        <p className="text-sm text-stone-400">
+          {isLoadingResults ? "正在加载动作..." : `共 ${results.length} 个结果`}
+        </p>
+      </div>
+
+      {errorMessage ? (
+        <div className="mb-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      <div className="space-y-3">
+        {isLoadingResults ? (
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-8 text-center text-stone-300">
+            正在查询动作列表...
+          </div>
+        ) : results.length > 0 ? (
+          results.map((option) => (
+            <button
+              key={option.exerciseId}
+              type="button"
+              onClick={() => onSelectExercise(option)}
+              className="w-full rounded-3xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-amber-300/40 hover:bg-amber-300/10"
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-base font-semibold text-white">
+                    {option.exerciseName}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-stone-300">
+                    <Tag>{formatExerciseStructureType(option.defaultStructureType)}</Tag>
+                    <Tag>{formatExerciseType(option.exerciseType)}</Tag>
+                    {option.movementType ? (
+                      <Tag>{formatMovementType(option.movementType)}</Tag>
+                    ) : null}
+                    {option.defaultUnit ? <Tag>{option.defaultUnit}</Tag> : null}
+                  </div>
+                </div>
+                <span className="text-xs text-amber-200">点击选择</span>
+              </div>
+
+              <div className="mt-3 space-y-2 text-xs text-stone-300">
+                {option.primaryMuscles.length > 0 ? (
+                  <p>
+                    主要肌群：
+                    {option.primaryMuscles
+                      .map((muscle) => muscle.muscleName)
+                      .join("、")}
+                  </p>
+                ) : null}
+                {option.secondaryMuscles.length > 0 ? (
+                  <p>
+                    次要肌群：
+                    {option.secondaryMuscles
+                      .map((muscle) => muscle.muscleName)
+                      .join("、")}
+                  </p>
+                ) : null}
+                {option.equipmentNames.length > 0 ? (
+                  <p>{`器械：${option.equipmentNames.join("、")}`}</p>
+                ) : null}
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="rounded-3xl border border-dashed border-white/12 bg-white/5 px-4 py-8 text-center text-stone-300">
+            当前条件下没有找到可用动作，试试切换分类、细分肌肉或关键词。
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur">
@@ -126,122 +247,41 @@ export function ExercisePickerDialog({
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[220px_1fr]">
-          <aside className="border-r border-white/10 bg-white/[0.03] p-4">
-            <p className="px-2 text-xs uppercase tracking-[0.2em] text-stone-500">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex gap-2 border-b border-white/10 px-4 py-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobilePane("categories")}
+              className={[
+                "shrink-0 rounded-full px-4 py-2 text-sm transition",
+                mobilePane === "categories"
+                  ? "bg-amber-400 text-stone-950"
+                  : "bg-white/8 text-stone-200"
+              ].join(" ")}
+            >
               一级分类
-            </p>
-            <div className="mt-4 space-y-2">
-              {isLoadingFilters ? (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-300">
-                  正在加载分类...
-                </div>
-              ) : categories.length > 0 ? (
-                categories.map((category) => (
-                  <button
-                    key={category.categoryCode}
-                    type="button"
-                    onClick={() => onCategoryChange(category.categoryCode)}
-                    className={[
-                      "w-full rounded-2xl px-4 py-3 text-left text-sm transition",
-                      category.categoryCode === selectedCategoryCode
-                        ? "bg-amber-400 text-stone-950"
-                        : "bg-white/5 text-stone-200 hover:bg-white/10"
-                    ].join(" ")}
-                  >
-                    {category.categoryName}
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-white/12 bg-white/5 px-4 py-4 text-sm text-stone-300">
-                  当前没有可用分类。
-                </div>
-              )}
-            </div>
-          </aside>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobilePane("results")}
+              className={[
+                "shrink-0 rounded-full px-4 py-2 text-sm transition",
+                mobilePane === "results"
+                  ? "bg-amber-400 text-stone-950"
+                  : "bg-white/8 text-stone-200"
+              ].join(" ")}
+            >
+              结果
+            </button>
+          </div>
 
-          <div className="min-h-0 p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
-                  当前分类
-                </p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedCategory?.categoryName ?? "未选择"}
-                </p>
-              </div>
-              <p className="text-sm text-stone-400">
-                {isLoadingResults ? "正在加载动作..." : `共 ${results.length} 个结果`}
-              </p>
-            </div>
+          <div className="hidden min-h-0 flex-1 lg:grid lg:grid-cols-[220px_1fr]">
+            {categoriesPane}
+            {resultsPane}
+          </div>
 
-            {errorMessage ? (
-              <div className="mb-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-                {errorMessage}
-              </div>
-            ) : null}
-
-            <div className="h-full overflow-y-auto pr-1">
-              {isLoadingResults ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-8 text-center text-stone-300">
-                  正在查询动作列表...
-                </div>
-              ) : results.length > 0 ? (
-                <div className="grid gap-3">
-                  {results.map((option) => (
-                    <button
-                      key={option.exerciseId}
-                      type="button"
-                      onClick={() => onSelectExercise(option)}
-                      className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-amber-300/40 hover:bg-amber-300/10"
-                    >
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <p className="text-base font-semibold text-white">
-                            {option.exerciseName}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-stone-300">
-                            <Tag>{formatExerciseStructureType(option.defaultStructureType)}</Tag>
-                            <Tag>{formatExerciseType(option.exerciseType)}</Tag>
-                            {option.movementType ? (
-                              <Tag>{formatMovementType(option.movementType)}</Tag>
-                            ) : null}
-                            {option.defaultUnit ? <Tag>{option.defaultUnit}</Tag> : null}
-                          </div>
-                        </div>
-                        <span className="text-xs text-amber-200">点击选择</span>
-                      </div>
-
-                      <div className="mt-3 space-y-2 text-xs text-stone-300">
-                        {option.primaryMuscles.length > 0 ? (
-                          <p>
-                            主要肌群：
-                            {option.primaryMuscles
-                              .map((muscle) => muscle.muscleName)
-                              .join("、")}
-                          </p>
-                        ) : null}
-                        {option.secondaryMuscles.length > 0 ? (
-                          <p>
-                            次要肌群：
-                            {option.secondaryMuscles
-                              .map((muscle) => muscle.muscleName)
-                              .join("、")}
-                          </p>
-                        ) : null}
-                        {option.equipmentNames.length > 0 ? (
-                          <p>{`器械：${option.equipmentNames.join("、")}`}</p>
-                        ) : null}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/5 px-4 py-8 text-center text-stone-300">
-                  当前条件下没有找到可用动作，试试切换分类、细分肌肉或关键词。
-                </div>
-              )}
-            </div>
+          <div className="min-h-0 flex-1 overflow-hidden lg:hidden">
+            {mobilePane === "categories" ? categoriesPane : resultsPane}
           </div>
         </div>
       </section>
