@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,9 +22,13 @@ public class SystemExerciseLookupService {
     private static final Logger log = LoggerFactory.getLogger(SystemExerciseLookupService.class);
 
     private final ExerciseQueryMapper exerciseQueryMapper;
+    private final SystemExerciseCache systemExerciseCache;
 
-    public SystemExerciseLookupService(ExerciseQueryMapper exerciseQueryMapper) {
+    public SystemExerciseLookupService(
+            ExerciseQueryMapper exerciseQueryMapper,
+            SystemExerciseCache systemExerciseCache) {
         this.exerciseQueryMapper = exerciseQueryMapper;
+        this.systemExerciseCache = systemExerciseCache;
     }
 
     /**
@@ -51,33 +54,24 @@ public class SystemExerciseLookupService {
 
     /**
      * Load active system exercise metadata for internal modules such as plan validation.
+     * Delegates to the Redis-backed {@link SystemExerciseCache} and rebuilds the map in memory.
      */
     public Map<Long, SystemExerciseLookupResult> loadActiveSystemExercisesByIds(Collection<Long> exerciseIds) {
         if (exerciseIds == null || exerciseIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        Set<Long> distinctIds = exerciseIds.stream().filter(id -> id != null && id > 0).collect(Collectors.toSet());
-        if (distinctIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<SystemExerciseLookupEntity> entities =
-                exerciseQueryMapper.selectActiveSystemLookupByIds(List.copyOf(distinctIds));
-        Map<Long, SystemExerciseLookupResult> result = new LinkedHashMap<>();
-        for (SystemExerciseLookupEntity entity : entities) {
-            result.put(entity.getId(), toLookupResult(entity));
-        }
-        log.debug("System exercise lookup loaded. requestedCount={}, matchedCount={}",
-                distinctIds.size(), result.size());
-        return result;
+        return systemExerciseCache.loadActive(exerciseIds).stream()
+                .collect(Collectors.toMap(
+                        SystemExerciseLookupResult::id,
+                        result -> result,
+                        (a, b) -> a,
+                        LinkedHashMap::new));
     }
 
     /**
-     * Require one active system exercise metadata row. Cached in Redis ("systemExercises", 30m):
-     * the system exercise library is stable reference data and single-exercise lookups are safe to
-     * cache as a plain record value.
+     * Require one active system exercise metadata row. Benefits from the system exercise cache
+     * via {@link #loadActiveSystemExercisesByIds}.
      */
-    @Cacheable(cacheNames = "systemExercises", key = "#exerciseId")
     public SystemExerciseLookupResult getRequiredActiveSystemExercise(Long exerciseId) {
         if (exerciseId == null || exerciseId < 1) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
