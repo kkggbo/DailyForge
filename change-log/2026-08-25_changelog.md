@@ -75,7 +75,8 @@
 
 - 新增共享聚合层 `TrainingPerformanceAggregationService`：汇总用户最近 5 次已完成训练（默认窗口），按系统动作分组输出完成率、平均重量/次数/RPE/休息、总容量等 `PerformanceSummary`。
 - 该聚合接入 AI 模板生成上下文：新增 `getUserRecentWorkoutContext`，把最近表现以紧凑 JSON（含 `available` 标志）注入 prompt。
-- 模型生成规则更新：有历史数据时按实际表现校准重量/组数/次数并标记 `basisType=historical_performance`；无历史时退回 `starting_recommendation`。
+- 模型依据优先级（高→低）：用户当下明确意图（补充要求）＞ 伤病与注意事项（常驻健康约束，作硬限制；与补充要求冲突时健康优先并写入 warnings）＞ 历史表现（仅无明确意图时作起始校准；对降强度/恢复/避开类意图只当上限封顶）＞ 个人资料与请求默认值。
+- `basisType=historical_performance` 仅在负荷确实由历史表现导出时使用；其余场景一律 `starting_recommendation`，真实驱动因素写入 `intensityRationale.summary` 说明。
 - 聚合层后续直接复用给统计模块，避免重复实现。
 
 ## 总结

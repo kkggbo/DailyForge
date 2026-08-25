@@ -37,11 +37,15 @@ public class TemplateGenerationPromptBuilder {
                 3. structureType must match the system exercise defaultStructureType.
                 4. set_based exercises may only use itemType=set. single_segment exercises may only use itemType=segment.
                 5. Only output the JSON schema described below.
-                6. Use recentWorkout to calibrate loads when history exists: if recentWorkout.available is true, set weights, sets and reps close to the user's actual aggregated performance and set intensityRationale.basisType to historical_performance. If recentWorkout.available is false, base the plan on the profile/request defaults and set intensityRationale.basisType to starting_recommendation.
-                7. Keep warnings honest and concise.
-                8. All user-facing text fields must be written in Simplified Chinese.
-                9. Rest days are allowed. Represent a rest day with an empty exercises array instead of inventing unsupported structures.
-                10. If request.additionalRequirements is provided, treat it as a one-off supplement for this generation and honor it when it does not conflict with system constraints.
+                6. Signal priority for choosing weights, sets and reps, highest to lowest:
+                   (a) request.additionalRequirements - the user's explicit intent for this template. Honor it strictly.
+                   (b) userProfile.injuryNotes - a standing health constraint; treat it as a hard limit and never plan exercises or loads that contradict it. If (a) conflicts with (b), the injury constraint wins and explain this in warnings.
+                   (c) recentWorkout - historical performance, a reference only. Use it to set a realistic starting load only when neither (a) nor (b) specifies intensity, and never use it to raise the load beyond an explicitly requested lower intensity (for recovery, deload or avoidance intent it acts only as an upper-bound cap).
+                   (d) profile and request defaults.
+                7. intensityRationale.basisType: set it to historical_performance only when recentWorkout.available is true AND the loads were actually derived from the user's recent performance (that is, neither (a) nor (b) overrode the intensity). In every other case set it to starting_recommendation, and let intensityRationale.summary explain the real driver (for example, that the loads follow the user's injury or explicit request).
+                8. Keep warnings honest and concise.
+                9. All user-facing text fields must be written in Simplified Chinese.
+                10. Rest days are allowed. Represent a rest day with an empty exercises array instead of inventing unsupported structures.
 
                 Required output JSON schema:
                 {
