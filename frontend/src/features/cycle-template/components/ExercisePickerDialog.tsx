@@ -251,35 +251,6 @@ export function ExercisePickerDialog({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex gap-2 border-b border-white/10 px-4 py-2 lg:hidden">
-            {mobilePane === "categories" ? (
-              <>
-                <button
-                  type="button"
-                  disabled
-                  className="shrink-0 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950"
-                >
-                  一级分类
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMobilePane("results")}
-                  className="shrink-0 rounded-full bg-white/8 px-4 py-2 text-sm text-stone-200"
-                >
-                  结果
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setMobilePane("categories")}
-                className="shrink-0 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-200"
-              >
-                ← 返回
-              </button>
-            )}
-          </div>
-
           <div className="hidden min-h-0 flex-1 lg:grid lg:grid-cols-[220px_1fr]">
             <div className="min-h-0 overflow-y-auto border-r border-white/10 bg-white/[0.03] p-4">
               {categoriesPane}
@@ -288,7 +259,20 @@ export function ExercisePickerDialog({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:hidden">
-            {mobilePane === "categories" ? categoriesPane : resultsPane}
+            {mobilePane === "categories" ? (
+              categoriesPane
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMobilePane("categories")}
+                  className="mb-3 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-200"
+                >
+                  ← 返回
+                </button>
+                {resultsPane}
+              </>
+            )}
           </div>
         </div>
       </section>
