@@ -12,27 +12,24 @@
         </encoder>
     </appender>
 
-    <!-- Rolling file logs only outside the prod profile (prod relies on docker logs). -->
-    <springProfile name="!prod">
-        <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>${LOG_PATH:-logs}/dailyforge.log</file>
-            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>${LOG_PATH:-logs}/dailyforge.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-                <maxFileSize>20MB</maxFileSize>
-                <maxHistory>14</maxHistory>
-                <totalSizeCap>1GB</totalSizeCap>
-            </rollingPolicy>
-            <encoder>
-                <pattern>${CONSOLE_PATTERN}</pattern>
-                <charset>UTF-8</charset>
-            </encoder>
-        </appender>
-    </springProfile>
+    <!-- Rolling file logs in every environment. LOG_PATH is injected in production (compose
+         sets it to the mounted /logs volume); dev falls back to ./logs. -->
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH:-logs}/dailyforge.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH:-logs}/dailyforge.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <springProfile name="!prod">
-            <appender-ref ref="ROLLING_FILE"/>
-        </springProfile>
+        <appender-ref ref="ROLLING_FILE"/>
     </root>
 </configuration>

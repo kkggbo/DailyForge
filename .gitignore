@@ -27,3 +27,4 @@ skill-drafts/
 dbdata/
 *.tsbuildinfo
 frontend/vite.config.js
+deploy/logs/
