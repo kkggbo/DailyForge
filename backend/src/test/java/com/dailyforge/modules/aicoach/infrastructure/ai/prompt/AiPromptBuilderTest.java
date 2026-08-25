@@ -38,6 +38,7 @@ class AiPromptBuilderTest {
                         "每周至少保留 1 天完整休息，避免大重量深蹲。"),
                 Map.of("goalType", "muscle_gain"),
                 Map.of("currentWeightKg", 75.5),
+                Map.of("available", false),
                 Map.of("sceneTypes", List.of("gym", "home")));
 
         // When

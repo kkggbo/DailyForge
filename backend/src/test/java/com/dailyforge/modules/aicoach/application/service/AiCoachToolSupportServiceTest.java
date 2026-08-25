@@ -21,6 +21,7 @@ import com.dailyforge.modules.workout.infrastructure.persistence.mapper.Training
 import com.dailyforge.modules.workout.infrastructure.persistence.mapper.TrainingSessionExerciseItemMetricMapper;
 import com.dailyforge.modules.workout.infrastructure.persistence.mapper.TrainingSessionExerciseMapper;
 import com.dailyforge.modules.workout.infrastructure.persistence.mapper.TrainingSessionMapper;
+import com.dailyforge.modules.workout.application.service.TrainingPerformanceAggregationService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,8 @@ class AiCoachToolSupportServiceTest {
     private TrainingSessionExerciseItemMapper trainingSessionExerciseItemMapper;
     @Mock
     private TrainingSessionExerciseItemMetricMapper trainingSessionExerciseItemMetricMapper;
+    @Mock
+    private TrainingPerformanceAggregationService trainingPerformanceAggregationService;
 
     private AiCoachToolSupportService service;
 
@@ -79,7 +82,8 @@ class AiCoachToolSupportServiceTest {
                 trainingSessionMapper,
                 trainingSessionExerciseMapper,
                 trainingSessionExerciseItemMapper,
-                trainingSessionExerciseItemMetricMapper);
+                trainingSessionExerciseItemMetricMapper,
+                trainingPerformanceAggregationService);
     }
 
     @Test

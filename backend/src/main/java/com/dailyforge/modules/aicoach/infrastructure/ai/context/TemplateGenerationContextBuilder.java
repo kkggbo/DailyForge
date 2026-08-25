@@ -19,6 +19,7 @@ public class TemplateGenerationContextBuilder {
                 request,
                 aiCoachToolSupportService.getUserProfileContext(userId),
                 aiCoachToolSupportService.getUserCurrentBodyMetricsContext(userId),
+                aiCoachToolSupportService.getUserRecentWorkoutContext(userId),
                 aiCoachToolSupportService.getTemplateGenerationConstraints());
     }
 }

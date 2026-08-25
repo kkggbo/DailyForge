@@ -23,6 +23,8 @@ import com.dailyforge.modules.profile.infrastructure.persistence.entity.UserCurr
 import com.dailyforge.modules.profile.infrastructure.persistence.entity.UserProfileEntity;
 import com.dailyforge.modules.profile.infrastructure.persistence.mapper.UserCurrentBodyMetricsMapper;
 import com.dailyforge.modules.profile.infrastructure.persistence.mapper.UserProfileMapper;
+import com.dailyforge.modules.workout.application.model.PerformanceSummary;
+import com.dailyforge.modules.workout.application.service.TrainingPerformanceAggregationService;
 import com.dailyforge.modules.workout.infrastructure.persistence.entity.TrainingSessionEntity;
 import com.dailyforge.modules.workout.infrastructure.persistence.entity.TrainingSessionExerciseEntity;
 import com.dailyforge.modules.workout.infrastructure.persistence.entity.TrainingSessionExerciseItemEntity;
@@ -47,6 +49,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class AiCoachToolSupportService {
 
+    /** Number of most recent completed workout sessions aggregated into the AI context. */
+    private static final int RECENT_WORKOUT_WINDOW = 5;
+
     private static final List<String> PAIN_KEYWORDS = List.of(
             "pain",
             "hurt",
@@ -68,6 +73,7 @@ public class AiCoachToolSupportService {
     private final TrainingSessionExerciseMapper trainingSessionExerciseMapper;
     private final TrainingSessionExerciseItemMapper trainingSessionExerciseItemMapper;
     private final TrainingSessionExerciseItemMetricMapper trainingSessionExerciseItemMetricMapper;
+    private final TrainingPerformanceAggregationService trainingPerformanceAggregationService;
 
     public AiCoachToolSupportService(
             UserProfileMapper userProfileMapper,
@@ -80,7 +86,8 @@ public class AiCoachToolSupportService {
             TrainingSessionMapper trainingSessionMapper,
             TrainingSessionExerciseMapper trainingSessionExerciseMapper,
             TrainingSessionExerciseItemMapper trainingSessionExerciseItemMapper,
-            TrainingSessionExerciseItemMetricMapper trainingSessionExerciseItemMetricMapper) {
+            TrainingSessionExerciseItemMetricMapper trainingSessionExerciseItemMetricMapper,
+            TrainingPerformanceAggregationService trainingPerformanceAggregationService) {
         this.userProfileMapper = userProfileMapper;
         this.userCurrentBodyMetricsMapper = userCurrentBodyMetricsMapper;
         this.exerciseQueryMapper = exerciseQueryMapper;
@@ -92,6 +99,7 @@ public class AiCoachToolSupportService {
         this.trainingSessionExerciseMapper = trainingSessionExerciseMapper;
         this.trainingSessionExerciseItemMapper = trainingSessionExerciseItemMapper;
         this.trainingSessionExerciseItemMetricMapper = trainingSessionExerciseItemMetricMapper;
+        this.trainingPerformanceAggregationService = trainingPerformanceAggregationService;
     }
 
     public Map<String, Object> getUserProfileContext(Long userId) {
@@ -125,6 +133,47 @@ public class AiCoachToolSupportService {
         result.put("currentBodyType", metrics == null ? null : metrics.getCurrentBodyType());
         result.put("updatedAt", metrics == null ? null : metrics.getUpdatedAt());
         return result;
+    }
+
+    /**
+     * Compact view of the user's recent completed workout performance, used as AI prompt context.
+     * The {@code available} flag is false when the user has no completed workout history; the model
+     * should then fall back to a starting recommendation.
+     */
+    public Map<String, Object> getUserRecentWorkoutContext(Long userId) {
+        PerformanceSummary summary =
+                trainingPerformanceAggregationService.aggregateRecentCompletedWorkout(
+                        userId, RECENT_WORKOUT_WINDOW);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("available", summary.sessionCount() > 0);
+        result.put("window", RECENT_WORKOUT_WINDOW);
+        result.put("sessionCount", summary.sessionCount());
+        result.put("avgCompletionRate", round(summary.avgCompletionRate()));
+        result.put("exercises", summary.exercises().stream()
+                .map(this::formatExercisePerformance)
+                .toList());
+        return result;
+    }
+
+    private Map<String, Object> formatExercisePerformance(PerformanceSummary.ExercisePerformance e) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("exerciseId", e.exerciseId());
+        result.put("name", e.name());
+        result.put("structureType", e.structureType());
+        result.put("timesPerformed", e.timesPerformed());
+        result.put("setsDone", e.setsDone());
+        result.put("setsPlanned", e.setsPlanned());
+        result.put("completionRate", round(e.completionRate()));
+        result.put("avgWeightKg", e.avgWeightKg());
+        result.put("totalVolume", e.totalVolume());
+        result.put("avgReps", e.avgReps());
+        result.put("avgRpe", e.avgRpe());
+        result.put("avgRestSeconds", e.avgRestSeconds());
+        return result;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     public Map<String, Object> getTemplateGenerationConstraints() {

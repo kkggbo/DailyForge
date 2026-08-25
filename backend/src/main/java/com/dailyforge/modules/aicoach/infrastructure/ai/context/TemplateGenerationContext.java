@@ -8,5 +8,6 @@ public record TemplateGenerationContext(
         TemplateGenerationRequest request,
         Map<String, Object> userProfile,
         Map<String, Object> currentBodyMetrics,
+        Map<String, Object> recentWorkout,
         Map<String, Object> templateConstraints) {
 }

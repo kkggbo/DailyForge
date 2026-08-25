@@ -37,7 +37,7 @@ public class TemplateGenerationPromptBuilder {
                 3. structureType must match the system exercise defaultStructureType.
                 4. set_based exercises may only use itemType=set. single_segment exercises may only use itemType=segment.
                 5. Only output the JSON schema described below.
-                6. If historical load data is not available, intensityRationale.basisType must be starting_recommendation.
+                6. Use recentWorkout to calibrate loads when history exists: if recentWorkout.available is true, set weights, sets and reps close to the user's actual aggregated performance and set intensityRationale.basisType to historical_performance. If recentWorkout.available is false, base the plan on the profile/request defaults and set intensityRationale.basisType to starting_recommendation.
                 7. Keep warnings honest and concise.
                 8. All user-facing text fields must be written in Simplified Chinese.
                 9. Rest days are allowed. Represent a rest day with an empty exercises array instead of inventing unsupported structures.

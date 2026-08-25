@@ -71,6 +71,13 @@
 - 隐藏任务编号、循环 ID、模板 ID 等内部数据，统一中文展示。
 - 任务页「返回周期总结」改为「返回训练工作台」（跳 `/workout`）；历史页周期 tab 按钮改「查看总结详情」并加黄色背景；「Cycle Summary」正文铺满卡片宽度。
 
+### 13. AI 模板生成：参考最近训练表现
+
+- 新增共享聚合层 `TrainingPerformanceAggregationService`：汇总用户最近 5 次已完成训练（默认窗口），按系统动作分组输出完成率、平均重量/次数/RPE/休息、总容量等 `PerformanceSummary`。
+- 该聚合接入 AI 模板生成上下文：新增 `getUserRecentWorkoutContext`，把最近表现以紧凑 JSON（含 `available` 标志）注入 prompt。
+- 模型生成规则更新：有历史数据时按实际表现校准重量/组数/次数并标记 `basisType=historical_performance`；无历史时退回 `starting_recommendation`。
+- 聚合层后续直接复用给统计模块，避免重复实现。
+
 ## 总结
 
 前端完成体验收口：去掉开发信息、统一中文、让 AI 入口回归业务上下文，并重做了循环模板编辑页与训练工作台的核心交互。AI 侧同步收敛：`duration_minutes` 指标键、RPE 隐藏、AI 输出「指标-结构」校验、AI 模型改用 `deepseek-v4-flash`，前后端契约文档已同步。全部改动已按 Conventional Commits 分次提交；子代理模型已配置为固定 `deepseek-v4-flash` + low 思考强度。
