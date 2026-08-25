@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -72,8 +73,11 @@ public class SystemExerciseLookupService {
     }
 
     /**
-     * Require one active system exercise metadata row.
+     * Require one active system exercise metadata row. Cached in Redis ("systemExercises", 30m):
+     * the system exercise library is stable reference data and single-exercise lookups are safe to
+     * cache as a plain record value.
      */
+    @Cacheable(cacheNames = "systemExercises", key = "#exerciseId")
     public SystemExerciseLookupResult getRequiredActiveSystemExercise(Long exerciseId) {
         if (exerciseId == null || exerciseId < 1) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
