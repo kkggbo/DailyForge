@@ -169,3 +169,29 @@ ssh -N -L 3307:127.0.0.1:3306 root@<服务器IP>
 ```
 
 然后客户端连 `localhost:3307`。
+
+## 12. GitHub Actions 自动测试 / 构建 / 部署
+
+仓库根目录 `.github/workflows/ci.yml` 定义了一条流水线：
+
+- **CI（push 任意分支 / PR）**：前端 `pnpm test:run` + `pnpm build`；后端 `mvn test`（H2 + Redis service 容器）+ `mvn package`。
+- **CD（push 到 `main` 且 CI 通过后）**：SSH 登录服务器执行 `git pull` + `docker compose -f deploy/docker-compose.prod.yml up -d --build backend nginx`。
+
+### 12.1 需要在 GitHub 配置的 Secrets（Settings → Secrets and variables → Actions）
+
+| Secret | 说明 |
+|---|---|
+| `SERVER_HOST` | 阿里云服务器公网 IP |
+| `SERVER_USER` | SSH 用户（如 `root`） |
+| `SSH_PRIVATE_KEY` | 服务器可登录的 SSH 私钥（与公钥配对的） |
+| `SERVER_PATH` | 服务器上 DailyForge 仓库的绝对路径（如 `/root/DailyForge`） |
+
+### 12.2 说明
+
+- 服务器需要已按第 3、4、5 节配置好 Docker、仓库、`deploy/.env`。
+- CD **不会自动重跑数据库迁移**（避免重复执行报错）；若某次发布含新迁移（如 V8），请在服务器上手动执行 `./deploy/run-migrations.sh`。
+- `deploy/.env` 在 `.gitignore` 中、不会进仓库；服务器上保留真实值，流水线只做 `git pull` 拉代码。
+
+### 12.3 建议
+
+- 生产分支保护：Settings → Branches → 为 `main` 开启「Require status checks to pass before merging」，勾选 `CI / Frontend` 与 `CI / Backend`，保证 main 永远处于测试通过状态。
