@@ -543,14 +543,14 @@ export function CycleTemplateEditor({
       </section>
 
       <section className="rounded-[28px] border border-white/10 bg-black/20 p-5 backdrop-blur">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {form.days.map((day) => (
             <button
               key={day.dayIndex}
               type="button"
               onClick={() => onSelectedDayIndexChange(day.dayIndex)}
               className={[
-                "rounded-full px-4 py-2 text-sm transition",
+                "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition",
                 activeDay?.dayIndex === day.dayIndex
                   ? "bg-amber-400 text-stone-950"
                   : "bg-white/8 text-stone-200 hover:bg-white/12",

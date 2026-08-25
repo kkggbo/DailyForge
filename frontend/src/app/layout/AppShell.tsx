@@ -5,7 +5,7 @@ import { BackToTop } from "./BackToTop";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    "rounded-full px-4 py-2 text-sm transition",
+    "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition",
     isActive
       ? "bg-amber-400 text-stone-950"
       : "text-stone-200 hover:bg-white/10 hover:text-white"
@@ -32,7 +32,7 @@ export function AppShell() {
                 <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
                   DailyForge
                 </p>
-                <p className="text-sm text-stone-400">
+                <p className="hidden text-sm text-stone-400 sm:block">
                   为训练节奏、饮食决策与成长记录搭一条清晰主线
                 </p>
               </div>
@@ -40,7 +40,7 @@ export function AppShell() {
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <nav className="flex flex-wrap items-center gap-2">
+            <nav className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap">
               {isAuthenticated ? (
                 <>
                   <NavLink to="/app" className={navLinkClass}>

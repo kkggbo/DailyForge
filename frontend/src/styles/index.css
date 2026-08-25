@@ -72,3 +72,10 @@ select {
   background: rgba(251, 191, 36, 0.28);
   color: #fff7ed;
 }
+
+/* Minimum touch-target size for buttons on coarse-pointer (touch) devices. */
+@media (pointer: coarse) {
+  button {
+    min-height: 40px;
+  }
+}
