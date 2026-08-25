@@ -90,6 +90,18 @@ public interface TrainingSessionMapper extends BaseMapper<TrainingSessionEntity>
             @Param("userId") Long userId,
             @Param("sessionStatus") String sessionStatus);
 
+    @Select("""
+            SELECT * FROM training_sessions
+            WHERE user_id = #{userId}
+              AND session_type = 'workout'
+              AND status = 'completed'
+            ORDER BY completed_at DESC, started_at DESC, id DESC
+            LIMIT #{limit}
+            """)
+    List<TrainingSessionEntity> selectRecentCompletedWorkoutByUserId(
+            @Param("userId") Long userId,
+            @Param("limit") int limit);
+
     @Update("""
             UPDATE training_sessions
             SET template_id = #{templateId},
