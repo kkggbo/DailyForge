@@ -29,7 +29,7 @@ export function TemplateGenerationTaskPage() {
     const token = accessToken;
     const taskId = Number(rawTaskId);
     if (!Number.isInteger(taskId) || taskId <= 0) {
-      setPageError("任务编号无效。");
+      setPageError("无效的任务地址。");
       setIsLoading(false);
       return;
     }
