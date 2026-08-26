@@ -9,11 +9,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class AiToolDispatcher {
+
+    private static final Logger log = LoggerFactory.getLogger(AiToolDispatcher.class);
 
     private final AiToolRegistry aiToolRegistry;
     private final AiTaskToolCallMapper aiTaskToolCallMapper;
@@ -50,6 +54,8 @@ public class AiToolDispatcher {
             aiTaskRecordMapper.incrementToolCallCount(taskId);
             return resultJson;
         } catch (BusinessException exception) {
+            log.error("AI tool dispatch failed. taskId={}, taskType={}, toolName={}, roundNo={}",
+                    taskId, taskType, toolName, roundNo, exception);
             entity.setStatus("failed");
             entity.setErrorMessage(trim(exception.getMessage()));
             entity.setLatencyMs((int) Duration.between(startedAt, LocalDateTime.now()).toMillis());
@@ -58,6 +64,8 @@ public class AiToolDispatcher {
             aiTaskRecordMapper.incrementToolCallCount(taskId);
             throw exception;
         } catch (Exception exception) {
+            log.error("AI tool dispatch failed unexpectedly. taskId={}, taskType={}, toolName={}, roundNo={}",
+                    taskId, taskType, toolName, roundNo, exception);
             entity.setStatus("failed");
             entity.setErrorMessage(trim(exception.getMessage()));
             entity.setLatencyMs((int) Duration.between(startedAt, LocalDateTime.now()).toMillis());
