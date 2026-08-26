@@ -87,6 +87,8 @@ export function getAiCoachErrorMessage(error: unknown, fallback: string) {
       return "身体指标仍有缺失，暂时无法发起这项 AI 请求。";
     case "AI_CYCLE_RUN_NOT_COMPLETED":
       return "目标循环尚未完成，暂时不能生成周期总结。";
+    case "AI_CYCLE_SUMMARY_REQUIRED":
+      return "请先生成该周期的 AI 总结，再生成下一周期模板。";
     case "AI_TASK_NOT_FOUND":
       return "没有找到这条 AI 任务，可能已失效或无权访问。";
     case "AI_OUTPUT_INVALID":

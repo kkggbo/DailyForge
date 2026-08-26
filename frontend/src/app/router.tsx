@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { useAuth } from "./providers/AuthProvider";
 import { AiCoachHistoryPage } from "../features/ai-coach/pages/AiCoachHistoryPage";
 import { CycleSummaryPage } from "../features/ai-coach/pages/CycleSummaryPage";
 import { CycleSummaryTaskPage } from "../features/ai-coach/pages/CycleSummaryTaskPage";
+import { NextCycleGenerationTaskPage } from "../features/ai-coach/pages/NextCycleGenerationTaskPage";
 import { TemplateGenerationPage } from "../features/ai-coach/pages/TemplateGenerationPage";
 import { TemplateGenerationTaskPage } from "../features/ai-coach/pages/TemplateGenerationTaskPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
@@ -14,7 +16,11 @@ import { CycleTemplateDetailPage } from "../features/cycle-template/pages/CycleT
 import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTemplateEditPage";
 import { CycleTemplatePage } from "../features/cycle-template/pages/CycleTemplatePage";
 import { HomePage } from "../features/home/pages/HomePage";
-import { hasCompletedProfileOnboarding } from "../features/profile/lib/onboarding-storage";
+import { getProfileCompletionSummary } from "../features/profile/api/profile";
+import {
+  hasCompletedProfileOnboarding,
+  markProfileOnboardingCompleted
+} from "../features/profile/lib/onboarding-storage";
 import { BodyMetricHistoryPage } from "../features/profile/pages/BodyMetricHistoryPage";
 import { ProfileAiCompletionPage } from "../features/profile/pages/ProfileAiCompletionPage";
 import { ProfileEditPage } from "../features/profile/pages/ProfileEditPage";
@@ -64,9 +70,69 @@ function GuestOnlyOutlet() {
 }
 
 function AppEntryPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, accessToken } = useAuth();
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+  const [shouldOnboard, setShouldOnboard] = useState(false);
 
-  if (currentUser && !hasCompletedProfileOnboarding(currentUser.userId)) {
+  useEffect(() => {
+    if (!currentUser || !accessToken) {
+      setShouldOnboard(false);
+      setIsCheckingOnboarding(false);
+      return;
+    }
+
+    if (hasCompletedProfileOnboarding(currentUser.userId)) {
+      setShouldOnboard(false);
+      setIsCheckingOnboarding(false);
+      return;
+    }
+
+    const token = accessToken;
+    const userId = currentUser.userId;
+    let cancelled = false;
+
+    async function checkCompleteness() {
+      try {
+        const summary = await getProfileCompletionSummary(token);
+        if (cancelled) {
+          return;
+        }
+        if (summary.basicProfileReady && summary.hasWeightRecord) {
+          markProfileOnboardingCompleted(userId);
+          setShouldOnboard(false);
+        } else {
+          setShouldOnboard(true);
+        }
+      } catch {
+        // 接口异常：本次宽松进应用，不强制引导首次 onboarding
+        if (!cancelled) {
+          setShouldOnboard(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingOnboarding(false);
+        }
+      }
+    }
+
+    void checkCompleteness();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, accessToken]);
+
+  if (isCheckingOnboarding) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm text-stone-200">
+          正在同步账号状态...
+        </div>
+      </div>
+    );
+  }
+
+  if (shouldOnboard) {
     return <Navigate to="/profile/onboarding" replace />;
   }
 
@@ -128,6 +194,10 @@ export const router = createBrowserRouter([
           {
             path: "/ai-coach/cycle-summary/tasks/:taskId",
             element: <CycleSummaryTaskPage />
+          },
+          {
+            path: "/ai-coach/next-cycle-generation/tasks/:taskId",
+            element: <NextCycleGenerationTaskPage />
           },
           {
             path: "/profile",

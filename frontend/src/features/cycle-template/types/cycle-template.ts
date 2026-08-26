@@ -87,6 +87,8 @@ export type CycleTemplateDetailResponse = {
   templateId: number;
   templateName: string;
   goalType: string | null;
+  sceneType?: string | null;
+  includeCardio?: boolean | null;
   status: CycleTemplateStatus;
   sourceType?: CycleTemplateSourceType | null;
   cycleLength: number | null;

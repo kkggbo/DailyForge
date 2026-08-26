@@ -31,6 +31,29 @@ export function createDefaultTemplateGenerationForm(
   };
 }
 
+export function createTemplateGenerationForm(
+  capability: TemplateGenerationCapability,
+  initialValues?: Partial<TemplateGenerationForm>
+): TemplateGenerationForm | null {
+  const base = createDefaultTemplateGenerationForm(capability);
+  if (!base) {
+    return null;
+  }
+
+  if (!initialValues) {
+    return base;
+  }
+
+  return {
+    ...base,
+    sceneType: initialValues.sceneType ?? base.sceneType,
+    goalType: initialValues.goalType ?? base.goalType,
+    cycleLengthText: initialValues.cycleLengthText ?? base.cycleLengthText,
+    includeCardio: initialValues.includeCardio ?? base.includeCardio,
+    additionalRequirements: initialValues.additionalRequirements ?? ""
+  };
+}
+
 export function mapGeneratedDraftTemplateToDetail(
   draftTemplate: GeneratedDraftTemplate
 ): CycleTemplateDetailResponse {

@@ -27,6 +27,7 @@ type AiTaskHistoryListProps<TRecord extends HistoryRecordBase> = {
   emptyMessage: string;
   taskLinkLabel: string;
   primaryAction?: boolean;
+  renderCardActions?: (record: TRecord) => ReactNode;
   isLoading: boolean;
   error: string | null;
   data: AiTaskHistoryPage<TRecord> | null;
@@ -42,6 +43,7 @@ export function AiTaskHistoryList<TRecord extends HistoryRecordBase>({
   emptyMessage,
   taskLinkLabel,
   primaryAction = false,
+  renderCardActions,
   isLoading,
   error,
   data,
@@ -99,27 +101,26 @@ export function AiTaskHistoryList<TRecord extends HistoryRecordBase>({
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4">
                   <InfoItem label="创建时间" value={formatAiDateTime(record.createdAt)} />
-                  <InfoItem label="最近更新" value={formatAiDateTime(record.updatedAt)} />
-                  <InfoItem label="完成时间" value={formatAiDateTime(record.completedAt)} />
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-300">
                   {record.summaryText ?? "暂无可预览的摘要内容。"}
                 </div>
 
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
                   <Link
                     to={getTaskLink(record)}
                     className={
                       primaryAction
-                        ? "rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
-                        : "rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+                        ? "inline-flex items-center rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
+                        : "inline-flex items-center rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
                     }
                   >
                     {taskLinkLabel}
                   </Link>
+                  {renderCardActions?.(record)}
                 </div>
               </article>
             ))}

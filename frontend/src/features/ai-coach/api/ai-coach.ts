@@ -4,9 +4,11 @@ import type {
   AiTaskAcceptedResponse,
   AiTaskHistoryQuery,
   CreateCycleSummaryPayload,
+  CreateNextCycleGenerationPayload,
   CreateTemplateGenerationPayload,
   CycleSummaryHistoryPage,
   CycleSummaryTaskResponse,
+  NextCycleGenerationTaskResponse,
   TemplateGenerationHistoryPage,
   TemplateGenerationTaskResponse
 } from "../types/ai-coach";
@@ -73,6 +75,32 @@ export function createCycleSummaryTask(
 export function getCycleSummaryTask(accessToken: string, taskId: number) {
   return request<CycleSummaryTaskResponse>(
     `/ai-coach/cycle-summaries/${taskId}`,
+    {
+      accessToken
+    }
+  );
+}
+
+export function createNextCycleGenerationTask(
+  accessToken: string,
+  payload: CreateNextCycleGenerationPayload
+) {
+  return request<AiTaskAcceptedResponse<"next_cycle_generation">>(
+    "/ai-coach/next-cycle-generations",
+    {
+      method: "POST",
+      accessToken,
+      body: payload
+    }
+  );
+}
+
+export function getNextCycleGenerationTask(
+  accessToken: string,
+  taskId: number
+) {
+  return request<NextCycleGenerationTaskResponse>(
+    `/ai-coach/next-cycle-generations/${taskId}`,
     {
       accessToken
     }

@@ -66,5 +66,8 @@ describe("CycleSummaryTaskPage", () => {
       "href",
       "/cycle-templates/301"
     );
+    expect(
+      screen.getByRole("button", { name: "生成下一周期模板" })
+    ).toBeInTheDocument();
   });
 });

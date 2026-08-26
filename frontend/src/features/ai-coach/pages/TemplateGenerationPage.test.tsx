@@ -66,6 +66,13 @@ const readyCapabilities: AiCoachCapabilities = {
     latestCompletedCycleRunId: null,
     latestCompletedAt: null,
     recommendedMissingFields: []
+  },
+  nextCycleGeneration: {
+    available: true,
+    ready: false,
+    latestCompletedCycleRunId: null,
+    latestCompletedAt: null,
+    missingReason: null
   }
 };
 

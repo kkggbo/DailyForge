@@ -76,9 +76,11 @@ export function AppShell() {
                 <p className="truncate text-sm font-medium text-stone-100">
                   {currentUser?.userName ?? "未登录"}
                 </p>
-                <p className="truncate text-xs text-stone-400">
-                  {currentUser ? getAccountTierLabel(currentUser.accountTier) : "guest"}
-                </p>
+                {currentUser ? (
+                  <p className="truncate text-xs text-stone-400">
+                    {getAccountTierLabel(currentUser.accountTier)}
+                  </p>
+                ) : null}
               </div>
               {isAuthenticated ? (
                 <button

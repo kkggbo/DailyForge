@@ -19,7 +19,10 @@ export type IntensityBasisType =
   | "historical_performance"
   | "starting_recommendation";
 
-export type AiTaskType = "template_generation" | "cycle_summary";
+export type AiTaskType =
+  | "template_generation"
+  | "cycle_summary"
+  | "next_cycle_generation";
 
 export type AiTaskStatus = "pending" | "running" | "succeeded" | "failed";
 
@@ -51,12 +54,21 @@ export type CycleSummaryCapability = {
   recommendedMissingFields: MissingFieldCode[];
 };
 
+export type NextCycleGenerationCapability = {
+  available: boolean;
+  ready: boolean;
+  latestCompletedCycleRunId: number | null;
+  latestCompletedAt: string | null;
+  missingReason: string | null;
+};
+
 export type AiCoachCapabilities = {
   aiEnabled: boolean;
   accountTier: string;
   platformRole: string;
   templateGeneration: TemplateGenerationCapability;
   cycleSummary: CycleSummaryCapability;
+  nextCycleGeneration: NextCycleGenerationCapability;
 };
 
 export type TemplateGenerationForm = {
@@ -69,6 +81,17 @@ export type TemplateGenerationForm = {
 
 export type CreateTemplateGenerationPayload = {
   clientRequestId: string;
+  sceneType: SceneType;
+  goalType: GoalType;
+  cycleLength: number;
+  includeCardio: boolean;
+  additionalRequirements: string | null;
+};
+
+export type CreateNextCycleGenerationPayload = {
+  clientRequestId: string;
+  sourceCycleRunId: number;
+  sourceSummaryTaskId: number | null;
   sceneType: SceneType;
   goalType: GoalType;
   cycleLength: number;
@@ -185,6 +208,16 @@ export type TemplateGenerationRequestSnapshot = {
   additionalRequirements: string | null;
 };
 
+export type NextCycleGenerationRequestSnapshot = {
+  sceneType: SceneType;
+  goalType: GoalType;
+  cycleLength: number;
+  includeCardio: boolean;
+  additionalRequirements: string | null;
+  sourceCycleRunId?: number;
+  sourceSummaryTaskId?: number | null;
+};
+
 export type AiTaskBase<TTaskType extends AiTaskType = AiTaskType> = {
   taskId: number;
   taskType: TTaskType;
@@ -196,7 +229,10 @@ export type AiTaskBase<TTaskType extends AiTaskType = AiTaskType> = {
   errorMessage: string | null;
   progressStage: AiTaskProgressStage;
   latestToolCall: AiTaskLatestToolCall | null;
-  requestSnapshot?: TemplateGenerationRequestSnapshot | null;
+  requestSnapshot?:
+    | TemplateGenerationRequestSnapshot
+    | NextCycleGenerationRequestSnapshot
+    | null;
   updatedAt: string;
   pollAfterSeconds?: number | null;
 };
@@ -216,6 +252,11 @@ export type TemplateGenerationTaskResponse = AiTaskResponse<
 export type CycleSummaryTaskResponse = AiTaskResponse<
   "cycle_summary",
   CycleSummaryTaskResult
+>;
+
+export type NextCycleGenerationTaskResponse = AiTaskResponse<
+  "next_cycle_generation",
+  TemplateGenerationTaskResult
 >;
 
 export type AiTaskHistoryQuery = {

@@ -4,6 +4,7 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { getCycleSummaryTask } from "../api/ai-coach";
 import { AiTaskStatusPanel } from "../components/AiTaskStatusPanel";
 import { CycleSummaryResult } from "../components/CycleSummaryResult";
+import { NextCycleGenerationModal } from "../components/NextCycleGenerationModal";
 import { getAiCoachErrorMessage } from "../lib/ai-coach-enums";
 import {
   getAiTaskPollDelayMs,
@@ -20,6 +21,7 @@ export function CycleSummaryTaskPage() {
   const [task, setTask] = useState<CycleSummaryTaskResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [nextCycleModalOpen, setNextCycleModalOpen] = useState(false);
 
   useEffect(() => {
     if (!accessToken) {
@@ -108,13 +110,28 @@ export function CycleSummaryTaskPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               to={`/cycle-templates/${task.result.templateId}`}
-              className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
+              className="inline-flex items-center rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
             >
               查看对应模板
             </Link>
+            <button
+              type="button"
+              onClick={() => setNextCycleModalOpen(true)}
+              className="inline-flex items-center rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+            >
+              生成下一周期模板
+            </button>
           </div>
         </>
       ) : null}
+
+      <NextCycleGenerationModal
+        open={nextCycleModalOpen}
+        onClose={() => setNextCycleModalOpen(false)}
+        sourceCycleRunId={task?.result?.cycleRunId ?? 0}
+        sourceSummaryTaskId={task?.taskId ?? null}
+        prefillTemplateId={task?.result?.templateId ?? null}
+      />
     </section>
   );
 }

@@ -5,7 +5,7 @@ import {
   formatAiTaskStatus,
   formatAiToolCallStatus
 } from "../lib/ai-coach-formatters";
-import type { AiTaskBase } from "../types/ai-coach";
+import type { AiTaskBase, AiTaskType } from "../types/ai-coach";
 
 type AiTaskStatusPanelProps = {
   task: AiTaskBase;
@@ -28,7 +28,7 @@ export function AiTaskStatusPanel({ task }: AiTaskStatusPanelProps) {
             {formatAiTaskStatus(task.taskStatus)}
           </h2>
           <p className="mt-2 text-sm text-stone-300">
-            {task.taskType === "cycle_summary" ? "周期总结任务" : "模板生成任务"}
+            {getAiTaskTypeLabel(task.taskType)}
           </p>
         </div>
 
@@ -46,10 +46,8 @@ export function AiTaskStatusPanel({ task }: AiTaskStatusPanelProps) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <InfoItem label="创建时间" value={formatAiDateTime(task.createdAt)} />
-        <InfoItem label="开始时间" value={formatAiDateTime(task.startedAt)} />
-        <InfoItem label="最近更新" value={formatAiDateTime(task.updatedAt)} />
         <InfoItem label="完成时间" value={formatAiDateTime(task.completedAt)} />
       </div>
 
@@ -116,6 +114,17 @@ export function AiTaskStatusPanel({ task }: AiTaskStatusPanelProps) {
       ) : null}
     </section>
   );
+}
+
+function getAiTaskTypeLabel(taskType: AiTaskType) {
+  switch (taskType) {
+    case "cycle_summary":
+      return "周期总结任务";
+    case "next_cycle_generation":
+      return "下一周期模板生成任务";
+    default:
+      return "模板生成任务";
+  }
 }
 
 function StatusPill({

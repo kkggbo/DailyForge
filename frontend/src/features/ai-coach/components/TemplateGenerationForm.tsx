@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getGoalTypeLabel, getSceneTypeLabel } from "../lib/ai-coach-enums";
-import { createDefaultTemplateGenerationForm } from "../lib/ai-coach-mappers";
+import { createTemplateGenerationForm } from "../lib/ai-coach-mappers";
 import type {
   TemplateGenerationCapability,
   TemplateGenerationForm as TemplateGenerationFormValues
@@ -10,6 +10,7 @@ type TemplateGenerationFormProps = {
   capability: TemplateGenerationCapability;
   isSubmitting: boolean;
   submitError: string | null;
+  initialValues?: Partial<TemplateGenerationFormValues>;
   onSubmit: (form: TemplateGenerationFormValues) => void;
 };
 
@@ -22,21 +23,23 @@ export function TemplateGenerationForm({
   capability,
   isSubmitting,
   submitError,
+  initialValues,
   onSubmit
 }: TemplateGenerationFormProps) {
   const [form, setForm] = useState<TemplateGenerationFormValues | null>(() =>
-    createDefaultTemplateGenerationForm(capability)
+    createTemplateGenerationForm(capability, initialValues)
   );
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    setForm(createDefaultTemplateGenerationForm(capability));
+    setForm(createTemplateGenerationForm(capability, initialValues));
     setValidationError(null);
   }, [
     capability.allowedGoalTypes,
     capability.allowedSceneTypes,
     capability.maxCycleLength,
-    capability.minCycleLength
+    capability.minCycleLength,
+    initialValues
   ]);
 
   function handleSubmit() {
@@ -82,8 +85,7 @@ export function TemplateGenerationForm({
           设置本次生成条件
         </h2>
         <p className="mt-3 max-w-2xl leading-7 text-stone-300">
-          结果会先落为可编辑草稿。你可以保留结构化选项，再用一段自由输入告诉 AI
-          这次有哪些额外偏好、限制或提醒。
+          生成结果会保存为可编辑草稿，你可随时修改；如需补充偏好、限制或提醒，可在下方填写。
         </p>
       </div>
 

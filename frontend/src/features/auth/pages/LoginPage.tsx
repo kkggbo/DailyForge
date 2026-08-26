@@ -41,7 +41,7 @@ export function LoginPage() {
 
   return (
     <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur">
+      <div className="order-2 rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur lg:order-none">
         <p className="text-sm uppercase tracking-[0.28em] text-amber-300">
           DailyForge
         </p>
@@ -65,7 +65,7 @@ export function LoginPage() {
         </div>
       </div>
 
-      <div className="rounded-[32px] border border-amber-300/20 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+      <div className="order-1 rounded-[32px] border border-amber-300/20 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)] lg:order-none">
         <form className="space-y-5" onSubmit={handleSubmit}>
           {statusMessage ? (
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">

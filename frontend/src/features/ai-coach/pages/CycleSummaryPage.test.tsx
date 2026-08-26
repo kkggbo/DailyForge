@@ -51,6 +51,13 @@ const readyCapabilities: AiCoachCapabilities = {
     latestCompletedCycleRunId: 1201,
     latestCompletedAt: "2026-08-01T10:00:00",
     recommendedMissingFields: []
+  },
+  nextCycleGeneration: {
+    available: true,
+    ready: true,
+    latestCompletedCycleRunId: 1201,
+    latestCompletedAt: "2026-08-01T10:00:00",
+    missingReason: null
   }
 };
 

@@ -131,7 +131,7 @@ export function RegisterPage() {
 
   return (
     <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-      <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur">
+      <div className="order-2 rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur lg:order-none">
         <p className="text-sm uppercase tracking-[0.28em] text-amber-300">
           Create Account
         </p>
@@ -148,7 +148,7 @@ export function RegisterPage() {
         </div>
       </div>
 
-      <div className="rounded-[32px] border border-white/10 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+      <div className="order-1 rounded-[32px] border border-white/10 bg-stone-950/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)] lg:order-none">
         <form className="grid gap-5 sm:grid-cols-2" onSubmit={handleSubmit}>
           <div className="sm:col-span-2">
             <label className="mb-2 block text-sm text-stone-300" htmlFor="email">

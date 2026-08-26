@@ -7,6 +7,7 @@ import {
   getTemplateGenerationHistory
 } from "../api/ai-coach";
 import { AiTaskHistoryList } from "../components/AiTaskHistoryList";
+import { NextCycleGenerationModal } from "../components/NextCycleGenerationModal";
 import { getAiCoachErrorMessage } from "../lib/ai-coach-enums";
 import {
   formatGoalType,
@@ -45,6 +46,8 @@ export function AiCoachHistoryPage() {
     null
   );
   const [cycleHistoryError, setCycleHistoryError] = useState<string | null>(null);
+  const [nextCycleTarget, setNextCycleTarget] =
+    useState<CycleSummaryHistoryItem | null>(null);
 
   useEffect(() => {
     if (!accessToken) {
@@ -170,6 +173,20 @@ export function AiCoachHistoryPage() {
           emptyMessage="还没有周期总结历史。完成一次 AI 周期总结后会显示在这里。"
           taskLinkLabel="查看总结详情"
           primaryAction
+          renderCardActions={(record) => {
+            if (record.taskStatus !== "succeeded") {
+              return null;
+            }
+            return (
+              <button
+                type="button"
+                onClick={() => setNextCycleTarget(record)}
+                className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+              >
+                生成下一周期模板
+              </button>
+            );
+          }}
           isLoading={isLoadingCycleHistory}
           error={cycleHistoryError}
           data={cycleHistory}
@@ -179,6 +196,14 @@ export function AiCoachHistoryPage() {
           onPageChange={setCyclePage}
         />
       )}
+
+      <NextCycleGenerationModal
+        open={nextCycleTarget !== null}
+        onClose={() => setNextCycleTarget(null)}
+        sourceCycleRunId={nextCycleTarget?.cycleRunId ?? 0}
+        sourceSummaryTaskId={nextCycleTarget?.taskId ?? null}
+        prefillTemplateId={nextCycleTarget?.templateId ?? null}
+      />
     </section>
   );
 }
