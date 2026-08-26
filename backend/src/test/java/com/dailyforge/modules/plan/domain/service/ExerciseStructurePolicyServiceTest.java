@@ -44,7 +44,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template structure type is invalid");
+                .hasMessage("周期模板动作结构类型无效");
     }
 
     @Test
@@ -63,7 +63,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template item is invalid");
+                .hasMessage("周期模板组项无效");
     }
 
     @Test
@@ -89,7 +89,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(2L, singleSegmentExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template item count is invalid");
+                .hasMessage("周期模板组项数量无效");
     }
 
     @Test
@@ -110,7 +110,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template metric key is duplicated");
+                .hasMessage("周期模板指标项重复");
     }
 
     @Test
@@ -129,7 +129,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template metric key is invalid");
+                .hasMessage("周期模板指标项无效");
     }
 
     @Test
@@ -148,7 +148,7 @@ class ExerciseStructurePolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseStructurePolicyService.validateDayRequests(request, Map.of(1L, setBasedExercise)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template metric value is invalid");
+                .hasMessage("周期模板指标值无效");
     }
 
     @Test

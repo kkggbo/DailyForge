@@ -51,6 +51,16 @@ public class AiOutputValidationDomainService {
     public TemplateGenerationValidatedResult validateTemplateGeneration(
             String json,
             TemplateGenerationRequest request) {
+        return validateTemplateGeneration(json, request.cycleLength());
+    }
+
+    /**
+     * Validate an AI template blueprint against the requested cycle length. Shared by
+     * template_generation and next_cycle_generation (both produce the same output schema).
+     */
+    public TemplateGenerationValidatedResult validateTemplateGeneration(
+            String json,
+            Integer cycleLength) {
         List<String> errors = new ArrayList<>();
         TemplateGenerationModelOutput output = read(json, TemplateGenerationModelOutput.class, errors);
         if (!errors.isEmpty()) {
@@ -60,7 +70,7 @@ public class AiOutputValidationDomainService {
         if (!StringUtils.hasText(output.templateName())) {
             errors.add("templateName must not be blank");
         }
-        if (output.cycleLength() == null || !output.cycleLength().equals(request.cycleLength())) {
+        if (output.cycleLength() == null || !output.cycleLength().equals(cycleLength)) {
             errors.add("cycleLength must equal request.cycleLength");
         }
         if (output.days() == null || output.days().isEmpty()) {

@@ -18,6 +18,7 @@ public class AiToolRegistry {
 
     private static final String TEMPLATE = "template_generation";
     private static final String SUMMARY = "cycle_summary";
+    private static final String NEXT_CYCLE = "next_cycle_generation";
 
     private final Map<String, AiToolHandler> handlers;
 
@@ -58,6 +59,16 @@ public class AiToolRegistry {
                     "get_cycle_run_summary",
                     "get_cycle_run_sessions_detail",
                     "get_cycle_run_aggregated_analysis");
+        }
+        if (NEXT_CYCLE.equals(taskType)) {
+            return List.of(
+                    "get_user_profile_context",
+                    "get_user_current_body_metrics_context",
+                    "get_template_generation_constraints",
+                    "search_candidate_exercises",
+                    "get_exercise_detail",
+                    "get_cycle_run_aggregated_analysis",
+                    "get_cycle_run_sessions_detail");
         }
         throw new BusinessException(ErrorCode.AI_OUTPUT_INVALID, "unsupported ai task type");
     }

@@ -10,6 +10,7 @@ import com.dailyforge.modules.aicoach.interfaces.vo.CycleSummaryTaskResultRespon
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationRequestSnapshotResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationHistoryItemResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationTaskResultResponse;
+import com.dailyforge.modules.aicoach.interfaces.dto.NextCycleGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -54,6 +55,40 @@ public class AiCoachAssembler {
                 toTemplateGenerationRequestSnapshot(requestSnapshot),
                 resolveUpdatedAt(entity),
                 result);
+    }
+
+    public <T> AiTaskDetailResponse<T> toNextCycleTaskDetailResponse(
+            AiTaskRecordEntity entity,
+            AiTaskToolCallEntity latestToolCall,
+            NextCycleGenerationRequest requestSnapshot,
+            T result) {
+        return new AiTaskDetailResponse<>(
+                entity.getId(),
+                entity.getTaskType(),
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                entity.getStartedAt(),
+                entity.getCompletedAt(),
+                entity.getErrorCode(),
+                entity.getErrorMessage(),
+                resolveProgressStage(entity, latestToolCall),
+                toLatestToolCallResponse(latestToolCall),
+                toNextCycleGenerationRequestSnapshot(requestSnapshot),
+                resolveUpdatedAt(entity),
+                result);
+    }
+
+    private TemplateGenerationRequestSnapshotResponse toNextCycleGenerationRequestSnapshot(
+            NextCycleGenerationRequest requestSnapshot) {
+        if (requestSnapshot == null) {
+            return null;
+        }
+        return new TemplateGenerationRequestSnapshotResponse(
+                requestSnapshot.sceneType(),
+                requestSnapshot.goalType(),
+                requestSnapshot.cycleLength(),
+                requestSnapshot.includeCardio(),
+                requestSnapshot.additionalRequirements());
     }
 
     public TemplateGenerationHistoryItemResponse toTemplateGenerationHistoryItem(

@@ -32,7 +32,7 @@ class CycleTemplatePolicyServiceTest {
     void assertFormalCycleLengthShouldRejectNull() {
         assertThatThrownBy(() -> cycleTemplatePolicyService.assertFormalCycleLength(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle length is invalid");
+                .hasMessage("周期天数无效");
     }
 
     @Test
@@ -41,7 +41,7 @@ class CycleTemplatePolicyServiceTest {
                 5,
                 List.of(new CycleTemplateDayRequest(6, "Legs", List.of()))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("cycle template day is out of range");
+                .hasMessage("周期模板天序号超出范围");
     }
 
     @Test

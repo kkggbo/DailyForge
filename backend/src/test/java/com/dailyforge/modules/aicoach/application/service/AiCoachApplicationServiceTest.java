@@ -18,6 +18,7 @@ import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskRe
 import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskToolCallMapper;
 import com.dailyforge.modules.aicoach.interfaces.dto.AiTaskHistoryQuery;
 import com.dailyforge.modules.aicoach.interfaces.dto.CycleSummaryRequest;
+import com.dailyforge.modules.aicoach.interfaces.dto.NextCycleGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiAsyncTaskAcceptedResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiCoachCapabilitiesResponse;
@@ -395,6 +396,80 @@ class AiCoachApplicationServiceTest {
         assertThat(response.result()).isNotNull();
         assertThat(response.result().cycleRunId()).isEqualTo(7002L);
         assertThat(response.result().executionOverview()).isEqualTo("本轮 4 个 Day 均完成打卡，其中 1 个动作出现部分完成。");
+    }
+
+    @Test
+    void submitNextCycleGenerationShouldRejectWhenNoSucceededCycleSummaryExists() {
+        // Given
+        NextCycleGenerationRequest request = new NextCycleGenerationRequest(
+                "req-nc-1", 1201L, null, "gym", "muscle_gain", 4, true, null);
+        when(planUserSupportService.requireActiveUserId()).thenReturn(USER_ID);
+        when(userMapper.selectById(USER_ID)).thenReturn(activeAiUser("invited_ai"));
+        when(userProfileMapper.selectById(USER_ID)).thenReturn(completeProfile());
+        when(userCurrentBodyMetricsMapper.selectById(USER_ID)).thenReturn(bodyMetrics("76.50"));
+        when(cycleRunMapper.selectOne(any())).thenReturn(completedCycleRun(1201L));
+        when(aiTaskRecordMapper.selectLatestSucceededByUserIdAndTaskTypeAndRelatedEntity(
+                USER_ID, "cycle_summary", "cycle_run", 1201L)).thenReturn(null);
+
+        // When / Then
+        assertThatThrownBy(() -> service.submitNextCycleGeneration(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(error -> assertThat(((BusinessException) error).getErrorCode())
+                        .isEqualTo(ErrorCode.AI_CYCLE_SUMMARY_REQUIRED));
+
+        verify(aiTaskRecordMapper, never()).insert(any());
+    }
+
+    @Test
+    void submitNextCycleGenerationShouldCreateTaskWhenSummaryIsAvailable() {
+        // Given
+        NextCycleGenerationRequest request = new NextCycleGenerationRequest(
+                "req-nc-2", 1201L, 88L, "gym", "muscle_gain", 4, true, null);
+        AiTaskRecordEntity summaryTask = new AiTaskRecordEntity();
+        summaryTask.setId(88L);
+        summaryTask.setTaskType("cycle_summary");
+        summaryTask.setStatus("succeeded");
+        summaryTask.setRelatedEntityType("cycle_run");
+        summaryTask.setRelatedEntityId(1201L);
+
+        when(planUserSupportService.requireActiveUserId()).thenReturn(USER_ID);
+        when(userMapper.selectById(USER_ID)).thenReturn(activeAiUser("invited_ai"));
+        when(userProfileMapper.selectById(USER_ID)).thenReturn(completeProfile());
+        when(userCurrentBodyMetricsMapper.selectById(USER_ID)).thenReturn(bodyMetrics("76.50"));
+        when(cycleRunMapper.selectOne(any())).thenReturn(completedCycleRun(1201L));
+        when(aiTaskRecordMapper.selectByIdAndUserIdAndTaskType(88L, USER_ID, "cycle_summary"))
+                .thenReturn(summaryTask);
+        when(aiTaskRecordMapper.selectByUserTaskAndClientRequestId(USER_ID, "next_cycle_generation", "req-nc-2"))
+                .thenReturn(null);
+
+        // When
+        AiAsyncTaskAcceptedResponse response = service.submitNextCycleGeneration(request);
+
+        // Then
+        verify(aiTaskRecordMapper).insert(any());
+        verify(aiCoachTaskExecutor).execute(any());
+        assertThat(response.taskType()).isEqualTo("next_cycle_generation");
+    }
+
+    @Test
+    void getCapabilitiesShouldExposeNextCycleGenerationCapability() {
+        // Given
+        when(planUserSupportService.requireActiveUserId()).thenReturn(USER_ID);
+        when(userMapper.selectById(USER_ID)).thenReturn(activeAiUser("invited_ai"));
+        when(userProfileMapper.selectById(USER_ID)).thenReturn(completeProfile());
+        when(userCurrentBodyMetricsMapper.selectById(USER_ID)).thenReturn(bodyMetrics("76.50"));
+        when(cycleRunMapper.selectOne(any())).thenReturn(completedCycleRun(900L));
+        when(aiTaskRecordMapper.selectLatestSucceededByUserIdAndTaskTypeAndRelatedEntity(
+                USER_ID, "cycle_summary", "cycle_run", 900L)).thenReturn(null);
+
+        // When
+        AiCoachCapabilitiesResponse response = service.getCapabilities();
+
+        // Then
+        assertThat(response.nextCycleGeneration().available()).isTrue();
+        assertThat(response.nextCycleGeneration().ready()).isFalse();
+        assertThat(response.nextCycleGeneration().latestCompletedCycleRunId()).isEqualTo(900L);
+        assertThat(response.nextCycleGeneration().missingReason()).isEqualTo("no_cycle_summary");
     }
 
     private TemplateGenerationTaskResultResponse templateGenerationResult() {

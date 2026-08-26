@@ -14,6 +14,8 @@ public class CycleTemplateEntity {
     private String name;
     private Integer cycleLength;
     private String goalType;
+    private String sceneType;
+    private Boolean includeCardio;
     private String status;
     private Long currentVersionId;
     private LocalDateTime createdAt;
@@ -57,6 +59,22 @@ public class CycleTemplateEntity {
 
     public void setGoalType(String goalType) {
         this.goalType = goalType;
+    }
+
+    public String getSceneType() {
+        return sceneType;
+    }
+
+    public void setSceneType(String sceneType) {
+        this.sceneType = sceneType;
+    }
+
+    public Boolean getIncludeCardio() {
+        return includeCardio;
+    }
+
+    public void setIncludeCardio(Boolean includeCardio) {
+        this.includeCardio = includeCardio;
     }
 
     public String getStatus() {

@@ -188,6 +188,8 @@ CREATE TABLE cycle_templates (
     name VARCHAR(128) NOT NULL,
     cycle_length TINYINT NULL,
     goal_type VARCHAR(32) NULL,
+    scene_type VARCHAR(32) NULL,
+    include_cardio TINYINT(1) NOT NULL DEFAULT 1,
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
     current_version_id BIGINT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -4,6 +4,7 @@ import com.dailyforge.common.ApiResponse;
 import com.dailyforge.modules.aicoach.application.service.AiCoachApplicationService;
 import com.dailyforge.modules.aicoach.interfaces.dto.AiTaskHistoryQuery;
 import com.dailyforge.modules.aicoach.interfaces.dto.CycleSummaryRequest;
+import com.dailyforge.modules.aicoach.interfaces.dto.NextCycleGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiAsyncTaskAcceptedResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiCoachCapabilitiesResponse;
@@ -158,6 +159,53 @@ public class AiCoachController {
     public ApiResponse<AiTaskDetailResponse<CycleSummaryTaskResultResponse>> getCycleSummary(
             @PathVariable @Min(1) Long taskId) {
         return ApiResponse.success(aiCoachApplicationService.getCycleSummary(taskId));
+    }
+
+    @PostMapping("/next-cycle-generations")
+    @Operation(summary = "Submit one AI next-cycle template generation task")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI next-cycle template generation task accepted",
+                    content = @Content(schema = @Schema(implementation = AiAsyncTaskAcceptedResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request or missing required AI profile data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "AI feature is not available"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Cycle run not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "Cycle run is not completed or cycle summary is required"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "503",
+                    description = "AI service is unavailable"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "504",
+                    description = "AI service timeout")
+    })
+    public ApiResponse<AiAsyncTaskAcceptedResponse> submitNextCycleGeneration(
+            @Valid @RequestBody NextCycleGenerationRequest request) {
+        return ApiResponse.success(aiCoachApplicationService.submitNextCycleGeneration(request));
+    }
+
+    @GetMapping("/next-cycle-generations/{taskId}")
+    @Operation(summary = "Query one AI next-cycle template generation task result")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "AI next-cycle template generation task detail loaded",
+                    content = @Content(schema = @Schema(implementation = AiTaskDetailResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "AI task not found")
+    })
+    public ApiResponse<AiTaskDetailResponse<TemplateGenerationTaskResultResponse>> getNextCycleGeneration(
+            @PathVariable @Min(1) Long taskId) {
+        return ApiResponse.success(aiCoachApplicationService.getNextCycleGeneration(taskId));
     }
 
     @GetMapping("/cycle-summaries/history")

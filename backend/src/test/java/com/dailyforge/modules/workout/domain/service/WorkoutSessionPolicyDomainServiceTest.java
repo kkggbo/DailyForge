@@ -67,7 +67,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), sessionMetrics),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("every workout exercise requires a completion status");
+                .hasMessage("每个训练动作都需要填写完成状态");
     }
 
     @Test
@@ -83,7 +83,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), sessionMetrics),
                 false))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout metric payload does not match the session snapshot");
+                .hasMessage("训练指标数据与会话快照不一致");
     }
 
     @Test
@@ -100,7 +100,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), sessionMetrics),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout metric value is invalid");
+                .hasMessage("训练指标值无效");
     }
 
     @Test
@@ -117,7 +117,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), sessionMetrics),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout metric value is invalid");
+                .hasMessage("训练指标值无效");
     }
 
     @Test
@@ -134,7 +134,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), sessionMetrics),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout metric value is invalid");
+                .hasMessage("训练指标值无效");
     }
 
     @Test
@@ -157,7 +157,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout session exercise payload does not match the session snapshot");
+                .hasMessage("训练会话动作数据与会话快照不一致");
     }
 
     @Test
@@ -189,7 +189,7 @@ class WorkoutSessionPolicyDomainServiceTest {
                 Map.of(sessionItem.getId(), metrics),
                 true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("workout metric value is invalid");
+                .hasMessage("训练指标值无效");
     }
 
     private WorkoutSessionSaveRequest request(

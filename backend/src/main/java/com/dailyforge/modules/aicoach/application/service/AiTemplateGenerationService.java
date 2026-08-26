@@ -5,6 +5,7 @@ import com.dailyforge.common.ErrorCode;
 import com.dailyforge.modules.aicoach.domain.model.TemplateGenerationValidatedResult;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.entity.AiTaskRecordEntity;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskRecordMapper;
+import com.dailyforge.modules.aicoach.interfaces.dto.NextCycleGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationTaskResultResponse;
 import com.dailyforge.modules.exercise.application.model.SystemExerciseLookupResult;
@@ -52,12 +53,54 @@ public class AiTemplateGenerationService {
             TemplateGenerationValidatedResult validatedResult) {
         AiTaskRecordEntity task = requireTask(taskId, "template_generation");
         TemplateGenerationRequest request = read(task.getRequestPayloadJson(), TemplateGenerationRequest.class);
+        persistTemplateDraft(
+                taskId,
+                "template_generation",
+                request.goalType(),
+                request.sceneType(),
+                request.includeCardio(),
+                inputSummaryJson,
+                validatedResult);
+    }
+
+    /**
+     * Persist a successful next_cycle_generation result. Reuses the same draft-template persistence
+     * path as template_generation, sourcing the scene / cardio prefill from the next-cycle request.
+     */
+    @Transactional
+    public void persistNextCycleSuccessfulResult(
+            Long taskId,
+            String inputSummaryJson,
+            TemplateGenerationValidatedResult validatedResult) {
+        AiTaskRecordEntity task = requireTask(taskId, "next_cycle_generation");
+        NextCycleGenerationRequest request = read(task.getRequestPayloadJson(), NextCycleGenerationRequest.class);
+        persistTemplateDraft(
+                taskId,
+                "next_cycle_generation",
+                request.goalType(),
+                request.sceneType(),
+                request.includeCardio(),
+                inputSummaryJson,
+                validatedResult);
+    }
+
+    private void persistTemplateDraft(
+            Long taskId,
+            String taskType,
+            String goalType,
+            String sceneType,
+            Boolean includeCardio,
+            String inputSummaryJson,
+            TemplateGenerationValidatedResult validatedResult) {
+        AiTaskRecordEntity task = requireTask(taskId, taskType);
 
         CycleTemplateEntity template = new CycleTemplateEntity();
         template.setUserId(task.getUserId());
         template.setName(validatedResult.templateName());
         template.setCycleLength(validatedResult.cycleLength());
-        template.setGoalType(request.goalType());
+        template.setGoalType(goalType);
+        template.setSceneType(sceneType);
+        template.setIncludeCardio(includeCardio);
         template.setStatus("draft");
         templateMapper.insert(template);
 

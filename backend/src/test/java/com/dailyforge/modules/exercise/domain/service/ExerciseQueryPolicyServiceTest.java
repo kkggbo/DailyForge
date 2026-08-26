@@ -43,7 +43,7 @@ class ExerciseQueryPolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 
     @Test
@@ -53,7 +53,7 @@ class ExerciseQueryPolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 
     @Test
@@ -63,7 +63,7 @@ class ExerciseQueryPolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 
     @Test
@@ -73,7 +73,7 @@ class ExerciseQueryPolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 
     @Test
@@ -83,13 +83,13 @@ class ExerciseQueryPolicyServiceTest {
 
         assertThatThrownBy(() -> exerciseQueryPolicyService.normalizeListQuery(query))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 
     @Test
     void validateExerciseIdShouldRejectInvalidValue() {
         assertThatThrownBy(() -> exerciseQueryPolicyService.validateExerciseId(0L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("request arguments are invalid");
+                .hasMessage("请求参数无效");
     }
 }

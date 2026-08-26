@@ -12,6 +12,7 @@ import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskRe
 import com.dailyforge.modules.aicoach.infrastructure.persistence.mapper.AiTaskToolCallMapper;
 import com.dailyforge.modules.aicoach.interfaces.dto.AiTaskHistoryQuery;
 import com.dailyforge.modules.aicoach.interfaces.dto.CycleSummaryRequest;
+import com.dailyforge.modules.aicoach.interfaces.dto.NextCycleGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.dto.TemplateGenerationRequest;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiAsyncTaskAcceptedResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.AiCoachCapabilitiesResponse;
@@ -52,6 +53,7 @@ public class AiCoachApplicationService {
     private static final Logger log = LoggerFactory.getLogger(AiCoachApplicationService.class);
     private static final String TASK_TEMPLATE_GENERATION = "template_generation";
     private static final String TASK_CYCLE_SUMMARY = "cycle_summary";
+    private static final String TASK_NEXT_CYCLE_GENERATION = "next_cycle_generation";
     private static final String RELATED_ENTITY_CYCLE_RUN = "cycle_run";
     private static final String PLATFORM_ROLE_ADMIN = "admin";
     private static final Set<String> SUPPORTED_SCENE_TYPES = Set.of("gym", "home");
@@ -124,7 +126,34 @@ public class AiCoachApplicationService {
                         latestCompletedRun != null,
                         latestCompletedRun == null ? null : latestCompletedRun.getId(),
                         latestCompletedRun == null ? null : latestCompletedRun.getCompletedAt(),
-                        recommendedMissingFields));
+                        recommendedMissingFields),
+                buildNextCycleGenerationCapability(userId, aiEnabled, latestCompletedRun));
+    }
+
+    private AiCoachCapabilitiesResponse.NextCycleGenerationCapability buildNextCycleGenerationCapability(
+            Long userId,
+            boolean aiEnabled,
+            CycleRunEntity latestCompletedRun) {
+        if (!aiEnabled) {
+            return new AiCoachCapabilitiesResponse.NextCycleGenerationCapability(
+                    false, false, null, null, "ai_not_available");
+        }
+        if (latestCompletedRun == null) {
+            return new AiCoachCapabilitiesResponse.NextCycleGenerationCapability(
+                    true, false, null, null, "no_completed_cycle");
+        }
+        AiTaskRecordEntity summary = aiTaskRecordMapper.selectLatestSucceededByUserIdAndTaskTypeAndRelatedEntity(
+                userId,
+                TASK_CYCLE_SUMMARY,
+                RELATED_ENTITY_CYCLE_RUN,
+                latestCompletedRun.getId());
+        boolean ready = summary != null;
+        return new AiCoachCapabilitiesResponse.NextCycleGenerationCapability(
+                true,
+                ready,
+                latestCompletedRun.getId(),
+                latestCompletedRun.getCompletedAt(),
+                ready ? null : "no_cycle_summary");
     }
 
     @Transactional
@@ -219,6 +248,58 @@ public class AiCoachApplicationService {
             result = deserializeResult(task.getResultJson(), CycleSummaryTaskResultResponse.class);
         }
         return aiCoachAssembler.toTaskDetailResponse(task, latestToolCall, null, result);
+    }
+
+    @Transactional
+    public AiAsyncTaskAcceptedResponse submitNextCycleGeneration(NextCycleGenerationRequest request) {
+        NextCycleGenerationRequest normalizedRequest = normalizeNextCycleGenerationRequest(request);
+        Long userId = planUserSupportService.requireActiveUserId();
+        UserEntity user = requireUser(userId);
+        assertAiEnabled(user);
+        validateSceneType(normalizedRequest.sceneType());
+        validateGoalType(normalizedRequest.goalType());
+        UserProfileEntity profile = userProfileMapper.selectById(userId);
+        UserCurrentBodyMetricsEntity metrics = userCurrentBodyMetricsMapper.selectById(userId);
+        assertTemplateGenerationReady(profile, metrics);
+        AiTaskRecordEntity existing = findExistingTask(userId, TASK_NEXT_CYCLE_GENERATION, normalizedRequest.clientRequestId());
+        if (existing != null) {
+            return aiCoachAssembler.toAcceptedResponse(existing);
+        }
+        requireCompletedCycleRun(userId, normalizedRequest.sourceCycleRunId());
+        assertCycleSummaryAvailable(userId, normalizedRequest.sourceCycleRunId(), normalizedRequest.sourceSummaryTaskId());
+
+        AiTaskRecordEntity task = buildTaskRecord(
+                userId,
+                TASK_NEXT_CYCLE_GENERATION,
+                normalizedRequest.clientRequestId(),
+                aiCoachProperties.getNextCycleGenerationPromptVersion(),
+                normalizedRequest,
+                RELATED_ENTITY_CYCLE_RUN,
+                normalizedRequest.sourceCycleRunId());
+        try {
+            aiTaskRecordMapper.insert(task);
+        } catch (DuplicateKeyException exception) {
+            AiTaskRecordEntity duplicated = findExistingTask(userId, TASK_NEXT_CYCLE_GENERATION, request.clientRequestId());
+            if (duplicated != null) {
+                return aiCoachAssembler.toAcceptedResponse(duplicated);
+            }
+            throw exception;
+        }
+        scheduleTaskAfterCommit(task.getId());
+        return aiCoachAssembler.toAcceptedResponse(task);
+    }
+
+    public AiTaskDetailResponse<TemplateGenerationTaskResultResponse> getNextCycleGeneration(Long taskId) {
+        Long userId = planUserSupportService.requireActiveUserId();
+        AiTaskRecordEntity task = requireTask(taskId, userId, TASK_NEXT_CYCLE_GENERATION);
+        AiTaskToolCallEntity latestToolCall = loadLatestToolCall(task.getId());
+        NextCycleGenerationRequest requestSnapshot =
+                safeDeserialize(task.getRequestPayloadJson(), NextCycleGenerationRequest.class);
+        TemplateGenerationTaskResultResponse result = null;
+        if ("succeeded".equals(task.getStatus())) {
+            result = deserializeResult(task.getResultJson(), TemplateGenerationTaskResultResponse.class);
+        }
+        return aiCoachAssembler.toNextCycleTaskDetailResponse(task, latestToolCall, requestSnapshot, result);
     }
 
     public TemplateGenerationHistoryPageResponse getTemplateGenerationHistory(AiTaskHistoryQuery query) {
@@ -354,6 +435,18 @@ public class AiCoachApplicationService {
                 request.cycleRunId());
     }
 
+    private NextCycleGenerationRequest normalizeNextCycleGenerationRequest(NextCycleGenerationRequest request) {
+        return new NextCycleGenerationRequest(
+                normalizeClientRequestId(request.clientRequestId()),
+                request.sourceCycleRunId(),
+                request.sourceSummaryTaskId(),
+                trimToNull(request.sceneType()),
+                trimToNull(request.goalType()),
+                request.cycleLength(),
+                request.includeCardio(),
+                trimToNull(request.additionalRequirements()));
+    }
+
     private UserEntity requireUser(Long userId) {
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
@@ -403,6 +496,22 @@ public class AiCoachApplicationService {
         List<String> bodyMetricMissing = collectBodyMetricMissingFields(metrics);
         if (!bodyMetricMissing.isEmpty()) {
             throw new BusinessException(ErrorCode.AI_REQUIRED_BODY_METRIC_MISSING, String.join(",", bodyMetricMissing));
+        }
+    }
+
+    private void assertCycleSummaryAvailable(Long userId, Long sourceCycleRunId, Long sourceSummaryTaskId) {
+        AiTaskRecordEntity summary = null;
+        if (sourceSummaryTaskId != null) {
+            summary = aiTaskRecordMapper.selectByIdAndUserIdAndTaskType(sourceSummaryTaskId, userId, TASK_CYCLE_SUMMARY);
+            if (summary != null && !sourceCycleRunId.equals(summary.getRelatedEntityId())) {
+                summary = null;
+            }
+        } else {
+            summary = aiTaskRecordMapper.selectLatestSucceededByUserIdAndTaskTypeAndRelatedEntity(
+                    userId, TASK_CYCLE_SUMMARY, RELATED_ENTITY_CYCLE_RUN, sourceCycleRunId);
+        }
+        if (summary == null || !"succeeded".equals(summary.getStatus())) {
+            throw new BusinessException(ErrorCode.AI_CYCLE_SUMMARY_REQUIRED);
         }
     }
 

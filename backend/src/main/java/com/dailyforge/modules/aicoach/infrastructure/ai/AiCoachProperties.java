@@ -16,6 +16,7 @@ public class AiCoachProperties {
     private int maxRepairAttempts = 2;
     private String templateGenerationPromptVersion = "template_generation_v1";
     private String cycleSummaryPromptVersion = "cycle_summary_v1";
+    private String nextCycleGenerationPromptVersion = "next_cycle_generation_v1";
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -37,4 +38,6 @@ public class AiCoachProperties {
     public void setTemplateGenerationPromptVersion(String templateGenerationPromptVersion) { this.templateGenerationPromptVersion = templateGenerationPromptVersion; }
     public String getCycleSummaryPromptVersion() { return cycleSummaryPromptVersion; }
     public void setCycleSummaryPromptVersion(String cycleSummaryPromptVersion) { this.cycleSummaryPromptVersion = cycleSummaryPromptVersion; }
+    public String getNextCycleGenerationPromptVersion() { return nextCycleGenerationPromptVersion; }
+    public void setNextCycleGenerationPromptVersion(String nextCycleGenerationPromptVersion) { this.nextCycleGenerationPromptVersion = nextCycleGenerationPromptVersion; }
 }

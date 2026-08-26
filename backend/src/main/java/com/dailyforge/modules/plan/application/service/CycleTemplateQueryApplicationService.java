@@ -151,6 +151,8 @@ public class CycleTemplateQueryApplicationService {
                 template.getId(),
                 template.getName(),
                 template.getGoalType(),
+                template.getSceneType(),
+                template.getIncludeCardio(),
                 template.getStatus(),
                 resolveSourceType(template),
                 template.getCycleLength(),
