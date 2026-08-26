@@ -1,6 +1,10 @@
 package com.dailyforge.common.cache;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,12 +29,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 public class CacheConfig {
 
-    private final ObjectMapper objectMapper;
-
-    public CacheConfig(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
@@ -38,7 +36,7 @@ public class CacheConfig {
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
+                        .fromSerializer(buildValueSerializer()));
 
         Map<String, RedisCacheConfiguration> perCache = new HashMap<>();
         // The system exercise library is stable reference data read on many hot paths.
@@ -48,5 +46,25 @@ public class CacheConfig {
                 .cacheDefaults(defaults)
                 .withInitialCacheConfigurations(perCache)
                 .build();
+    }
+
+    /**
+     * Build a cache value serializer backed by a dedicated {@link ObjectMapper} that preserves
+     * concrete types via {@code @class} default typing.
+     *
+     * <p>The shared Spring {@link ObjectMapper} has no default typing, so a Redis round-trip of a
+     * final record (for example {@code SystemExerciseLookupResult}) would be deserialized back as a
+     * {@code LinkedHashMap} and break cached lookups with a {@code ClassCastException}. This
+     * dedicated mapper only affects cache values, never API serialization.
+     */
+    private GenericJackson2JsonRedisSerializer buildValueSerializer() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY);
+        return new GenericJackson2JsonRedisSerializer(mapper);
     }
 }
