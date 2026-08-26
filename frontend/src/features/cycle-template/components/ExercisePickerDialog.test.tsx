@@ -146,10 +146,11 @@ describe("ExercisePickerDialog", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: "Back" }));
+    // 桌面与手机两块面板都会渲染同一批分类/结果，jsdom 中两份并存，用 getAllByRole 取任一
+    await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
     expect(onCategoryChange).toHaveBeenCalledWith("back");
 
-    await user.click(screen.getByRole("button", { name: "Upper Chest" }));
+    await user.click(screen.getAllByRole("button", { name: "Upper Chest" })[0]);
     expect(onMuscleChange).toHaveBeenCalledWith(11);
 
     const keywordInput = screen.getByRole("textbox");
@@ -159,7 +160,9 @@ describe("ExercisePickerDialog", () => {
     await user.keyboard("{Enter}");
     expect(onKeywordSubmit).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole("button", { name: /Bench Press/i }));
+    await user.click(
+      screen.getAllByRole("button", { name: /Bench Press/i })[0]
+    );
     expect(onSelectExercise).toHaveBeenCalledWith(results[0]);
   });
 });
