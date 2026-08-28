@@ -99,6 +99,8 @@
 - 账户权益升级顺序：
   - `basic` < `invited_ai` < `premium`
 - 不允许平级覆盖或降级覆盖
+- **权益可带时长**：邀请码通过 `grant_duration_days` 指定授予层级的持续天数（NULL=永久）。兑换时把到期时间写入 `users.account_tier_expires_at`；到期后该用户自动回落到 `basic`。
+- 时长对任何层级通用（`invited_ai` / `premium` 均可带时长）。
 
 ---
 
@@ -125,6 +127,7 @@
 | `user_name` | `VARCHAR(64)` | 用户名 |
 | `platform_role` | `VARCHAR(32)` | 平台角色，当前 `user/admin` |
 | `account_tier` | `VARCHAR(32)` | 权益层级，当前 `basic/invited_ai/premium` |
+| `account_tier_expires_at` | `DATETIME(3)` | 当前层级到期时间；NULL=永久（V9 新增） |
 | `status` | `VARCHAR(32)` | 账户状态，当前 `active/disabled` |
 | `last_login_at` | `DATETIME(3)` | 最近登录时间 |
 
@@ -152,6 +155,7 @@
 | `max_uses` | `INT` | 最大可用次数 |
 | `used_count` | `INT` | 已使用次数 |
 | `expires_at` | `DATETIME(3)` | 过期时间，可空 |
+| `grant_duration_days` | `INT` | 授予层级持续天数；NULL=永久（V9 新增） |
 | `status` | `VARCHAR(32)` | `active/disabled` |
 
 #### user_invite_code_usages
@@ -236,6 +240,15 @@ erDiagram
 对应错误码：
 
 - `INVITE_CODE_GRANT_CONFLICT`
+
+**权益到期规则（V9）**
+
+- 新增 `AccountTierExpiryService.applyExpiryIfNeeded(user)`：若 `account_tier_expires_at != null && <= now` 且当前层级非 `basic`，则降级为 `basic` 并清空到期时间、写回 DB。
+- `AccountTierPolicyService`（纯领域）新增：
+  - `isExpired(tier, expiresAt, now)`
+  - `resolveEffectiveTier(tier, expiresAt)`（过期返回 `basic`）
+- 在以下读点接入 `applyExpiryIfNeeded`：`me()`、`login()`、`refreshToken()`、`redeemInviteCode()`、`AiCoachApplicationService.getCapabilities()/isAiEnabled()`、`register()` 兑换后。
+- 权限判定读 DB（不读 JWT claim），因此即使 access token（≤2h）残留 `invited_ai`，到期后 AI 等权限也会正确按 `basic` 拒绝。
 
 ---
 
@@ -522,19 +535,21 @@ dailyforge:
 | `data.userId` | `number` | 是 | 用户 ID |
 | `data.accountTier` | `string` | 是 | 兑换后的权益层级 |
 | `data.inviteCode` | `string` | 是 | 本次兑换的邀请码 |
+| `data.accountTierExpiresAt` | `string \| null` | 是 | 兑换后层级到期时间；无时长时为 null |
 
 实现逻辑：
 
 1. 获取当前登录用户 ID。
-2. `selectByCodeForUpdate` 锁定邀请码。
-3. 校验邀请码可用性。
-4. 校验用户状态。
-5. 校验用户是否已使用过该邀请码。
-6. 计算目标权益层级。
-7. 更新用户权益。
-8. 写入使用记录。
-9. 更新 `used_count`。
-10. 返回兑换结果。
+2. 先对当前用户执行 `applyExpiryIfNeeded`（若旧权益已到期先回落 `basic`）。
+3. `selectByCodeForUpdate` 锁定邀请码。
+4. 校验邀请码可用性。
+5. 校验用户状态。
+6. 校验用户是否已使用过该邀请码。
+7. 计算目标权益层级。
+8. 更新用户权益：`account_tier=目标层级`，且 `account_tier_expires_at = (grant_duration_days>0 ? now+duration : null)`。
+9. 写入使用记录。
+10. 更新 `used_count`。
+11. 返回兑换结果。
 
 事务：
 
@@ -611,7 +626,8 @@ com.dailyforge.infrastructure.security
 | `AuthAssembler` | 使用 MapStruct 负责实体到 VO 的映射 |
 | `PasswordPolicyService` | 处理密码确认规则 |
 | `InviteCodeDomainService` | 处理邀请码可用性规则 |
-| `AccountTierPolicyService` | 处理权益升级规则 |
+| `AccountTierPolicyService` | 处理权益升级规则与到期判定（纯领域） |
+| `AccountTierExpiryService` | 检测并持久化权益到期降级（应用服务，注入 `UserMapper`） |
 | `JwtTokenService` | 签发和解析 JWT |
 | `JwtAuthenticationFilter` | 请求级 access token 鉴权 |
 | `AuthSecurityUtils` | 安全上下文工具类 |
@@ -650,8 +666,8 @@ com.dailyforge.infrastructure.security
 | `RegisterResponse` | 注册结果 | `userId`、`email`、`userName`、`platformRole`、`accountTier`、`inviteCodeApplied` |
 | `AuthTokenResponse` | 登录/刷新令牌响应 | `accessToken`、`refreshToken`、`expiresIn`、`user` |
 | `AuthUserSummary` | 登录态用户摘要 | `userId`、`email`、`userName`、`platformRole`、`accountTier` |
-| `CurrentUserResponse` | 当前用户详情 | `userId`、`email`、`userName`、`platformRole`、`accountTier`、`status` |
-| `RedeemInviteCodeResponse` | 兑换邀请码结果 | `userId`、`accountTier`、`inviteCode` |
+| `CurrentUserResponse` | 当前用户详情 | `userId`、`email`、`userName`、`platformRole`、`accountTier`、`accountTierExpiresAt`、`status` |
+| `RedeemInviteCodeResponse` | 兑换邀请码结果 | `userId`、`accountTier`、`accountTierExpiresAt`、`inviteCode` |
 
 ### 8.3 MapStruct 映射说明
 

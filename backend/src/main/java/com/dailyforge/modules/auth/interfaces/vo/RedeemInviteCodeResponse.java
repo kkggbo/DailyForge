@@ -1,6 +1,7 @@
 package com.dailyforge.modules.auth.interfaces.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 
 @Schema(description = "兑换邀请码响应")
 public record RedeemInviteCodeResponse(
@@ -9,6 +10,9 @@ public record RedeemInviteCodeResponse(
 
         @Schema(description = "账户权益层级", example = "invited_ai", requiredMode = Schema.RequiredMode.REQUIRED)
         String accountTier,
+
+        @Schema(description = "兑换后层级到期时间; 无时长时为 null", example = "2026-09-25T00:00:00")
+        LocalDateTime accountTierExpiresAt,
 
         @Schema(description = "本次兑换的邀请码", example = "DAILYFORGE-AI-001",
                 requiredMode = Schema.RequiredMode.REQUIRED)

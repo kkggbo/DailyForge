@@ -15,6 +15,7 @@ public class UserEntity {
     private String userName;
     private String platformRole;
     private String accountTier;
+    private LocalDateTime accountTierExpiresAt;
     private String status;
     private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
@@ -66,6 +67,14 @@ public class UserEntity {
 
     public void setAccountTier(String accountTier) {
         this.accountTier = accountTier;
+    }
+
+    public LocalDateTime getAccountTierExpiresAt() {
+        return accountTierExpiresAt;
+    }
+
+    public void setAccountTierExpiresAt(LocalDateTime accountTierExpiresAt) {
+        this.accountTierExpiresAt = accountTierExpiresAt;
     }
 
     public String getStatus() {

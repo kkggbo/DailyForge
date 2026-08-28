@@ -36,6 +36,7 @@ public class AuthApplicationService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyService passwordPolicyService;
     private final InviteCodeApplicationService inviteCodeApplicationService;
+    private final AccountTierExpiryService accountTierExpiryService;
     private final JwtTokenService jwtTokenService;
     private final AuthAssembler authAssembler;
 
@@ -45,6 +46,7 @@ public class AuthApplicationService {
             PasswordEncoder passwordEncoder,
             PasswordPolicyService passwordPolicyService,
             InviteCodeApplicationService inviteCodeApplicationService,
+            AccountTierExpiryService accountTierExpiryService,
             JwtTokenService jwtTokenService,
             AuthAssembler authAssembler) {
         this.userMapper = userMapper;
@@ -52,6 +54,7 @@ public class AuthApplicationService {
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyService = passwordPolicyService;
         this.inviteCodeApplicationService = inviteCodeApplicationService;
+        this.accountTierExpiryService = accountTierExpiryService;
         this.jwtTokenService = jwtTokenService;
         this.authAssembler = authAssembler;
     }
@@ -88,6 +91,7 @@ public class AuthApplicationService {
             InviteCodeApplicationService.InviteCodeRedemptionResult result =
                     inviteCodeApplicationService.redeemInviteCode(user.getId(), request.inviteCode());
             user.setAccountTier(result.accountTier());
+            user.setAccountTierExpiresAt(result.accountTierExpiresAt());
             inviteCodeApplied = true;
         }
 
@@ -108,6 +112,7 @@ public class AuthApplicationService {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         user.setLastLoginAt(LocalDateTime.now());
         userMapper.updateById(user);
 
@@ -124,6 +129,7 @@ public class AuthApplicationService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         ensureUserIsActive(user);
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         return authAssembler.toCurrentUserResponse(user);
     }
 
@@ -134,6 +140,7 @@ public class AuthApplicationService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         ensureUserIsActive(user);
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         TokenPair tokenPair = jwtTokenService.generateTokenPair(user);
         return authAssembler.toAuthTokenResponse(tokenPair, user);
     }

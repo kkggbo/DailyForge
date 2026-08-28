@@ -14,6 +14,7 @@ public class InviteCodeEntity {
     private String information;
     private String grantType;
     private String grantValue;
+    private Integer grantDurationDays;
     private Integer maxUses;
     private Integer usedCount;
     private LocalDateTime expiresAt;
@@ -59,6 +60,14 @@ public class InviteCodeEntity {
 
     public void setGrantValue(String grantValue) {
         this.grantValue = grantValue;
+    }
+
+    public Integer getGrantDurationDays() {
+        return grantDurationDays;
+    }
+
+    public void setGrantDurationDays(Integer grantDurationDays) {
+        this.grantDurationDays = grantDurationDays;
     }
 
     public Integer getMaxUses() {

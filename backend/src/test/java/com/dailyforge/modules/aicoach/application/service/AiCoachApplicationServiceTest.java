@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.dailyforge.common.BusinessException;
 import com.dailyforge.common.ErrorCode;
 import com.dailyforge.modules.aicoach.application.assembler.AiCoachAssembler;
+import com.dailyforge.modules.auth.application.service.AccountTierExpiryService;
 import com.dailyforge.modules.aicoach.infrastructure.ai.AiCoachProperties;
 import com.dailyforge.modules.aicoach.infrastructure.ai.AiTaskExecutor;
 import com.dailyforge.modules.aicoach.infrastructure.persistence.entity.AiTaskRecordEntity;
@@ -60,6 +61,8 @@ class AiCoachApplicationServiceTest {
     @Mock
     private UserProfileMapper userProfileMapper;
     @Mock
+    private AccountTierExpiryService accountTierExpiryService;
+    @Mock
     private UserCurrentBodyMetricsMapper userCurrentBodyMetricsMapper;
     @Mock
     private CycleRunMapper cycleRunMapper;
@@ -90,6 +93,7 @@ class AiCoachApplicationServiceTest {
         service = new AiCoachApplicationService(
                 planUserSupportService,
                 userMapper,
+                accountTierExpiryService,
                 userProfileMapper,
                 userCurrentBodyMetricsMapper,
                 cycleRunMapper,

@@ -1,6 +1,7 @@
 package com.dailyforge.modules.auth.interfaces.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 
 @Schema(description = "登录态用户摘要信息")
 public record AuthUserSummary(
@@ -17,5 +18,8 @@ public record AuthUserSummary(
         String platformRole,
 
         @Schema(description = "账户权益层级", example = "basic", requiredMode = Schema.RequiredMode.REQUIRED)
-        String accountTier) {
+        String accountTier,
+
+        @Schema(description = "当前层级到期时间; 无时长时为 null", example = "2026-09-25T00:00:00")
+        LocalDateTime accountTierExpiresAt) {
 }

@@ -199,7 +199,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
           ...session,
           user: {
             ...session.user,
-            accountTier: response.accountTier
+            accountTier: response.accountTier,
+            accountTierExpiresAt: response.accountTierExpiresAt
           }
         };
 
@@ -208,7 +209,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
           previous
             ? {
                 ...previous,
-                accountTier: response.accountTier
+                accountTier: response.accountTier,
+                accountTierExpiresAt: response.accountTierExpiresAt
               }
             : previous
         );

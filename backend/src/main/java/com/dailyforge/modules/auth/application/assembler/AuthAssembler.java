@@ -32,6 +32,7 @@ public interface AuthAssembler {
     }
 
     default RedeemInviteCodeResponse toRedeemInviteCodeResponse(UserEntity user, String inviteCode) {
-        return new RedeemInviteCodeResponse(user.getId(), user.getAccountTier(), inviteCode);
+        return new RedeemInviteCodeResponse(
+                user.getId(), user.getAccountTier(), user.getAccountTierExpiresAt(), inviteCode);
     }
 }

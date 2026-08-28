@@ -28,18 +28,21 @@ public class InviteCodeApplicationService {
     private final UserMapper userMapper;
     private final InviteCodeDomainService inviteCodeDomainService;
     private final AccountTierPolicyService accountTierPolicyService;
+    private final AccountTierExpiryService accountTierExpiryService;
 
     public InviteCodeApplicationService(
             InviteCodeMapper inviteCodeMapper,
             UserInviteCodeUsageMapper userInviteCodeUsageMapper,
             UserMapper userMapper,
             InviteCodeDomainService inviteCodeDomainService,
-            AccountTierPolicyService accountTierPolicyService) {
+            AccountTierPolicyService accountTierPolicyService,
+            AccountTierExpiryService accountTierExpiryService) {
         this.inviteCodeMapper = inviteCodeMapper;
         this.userInviteCodeUsageMapper = userInviteCodeUsageMapper;
         this.userMapper = userMapper;
         this.inviteCodeDomainService = inviteCodeDomainService;
         this.accountTierPolicyService = accountTierPolicyService;
+        this.accountTierExpiryService = accountTierExpiryService;
     }
 
     public void validateInviteCode(String code) {
@@ -66,10 +69,13 @@ public class InviteCodeApplicationService {
             throw new BusinessException(ErrorCode.INVITE_CODE_ALREADY_USED);
         }
 
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         String nextTier = accountTierPolicyService.resolveGrantedTier(
                 user.getAccountTier(), inviteCode.getGrantType(), inviteCode.getGrantValue());
+        LocalDateTime grantedExpiresAt = resolveGrantedExpiry(inviteCode);
 
         user.setAccountTier(nextTier);
+        user.setAccountTierExpiresAt(grantedExpiresAt);
         userMapper.updateById(user);
 
         UserInviteCodeUsageEntity usageEntity = new UserInviteCodeUsageEntity();
@@ -86,9 +92,18 @@ public class InviteCodeApplicationService {
         inviteCode.setUsedCount(inviteCode.getUsedCount() + 1);
         inviteCodeMapper.updateById(inviteCode);
 
-        log.info("Invite code redeemed successfully. userId={}, inviteCode={}, grantType={}, grantValue={}",
-                userId, maskInviteCode(inviteCode.getCode()), inviteCode.getGrantType(), inviteCode.getGrantValue());
-        return new InviteCodeRedemptionResult(nextTier, inviteCode.getCode());
+        log.info("Invite code redeemed successfully. userId={}, inviteCode={}, grantType={}, grantValue={}, expiresAt={}",
+                userId, maskInviteCode(inviteCode.getCode()), inviteCode.getGrantType(),
+                inviteCode.getGrantValue(), grantedExpiresAt);
+        return new InviteCodeRedemptionResult(nextTier, grantedExpiresAt, inviteCode.getCode());
+    }
+
+    private LocalDateTime resolveGrantedExpiry(InviteCodeEntity inviteCode) {
+        Integer days = inviteCode.getGrantDurationDays();
+        if (days == null || days <= 0) {
+            return null;
+        }
+        return LocalDateTime.now().plusDays(days);
     }
 
     private String maskInviteCode(String code) {
@@ -98,6 +113,6 @@ public class InviteCodeApplicationService {
         return code.substring(0, 6) + "..." + code.substring(code.length() - 2);
     }
 
-    public record InviteCodeRedemptionResult(String accountTier, String inviteCode) {
+    public record InviteCodeRedemptionResult(String accountTier, LocalDateTime accountTierExpiresAt, String inviteCode) {
     }
 }

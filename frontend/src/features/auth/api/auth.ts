@@ -27,6 +27,7 @@ export type AuthUserSummary = {
   userName: string;
   platformRole: string;
   accountTier: string;
+  accountTierExpiresAt: string | null;
 };
 
 export type AuthTokenResponse = {
@@ -42,6 +43,7 @@ export type RegisterResponse = {
   userName: string;
   platformRole: string;
   accountTier: string;
+  accountTierExpiresAt: string | null;
   inviteCodeApplied: boolean;
 };
 
@@ -51,12 +53,14 @@ export type CurrentUserResponse = {
   userName: string;
   platformRole: string;
   accountTier: string;
+  accountTierExpiresAt: string | null;
   status: string;
 };
 
 export type RedeemInviteCodeResponse = {
   userId: number;
   accountTier: string;
+  accountTierExpiresAt: string | null;
   inviteCode: string;
 };
 

@@ -156,6 +156,7 @@ Content-Type: application/json
 | `data.userName` | `string` | 是 | 用户名 |
 | `data.platformRole` | `string` | 是 | 平台角色，当前默认 `user` |
 | `data.accountTier` | `string` | 是 | 注册完成后的权益层级 |
+| `data.accountTierExpiresAt` | `string \| null` | 是 | 当前层级到期时间；无时长时为 null |
 | `data.inviteCodeApplied` | `boolean` | 是 | 是否成功应用邀请码 |
 
 失败场景：
@@ -239,6 +240,7 @@ Content-Type: application/json
 | `data.user.userName` | `string` | 是 | 用户名 |
 | `data.user.platformRole` | `string` | 是 | 平台角色 |
 | `data.user.accountTier` | `string` | 是 | 当前权益层级 |
+| `data.user.accountTierExpiresAt` | `string \| null` | 是 | 当前层级到期时间；无时长时为 null |
 
 失败场景：
 
@@ -295,6 +297,7 @@ Authorization: Bearer <accessToken>
 | `data.userName` | `string` | 是 | 当前用户名 |
 | `data.platformRole` | `string` | 是 | 当前平台角色 |
 | `data.accountTier` | `string` | 是 | 当前权益层级 |
+| `data.accountTierExpiresAt` | `string \| null` | 是 | 当前层级到期时间；无时长时为 null |
 | `data.status` | `string` | 是 | 当前账户状态 |
 
 失败场景：
@@ -472,6 +475,7 @@ Content-Type: application/json
 |------|------|:---:|------|
 | `data.userId` | `number` | 是 | 当前用户 ID |
 | `data.accountTier` | `string` | 是 | 兑换后的账户权益层级 |
+| `data.accountTierExpiresAt` | `string \| null` | 是 | 兑换后层级到期时间；无时长时为 null |
 | `data.inviteCode` | `string` | 是 | 本次成功兑换的邀请码 |
 
 失败场景：
@@ -490,14 +494,15 @@ Content-Type: application/json
 实现逻辑：
 
 1. 通过登录态获取当前 `userId`。
-2. 使用 `select ... for update` 锁定邀请码记录。
-3. 校验邀请码状态、过期时间和剩余次数。
-4. 校验用户是否已使用过该邀请码。
-5. 根据 `grantType=account_tier` 和 `grantValue` 计算目标权益。
-6. 更新 `users.account_tier`。
-7. 写入 `user_invite_code_usages`。
-8. 更新 `invite_codes.used_count`。
-9. 返回兑换结果。
+2. 先对当前用户执行权益到期检测（若旧权益已到期先回落 `basic`）。
+3. 使用 `select ... for update` 锁定邀请码记录。
+4. 校验邀请码状态、过期时间和剩余次数。
+5. 校验用户是否已使用过该邀请码。
+6. 根据 `grantType=account_tier` 和 `grantValue` 计算目标权益。
+7. 更新 `users.account_tier`，并写入 `account_tier_expires_at = (grant_duration_days>0 ? now+duration : null)`。
+8. 写入 `user_invite_code_usages`。
+9. 更新 `invite_codes.used_count`。
+10. 返回兑换结果。
 
 ## 5. 鉴权与错误响应说明
 

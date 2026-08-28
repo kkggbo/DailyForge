@@ -23,6 +23,7 @@ import com.dailyforge.modules.aicoach.interfaces.vo.CycleSummaryTaskResultRespon
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationHistoryItemResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationHistoryPageResponse;
 import com.dailyforge.modules.aicoach.interfaces.vo.TemplateGenerationTaskResultResponse;
+import com.dailyforge.modules.auth.application.service.AccountTierExpiryService;
 import com.dailyforge.modules.auth.infrastructure.persistence.entity.UserEntity;
 import com.dailyforge.modules.auth.infrastructure.persistence.mapper.UserMapper;
 import com.dailyforge.modules.plan.application.service.PlanUserSupportService;
@@ -62,6 +63,7 @@ public class AiCoachApplicationService {
 
     private final PlanUserSupportService planUserSupportService;
     private final UserMapper userMapper;
+    private final AccountTierExpiryService accountTierExpiryService;
     private final UserProfileMapper userProfileMapper;
     private final UserCurrentBodyMetricsMapper userCurrentBodyMetricsMapper;
     private final CycleRunMapper cycleRunMapper;
@@ -76,6 +78,7 @@ public class AiCoachApplicationService {
     public AiCoachApplicationService(
             PlanUserSupportService planUserSupportService,
             UserMapper userMapper,
+            AccountTierExpiryService accountTierExpiryService,
             UserProfileMapper userProfileMapper,
             UserCurrentBodyMetricsMapper userCurrentBodyMetricsMapper,
             CycleRunMapper cycleRunMapper,
@@ -88,6 +91,7 @@ public class AiCoachApplicationService {
             ObjectMapper objectMapper) {
         this.planUserSupportService = planUserSupportService;
         this.userMapper = userMapper;
+        this.accountTierExpiryService = accountTierExpiryService;
         this.userProfileMapper = userProfileMapper;
         this.userCurrentBodyMetricsMapper = userCurrentBodyMetricsMapper;
         this.cycleRunMapper = cycleRunMapper;
@@ -103,6 +107,7 @@ public class AiCoachApplicationService {
     public AiCoachCapabilitiesResponse getCapabilities() {
         Long userId = planUserSupportService.requireActiveUserId();
         UserEntity user = requireUser(userId);
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         UserProfileEntity profile = userProfileMapper.selectById(userId);
         UserCurrentBodyMetricsEntity metrics = userCurrentBodyMetricsMapper.selectById(userId);
         List<String> missingRequiredFields = collectTemplateGenerationMissingFields(profile, metrics);
@@ -472,6 +477,7 @@ public class AiCoachApplicationService {
                 || !StringUtils.hasText(aiCoachProperties.getModel())) {
             return false;
         }
+        accountTierExpiryService.applyExpiryIfNeeded(user);
         return PLATFORM_ROLE_ADMIN.equalsIgnoreCase(user.getPlatformRole())
                 || AI_ENABLED_TIERS.contains(user.getAccountTier());
     }
