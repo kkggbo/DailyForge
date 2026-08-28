@@ -5,9 +5,18 @@
       <stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
+
   <rect width="64" height="64" rx="15" fill="url(#bg)"/>
-  <text x="32" y="45"
-        font-family="ui-sans-serif, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="32" font-weight="800" fill="#1c1917"
-        text-anchor="middle">DF</text>
+
+  <!-- 铁锤锤头（横向，右侧高光） -->
+  <rect x="10" y="12" width="44" height="15" rx="4" fill="#1c1917"/>
+  <rect x="38" y="12" width="16" height="15" rx="4" fill="#292524"/>
+
+  <!-- 锤柄（竖向） -->
+  <rect x="27" y="26" width="10" height="30" rx="4" fill="#1c1917"/>
+
+  <!-- 底部锻造火星点缀 -->
+  <circle cx="16" cy="54" r="2" fill="#1c1917"/>
+  <circle cx="24" cy="57" r="1.4" fill="#1c1917"/>
+  <circle cx="42" cy="55" r="1.6" fill="#1c1917"/>
 </svg>
