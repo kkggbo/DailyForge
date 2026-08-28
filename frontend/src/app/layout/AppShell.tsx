@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
-import { getAccountTierLabel } from "../../features/auth/lib/account-tier";
+import { getAccountTierExpiryLabel, getAccountTierLabel } from "../../features/auth/lib/account-tier";
 import { BackToTop } from "./BackToTop";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -52,6 +52,9 @@ export function AppShell() {
                   <NavLink to="/workout" className={navLinkClass}>
                     训练工作台
                   </NavLink>
+                  <NavLink to="/stats" className={navLinkClass}>
+                    统计
+                  </NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
                     个人资料
                   </NavLink>
@@ -79,6 +82,14 @@ export function AppShell() {
                 {currentUser ? (
                   <p className="truncate text-xs text-stone-400">
                     {getAccountTierLabel(currentUser.accountTier)}
+                  </p>
+                ) : null}
+                {currentUser ? (
+                  <p className="truncate text-[11px] text-stone-500">
+                    {getAccountTierExpiryLabel(
+                      currentUser.accountTier,
+                      currentUser.accountTierExpiresAt
+                    ) ?? ""}
                   </p>
                 ) : null}
               </div>

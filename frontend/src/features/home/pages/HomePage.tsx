@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { ApiRequestError } from "../../../shared/api/http";
+import { StatsEntryCard } from "../../stats/components/StatsEntryCard";
 import {
   completeSession,
   getWorkspace,
@@ -127,6 +128,8 @@ export function HomePage() {
         <WelcomeCard userName={currentUser?.userName} />
         {showAiUnlock ? <AiUnlockCard /> : null}
       </div>
+
+      <StatsEntryCard />
 
       {isLoading ? (
         <Loading />

@@ -2,6 +2,7 @@ package com.dailyforge.modules.workout.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.dailyforge.modules.workout.infrastructure.persistence.entity.TrainingSessionEntity;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -101,6 +102,30 @@ public interface TrainingSessionMapper extends BaseMapper<TrainingSessionEntity>
     List<TrainingSessionEntity> selectRecentCompletedWorkoutByUserId(
             @Param("userId") Long userId,
             @Param("limit") int limit);
+
+    /**
+     * Load all workout sessions for the stats module: workout type, excluding cancelled,
+     * optionally filtered by started_at time range.
+     */
+    @Select("""
+            <script>
+            SELECT * FROM training_sessions
+            WHERE user_id = #{userId}
+              AND session_type = 'workout'
+              AND status &lt;&gt; 'cancelled'
+            <if test="from != null">
+              AND started_at &gt;= #{from}
+            </if>
+            <if test="to != null">
+              AND started_at &lt;= #{to}
+            </if>
+            ORDER BY started_at ASC, id ASC
+            </script>
+            """)
+    List<TrainingSessionEntity> selectWorkoutSessionsForStats(
+            @Param("userId") Long userId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 
     @Update("""
             UPDATE training_sessions

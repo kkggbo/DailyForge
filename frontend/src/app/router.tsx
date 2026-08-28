@@ -26,6 +26,7 @@ import { ProfileAiCompletionPage } from "../features/profile/pages/ProfileAiComp
 import { ProfileEditPage } from "../features/profile/pages/ProfileEditPage";
 import { ProfileOnboardingPage } from "../features/profile/pages/ProfileOnboardingPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
+import { StatsPage } from "../features/stats/pages/StatsPage";
 import { WorkoutHistoryDetailPage } from "../features/workout/pages/WorkoutHistoryDetailPage";
 import { WorkoutPage } from "../features/workout/pages/WorkoutPage";
 
@@ -198,6 +199,10 @@ export const router = createBrowserRouter([
           {
             path: "/ai-coach/next-cycle-generation/tasks/:taskId",
             element: <NextCycleGenerationTaskPage />
+          },
+          {
+            path: "/stats",
+            element: <StatsPage />
           },
           {
             path: "/profile",

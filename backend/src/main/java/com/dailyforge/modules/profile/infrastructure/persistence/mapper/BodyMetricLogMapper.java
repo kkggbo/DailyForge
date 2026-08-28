@@ -2,6 +2,7 @@ package com.dailyforge.modules.profile.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.dailyforge.modules.profile.infrastructure.persistence.entity.BodyMetricLogEntity;
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -69,4 +70,27 @@ public interface BodyMetricLogMapper extends BaseMapper<BodyMetricLogEntity> {
             ORDER BY record_date DESC, id DESC
             """)
     List<BodyMetricLogEntity> selectAllActiveRecords(@Param("userId") Long userId);
+
+    /**
+     * Select active body metric rows for the stats module within an optional date range,
+     * ordered by record_date ascending then id descending (so the newest row per day comes last).
+     */
+    @Select("""
+            <script>
+            SELECT *
+            FROM body_metric_logs
+            WHERE user_id = #{userId} AND is_del = 0
+            <if test="from != null">
+              AND record_date &gt;= #{from}
+            </if>
+            <if test="to != null">
+              AND record_date &lt;= #{to}
+            </if>
+            ORDER BY record_date ASC, id DESC
+            </script>
+            """)
+    List<BodyMetricLogEntity> selectActiveRecordsForStats(
+            @Param("userId") Long userId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 }
