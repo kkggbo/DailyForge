@@ -111,6 +111,17 @@ export function AppShell() {
         <main className="flex-1 pt-8">
           <Outlet />
         </main>
+
+        <footer className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-stone-500">
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noreferrer"
+            className="transition hover:text-stone-300"
+          >
+            湘ICP备2026036952号
+          </a>
+        </footer>
       </div>
 
       <BackToTop />
