@@ -8,17 +8,17 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 
 已完成模块：
 
-- `auth`：注册、登录、刷新 Token、当前用户、邀请码兑换
+- `auth`：注册、登录、刷新 Token、当前用户、邀请码兑换、账户层级时间限制、账号管理（修改用户名 / 修改密码 / 密码找回）
 - `profile`：基础档案、身体指标记录、首次欢迎引导、AI 使用前信息完整度提示
 - `exercise`：系统动作库查询、关键词搜索、分类筛选、动作详情、模板动作选择器数据支持
 - `cycle_template`：草稿模板、正式模板、启用切换、编辑保存、软删除、AI 生成来源标识
 - `workout`：训练工作台、Day 导航、训练打卡、历史详情、周期结束后的后续选择
-- `ai_coach`：AI 训练模板草稿生成、AI 周期总结、任务历史、工具调用记录、结构化结果回写
+- `ai_coach`：AI 训练模板草稿生成、下一周期模板生成、AI 周期总结、任务历史、工具调用记录、结构化结果回写
+- `stats`：训练统计（按时间/动作汇总、单动作进阶曲线、趣味文案）、身体指标趋势（多指标折线图）
 
 当前仍在后续规划中的方向：
 
 - 饮食建议与饮食计划
-- 历史统计与趋势分析
 - AI 输出质量持续优化
 
 ## 关键设计说明
@@ -45,6 +45,7 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - TypeScript 5.7
 - Vite 6.3
 - Tailwind CSS 4.2
+- recharts（统计图表）
 - pnpm 9
 
 ### 后端
@@ -74,6 +75,9 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - `backend/src/main/resources/db/migration/V5__cycle_template_structure_v2.sql`
 - `backend/src/main/resources/db/migration/V6__workout_schema_upgrade.sql`
 - `backend/src/main/resources/db/migration/V7__ai_coach_schema_upgrade.sql`
+- `backend/src/main/resources/db/migration/V8__ai_next_cycle_schema_upgrade.sql`
+- `backend/src/main/resources/db/migration/V9__account_tier_expiry.sql`
+- `backend/src/main/resources/db/migration/V10__user_name_unique.sql`
 
 说明：
 
@@ -117,16 +121,19 @@ pnpm dev
 ## 主要页面入口
 
 - 控制台：`/app`
+- 统计：`/stats`
 - 训练模板：`/cycle-templates`（含 AI 生成模板入口）
 - 训练工作台：`/workout`（含 AI 周期总结与历史入口）
 - 个人资料：`/profile`（含编辑与身体指标历史）
+- 账号设置：`/account`（修改用户名 / 修改密码）
+- 忘记密码：`/forgot-password`
 - Swagger 文档：请以当前后端安全配置和网关映射为准，不再在 README 中写死旧路径
 
 ## 生产部署
 
 项目已具备 Docker 生产部署能力：
 
-- `deploy/docker-compose.prod.yml`：生产编排（nginx + backend + mysql + redis），仅 nginx 暴露 80 端口。
+- `deploy/docker-compose.prod.yml`：生产编排（nginx + backend + mysql + redis），nginx 暴露 80/443（HTTPS）。
 - `deploy/deploy.sh`：一键部署（起基础设施 → 跑迁移 → 构建启动）。
 - `deploy/.env.example`：环境变量模板（数据库密码 / JWT 密钥 / AI Key）。
 - `deploy/DEPLOY.md`：从零到跑通的部署说明（Ubuntu 24.04 + IP 访问）。
