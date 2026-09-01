@@ -64,6 +64,27 @@ export type RedeemInviteCodeResponse = {
   inviteCode: string;
 };
 
+export type UpdateUserNameRequest = {
+  userName: string;
+};
+
+export type ChangePasswordRequest = {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+export type ForgotPasswordCodeRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export async function register(payload: RegisterPayload) {
   return request<RegisterResponse>("/auth/register", {
     method: "POST",
@@ -109,6 +130,42 @@ export async function redeemInviteCode(
   return request<RedeemInviteCodeResponse>("/auth/redeem-invite-code", {
     method: "POST",
     accessToken,
+    body: payload
+  });
+}
+
+export function updateUserName(
+  accessToken: string,
+  payload: UpdateUserNameRequest
+) {
+  return request<CurrentUserResponse>("/auth/username", {
+    method: "PUT",
+    accessToken,
+    body: payload
+  });
+}
+
+export function changePassword(
+  accessToken: string,
+  payload: ChangePasswordRequest
+) {
+  return request<void>("/auth/password/change", {
+    method: "POST",
+    accessToken,
+    body: payload
+  });
+}
+
+export function sendForgotPasswordCode(payload: ForgotPasswordCodeRequest) {
+  return request<void>("/auth/password/forgot-code", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export function resetPassword(payload: ResetPasswordRequest) {
+  return request<void>("/auth/password/reset", {
+    method: "POST",
     body: payload
   });
 }

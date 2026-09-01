@@ -123,6 +123,11 @@ export function LoginPage() {
               去注册
             </Link>
           </p>
+          <p className="mt-2 text-sm text-stone-400">
+            <Link to="/forgot-password" className="text-amber-300 transition hover:text-amber-200">
+              忘记密码？
+            </Link>
+          </p>
         </form>
       </div>
     </section>

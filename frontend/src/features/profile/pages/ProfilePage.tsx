@@ -80,6 +80,12 @@ export function ProfilePage() {
           >
             查看身体指标历史记录
           </Link>
+          <Link
+            to="/account"
+            className="inline-flex rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/12"
+          >
+            账号设置
+          </Link>
         </div>
       </header>
 

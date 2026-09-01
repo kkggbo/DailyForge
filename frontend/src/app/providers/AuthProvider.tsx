@@ -13,6 +13,7 @@ import {
   refreshAccessToken as refreshAccessTokenRequest,
   redeemInviteCode as redeemInviteCodeRequest,
   register as registerRequest,
+  updateUserName as updateUserNameRequest,
   type AuthTokenResponse,
   type CurrentUserResponse,
   type LoginPayload,
@@ -36,6 +37,7 @@ type AuthContextValue = {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   redeemInviteCode: (payload: RedeemInviteCodePayload) => Promise<string>;
+  updateUserName: (userName: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -216,6 +218,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
         );
 
         return response.accountTier;
+      },
+      async updateUserName(userName) {
+        if (!session?.accessToken) {
+          throw new Error("当前未登录，无法修改用户名");
+        }
+
+        const me = await updateUserNameRequest(session.accessToken, {
+          userName
+        });
+
+        updateStoredSession({
+          ...session,
+          user: { ...session.user, userName: me.userName }
+        });
+        setCurrentUser(me);
       }
     }),
     [currentUser, isBootstrapping, session]

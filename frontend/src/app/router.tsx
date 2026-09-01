@@ -11,6 +11,8 @@ import { TemplateGenerationTaskPage } from "../features/ai-coach/pages/TemplateG
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RedeemInviteCodePage } from "../features/auth/pages/RedeemInviteCodePage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { AccountPage } from "../features/auth/pages/AccountPage";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { CycleTemplateCreatePage } from "../features/cycle-template/pages/CycleTemplateCreatePage";
 import { CycleTemplateDetailPage } from "../features/cycle-template/pages/CycleTemplateDetailPage";
 import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTemplateEditPage";
@@ -154,6 +156,10 @@ export const router = createBrowserRouter([
           {
             path: "/register",
             element: <RegisterPage />
+          },
+          {
+            path: "/forgot-password",
+            element: <ForgotPasswordPage />
           }
         ]
       },
@@ -171,6 +177,10 @@ export const router = createBrowserRouter([
           {
             path: "/invite-code",
             element: <RedeemInviteCodePage />
+          },
+          {
+            path: "/account",
+            element: <AccountPage />
           },
           {
             path: "/ai-coach",
