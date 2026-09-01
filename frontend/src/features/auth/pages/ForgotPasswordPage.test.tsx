@@ -3,9 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ForgotPasswordPage } from "./ForgotPasswordPage";
 
-const navigateMock = vi.fn();
-const sendForgotPasswordCodeMock = vi.fn();
-const resetPasswordMock = vi.fn();
+const { navigateMock, sendForgotPasswordCodeMock, resetPasswordMock } = vi.hoisted(() => ({
+  navigateMock: vi.fn(),
+  sendForgotPasswordCodeMock: vi.fn(),
+  resetPasswordMock: vi.fn()
+}));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>(

@@ -3,8 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AccountPage } from "./AccountPage";
 
-const updateUserNameMock = vi.fn();
-const changePasswordMock = vi.fn();
+const { updateUserNameMock, changePasswordMock } = vi.hoisted(() => ({
+  updateUserNameMock: vi.fn(),
+  changePasswordMock: vi.fn()
+}));
 
 vi.mock("../../../app/providers/AuthProvider", () => ({
   useAuth: () => ({
