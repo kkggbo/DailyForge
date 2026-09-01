@@ -34,7 +34,8 @@ CREATE TABLE users (
     last_login_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_users_email UNIQUE (email)
+    CONSTRAINT uk_users_email UNIQUE (email),
+    CONSTRAINT uk_users_user_name UNIQUE (user_name)
 );
 
 CREATE TABLE user_profiles (

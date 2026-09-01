@@ -24,4 +24,34 @@ class PasswordPolicyServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
     }
+
+    @Test
+    void shouldAcceptValidNewPassword() {
+        assertThatCode(() -> passwordPolicyService.validateNewPassword("NewPass456"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectTooShortNewPassword() {
+        assertThatThrownBy(() -> passwordPolicyService.validateNewPassword("12345"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_ARGUMENT);
+    }
+
+    @Test
+    void shouldRejectTooLongNewPassword() {
+        assertThatThrownBy(() -> passwordPolicyService.validateNewPassword("123456789012345678901"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_ARGUMENT);
+    }
+
+    @Test
+    void shouldRejectBlankNewPassword() {
+        assertThatThrownBy(() -> passwordPolicyService.validateNewPassword("  "))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_ARGUMENT);
+    }
 }

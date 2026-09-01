@@ -15,6 +15,17 @@ spring:
       host: localhost
       port: 6379
       database: 1
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+    from: ${MAIL_FROM:}
 
 server:
   port: 8080

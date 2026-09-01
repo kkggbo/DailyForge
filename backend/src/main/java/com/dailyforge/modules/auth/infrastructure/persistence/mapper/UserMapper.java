@@ -10,4 +10,7 @@ public interface UserMapper extends BaseMapper<UserEntity> {
 
     @Select("SELECT * FROM users WHERE email = #{email} LIMIT 1")
     UserEntity selectByEmail(String email);
+
+    @Select("SELECT * FROM users WHERE user_name = #{userName} LIMIT 1")
+    UserEntity selectByUserName(String userName);
 }

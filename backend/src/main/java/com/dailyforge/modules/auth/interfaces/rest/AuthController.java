@@ -1,12 +1,17 @@
 package com.dailyforge.modules.auth.interfaces.rest;
 
 import com.dailyforge.common.ApiResponse;
+import com.dailyforge.modules.auth.application.service.AccountManagementService;
 import com.dailyforge.modules.auth.application.service.AuthApplicationService;
+import com.dailyforge.modules.auth.interfaces.dto.ChangePasswordRequest;
+import com.dailyforge.modules.auth.interfaces.dto.ForgotPasswordCodeRequest;
 import com.dailyforge.modules.auth.interfaces.dto.LoginRequest;
 import com.dailyforge.modules.auth.interfaces.dto.LogoutRequest;
 import com.dailyforge.modules.auth.interfaces.dto.RedeemInviteCodeRequest;
 import com.dailyforge.modules.auth.interfaces.dto.RefreshTokenRequest;
 import com.dailyforge.modules.auth.interfaces.dto.RegisterRequest;
+import com.dailyforge.modules.auth.interfaces.dto.ResetPasswordRequest;
+import com.dailyforge.modules.auth.interfaces.dto.UpdateUserNameRequest;
 import com.dailyforge.modules.auth.interfaces.vo.AuthTokenResponse;
 import com.dailyforge.modules.auth.interfaces.vo.CurrentUserResponse;
 import com.dailyforge.modules.auth.interfaces.vo.RedeemInviteCodeResponse;
@@ -22,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,9 +40,13 @@ public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthApplicationService authApplicationService;
+    private final AccountManagementService accountManagementService;
 
-    public AuthController(AuthApplicationService authApplicationService) {
+    public AuthController(
+            AuthApplicationService authApplicationService,
+            AccountManagementService accountManagementService) {
         this.authApplicationService = authApplicationService;
+        this.accountManagementService = accountManagementService;
     }
 
     @PostMapping("/register")
@@ -123,5 +133,59 @@ public class AuthController {
             @Valid @RequestBody RedeemInviteCodeRequest request) {
         log.debug("AuthController redeemInviteCode entered");
         return ApiResponse.success(authApplicationService.redeemInviteCode(request.code()));
+    }
+
+    @PutMapping("/username")
+    @Operation(summary = "修改用户名", description = "登录用户修改自己的用户名，唯一且不区分大小写。")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "修改成功",
+                    content = @Content(schema = @Schema(implementation = CurrentUserResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "用户名格式非法"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未登录或令牌无效"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "用户名已被占用")
+    })
+    public ApiResponse<CurrentUserResponse> updateUserName(@Valid @RequestBody UpdateUserNameRequest request) {
+        log.debug("AuthController updateUserName entered");
+        return ApiResponse.success(accountManagementService.updateUserName(request));
+    }
+
+    @PostMapping("/password/change")
+    @Operation(summary = "修改密码", description = "登录用户修改自己的密码，需验证旧密码。")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "修改成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "旧密码错误/两次不一致/新旧相同/长度非法"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未登录或令牌无效")
+    })
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        log.debug("AuthController changePassword entered");
+        accountManagementService.changePassword(request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/password/forgot-code")
+    @Operation(summary = "发送找回密码验证码", description = "向注册邮箱发送找回验证码；防枚举，未知邮箱也返回成功。")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "已受理（无论邮箱是否存在）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "邮箱格式非法或发送过于频繁"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "邮件发送失败")
+    })
+    public ApiResponse<Void> sendForgotCode(@Valid @RequestBody ForgotPasswordCodeRequest request) {
+        log.debug("AuthController sendForgotCode entered");
+        accountManagementService.sendForgotCode(request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/password/reset")
+    @Operation(summary = "重置密码", description = "校验验证码并重置密码。")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "重置成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "验证码错误/过期/超限/两次不一致/长度非法")
+    })
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        log.debug("AuthController resetPassword entered");
+        accountManagementService.resetPassword(request);
+        return ApiResponse.success();
     }
 }
