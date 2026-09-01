@@ -23,6 +23,7 @@ spring:
     properties:
       mail:
         smtp:
+          auth: true
           ssl:
             enable: true
     from: ${MAIL_FROM:}
