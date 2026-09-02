@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
+  activityLevelOptions,
   genderOptions,
   goalTypeOptions,
   trainingLevelOptions
@@ -163,7 +164,20 @@ export function BasicProfileForm({
           </select>
         </FormField>
 
-        <div className="hidden md:block" />
+        <FormField label="活动量" error={fieldErrors.activityLevel}>
+          <select
+            value={form.activityLevel}
+            onChange={(event) => updateField("activityLevel", event.target.value)}
+            className={`${inputClassName} df-select-input`}
+          >
+            <option value="">暂不填写</option>
+            {activityLevelOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </FormField>
 
         <FormField
           className="md:col-span-2"
@@ -257,7 +271,10 @@ function toBasicProfilePayload(form: BasicProfileFormValues): UpdateProfileBasic
     trainingLevel: form.trainingLevel
       ? (form.trainingLevel as UpdateProfileBasicPayload["trainingLevel"])
       : null,
-    injuryNotes: form.injuryNotes.trim() || null
+    injuryNotes: form.injuryNotes.trim() || null,
+    activityLevel: form.activityLevel
+      ? (form.activityLevel as UpdateProfileBasicPayload["activityLevel"])
+      : null
   };
 }
 

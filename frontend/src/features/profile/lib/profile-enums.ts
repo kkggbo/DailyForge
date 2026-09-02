@@ -1,5 +1,6 @@
 import type {
   AiCompletionScene,
+  ActivityLevel,
   Gender,
   GoalType,
   ProfileTab,
@@ -30,6 +31,17 @@ export const trainingLevelOptions: Array<{
   { value: "experienced", label: "有经验" }
 ];
 
+export const activityLevelOptions: Array<{
+  value: ActivityLevel;
+  label: string;
+}> = [
+  { value: "sedentary", label: "久坐" },
+  { value: "light", label: "轻度" },
+  { value: "moderate", label: "中度" },
+  { value: "high", label: "高强度" },
+  { value: "very_high", label: "极高" }
+];
+
 export const profileFieldLabels: Record<string, string> = {
   gender: "性别",
   birthDate: "出生日期",
@@ -37,6 +49,7 @@ export const profileFieldLabels: Record<string, string> = {
   goalType: "训练目标",
   trainingLevel: "训练经验",
   injuryNotes: "伤病与注意事项",
+  activityLevel: "活动量",
   weightKg: "体重",
   recordDate: "记录日期",
   bodyFatPercent: "体脂率",

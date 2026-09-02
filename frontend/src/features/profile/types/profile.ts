@@ -4,6 +4,13 @@ export type GoalType = "fat_loss" | "muscle_gain" | "health_maintenance";
 
 export type TrainingLevel = "beginner" | "experienced";
 
+export type ActivityLevel =
+  | "sedentary"
+  | "light"
+  | "moderate"
+  | "high"
+  | "very_high";
+
 export type ProfileTab = "basic" | "metrics";
 
 export type AiCompletionScene = "ai-plan" | "ai-nutrition" | "ai-summary";
@@ -15,6 +22,7 @@ export type ProfileBasicResponse = {
   goalType: GoalType | null;
   trainingLevel: TrainingLevel | null;
   injuryNotes: string | null;
+  activityLevel: ActivityLevel | null;
   currentWeightKg: number | null;
   latestBodyMetricRecordDate: string | null;
 };
@@ -26,6 +34,7 @@ export type UpdateProfileBasicPayload = {
   goalType: GoalType | null;
   trainingLevel: TrainingLevel | null;
   injuryNotes: string | null;
+  activityLevel: ActivityLevel | null;
 };
 
 export type BodyMetricSnapshotResponse = {
@@ -115,6 +124,7 @@ export type BasicProfileFormValues = {
   goalType: string;
   trainingLevel: string;
   injuryNotes: string;
+  activityLevel: string;
 };
 
 export type BodyMetricFormValues = {

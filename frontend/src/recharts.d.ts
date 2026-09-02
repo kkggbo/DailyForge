@@ -15,4 +15,8 @@ declare module "recharts" {
   export const CartesianGrid: import("react").ComponentType<any>;
   export const AreaChart: import("react").ComponentType<any>;
   export const Area: import("react").ComponentType<any>;
+  export const PieChart: import("react").ComponentType<any>;
+  export const Pie: import("react").ComponentType<any>;
+  export const Cell: import("react").ComponentType<any>;
+  export const Legend: import("react").ComponentType<any>;
 }

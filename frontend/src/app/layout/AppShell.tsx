@@ -55,6 +55,9 @@ export function AppShell() {
                   <NavLink to="/stats" className={navLinkClass}>
                     统计
                   </NavLink>
+                  <NavLink to="/diet" className={navLinkClass}>
+                    饮食
+                  </NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
                     个人资料
                   </NavLink>

@@ -20,7 +20,7 @@ describe("BasicProfileForm", () => {
     const heightInput = container.querySelector('input[type="number"]');
     const notesTextarea = container.querySelector("textarea");
 
-    expect(selects).toHaveLength(3);
+    expect(selects).toHaveLength(4);
     expect(dateInput).not.toBeNull();
     expect(heightInput).not.toBeNull();
     expect(notesTextarea).not.toBeNull();
@@ -32,6 +32,7 @@ describe("BasicProfileForm", () => {
     await user.type(heightInput as HTMLInputElement, "178");
     await user.selectOptions(selects[1] as HTMLSelectElement, "muscle_gain");
     await user.selectOptions(selects[2] as HTMLSelectElement, "experienced");
+    await user.selectOptions(selects[3] as HTMLSelectElement, "moderate");
     await user.type(notesTextarea as HTMLTextAreaElement, "Left shoulder discomfort");
     await user.click(screen.getByRole("button", { name: "Save Basic Profile" }));
 
@@ -42,7 +43,8 @@ describe("BasicProfileForm", () => {
         heightCm: 178,
         goalType: "muscle_gain",
         trainingLevel: "experienced",
-        injuryNotes: "Left shoulder discomfort"
+        injuryNotes: "Left shoulder discomfort",
+        activityLevel: "moderate"
       });
     });
 

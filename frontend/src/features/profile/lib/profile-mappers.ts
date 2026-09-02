@@ -23,7 +23,8 @@ export function toBasicProfileFormValues(
         : String(profile.heightCm),
     goalType: profile?.goalType ?? "",
     trainingLevel: profile?.trainingLevel ?? "",
-    injuryNotes: profile?.injuryNotes ?? ""
+    injuryNotes: profile?.injuryNotes ?? "",
+    activityLevel: profile?.activityLevel ?? ""
   };
 }
 

@@ -17,6 +17,9 @@ import { CycleTemplateCreatePage } from "../features/cycle-template/pages/CycleT
 import { CycleTemplateDetailPage } from "../features/cycle-template/pages/CycleTemplateDetailPage";
 import { CycleTemplateEditPage } from "../features/cycle-template/pages/CycleTemplateEditPage";
 import { CycleTemplatePage } from "../features/cycle-template/pages/CycleTemplatePage";
+import { DietDiaryPage } from "../features/diet/pages/DietDiaryPage";
+import { DietFoodsPage } from "../features/diet/pages/DietFoodsPage";
+import { DietStatsPage } from "../features/diet/pages/DietStatsPage";
 import { HomePage } from "../features/home/pages/HomePage";
 import { getProfileCompletionSummary } from "../features/profile/api/profile";
 import {
@@ -213,6 +216,18 @@ export const router = createBrowserRouter([
           {
             path: "/stats",
             element: <StatsPage />
+          },
+          {
+            path: "/diet",
+            element: <DietDiaryPage />
+          },
+          {
+            path: "/diet/foods",
+            element: <DietFoodsPage />
+          },
+          {
+            path: "/diet/stats",
+            element: <DietStatsPage />
           },
           {
             path: "/profile",
