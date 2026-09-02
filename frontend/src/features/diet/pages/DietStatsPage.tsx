@@ -14,7 +14,8 @@ import {
   YAxis
 } from "recharts";
 import { useAuth } from "../../../app/providers/AuthProvider";
-import { getDietStats } from "../api/diet";
+import { getDietStats, getDietTargets } from "../api/diet";
+import { DietMissingFieldsNotice } from "../components/DietMissingFieldsNotice";
 import { getDietErrorMessage } from "../lib/diet-formatters";
 import type { DietStats } from "../types/diet";
 
@@ -65,6 +66,7 @@ export function DietStatsPage() {
   const { accessToken } = useAuth();
   const [range, setRange] = useState<Range>({ preset: "30d" });
   const [stats, setStats] = useState<DietStats | null>(null);
+  const [targetMissing, setTargetMissing] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,10 +79,22 @@ export function DietStatsPage() {
     async function load() {
       setIsLoading(true);
       setError(null);
+      setTargetMissing([]);
       try {
         const nextStats = await getDietStats(token, buildQuery(range));
         if (!cancelled) {
           setStats(nextStats);
+        }
+        // 无目标（资料不足）：并行取精确缺失项，供「完善资料」提示展示
+        if (!cancelled && !nextStats.goalAdherence) {
+          try {
+            const targetResponse = await getDietTargets(token);
+            if (!cancelled) {
+              setTargetMissing(targetResponse.missingFields ?? []);
+            }
+          } catch {
+            // 拿不到缺失项时显示通用补齐文案
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -287,7 +301,17 @@ export function DietStatsPage() {
                 <Stat label="符合率" value={`${stats.goalAdherence.ratePct}%`} />
               </div>
             </section>
-          ) : null}
+          ) : (
+            <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
+              <h2 className="text-xl font-semibold text-white">目标符合度</h2>
+              <div className="mt-4">
+                <DietMissingFieldsNotice
+                  missingFields={targetMissing}
+                  targetText="目标符合度"
+                />
+              </div>
+            </section>
+          )}
         </>
       ) : null}
     </section>

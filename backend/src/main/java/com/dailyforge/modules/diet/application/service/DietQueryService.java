@@ -50,7 +50,9 @@ public class DietQueryService {
         }
         NutritionTotals totals = new NutritionTotals(cal, pro, carb, fat);
 
-        DietTargetVO target = dietTargetService.getTargetForUser(userId);
+        DietTargetVO effective = dietTargetService.getTargetForUser(userId);
+        // 资料不足（basis=null）时按契约返回 null，前端据此展示「补齐资料」提示并单独调 D9 取缺失项
+        DietTargetVO target = (effective == null || effective.basis() == null) ? null : effective;
         DietProgressVO progress = buildProgress(target, totals);
         return new DietSummaryVO(date.toString(), target, meals, totals, progress);
     }

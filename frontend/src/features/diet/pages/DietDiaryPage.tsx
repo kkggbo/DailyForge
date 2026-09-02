@@ -56,8 +56,8 @@ export function DietDiaryPage() {
       const nextSummary = await getDaySummary(token, targetDate);
       setSummary(nextSummary);
 
-      if (nextSummary.target === null) {
-        // 资料不足：取精确缺失项（含 activityLevel 等）；失败则退回通用文案
+      if (!nextSummary.target?.basis) {
+        // 资料不足或目标不可用：取精确缺失项（含 activityLevel 等）；失败则退回通用文案
         try {
           const targetResponse = await getDietTargets(token);
           setTargetMissing(targetResponse.missingFields ?? []);
@@ -115,7 +115,8 @@ export function DietDiaryPage() {
     await reload();
   }
 
-  const target = summary?.target ?? null;
+  // 只有 basis 有效（auto/custom）才算有可用目标；basis=null 视为无目标（显示补齐提示）
+  const target = summary?.target?.basis ? summary.target : null;
 
   return (
     <section className="space-y-8">

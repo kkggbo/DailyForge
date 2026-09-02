@@ -1,4 +1,5 @@
 import {
+  activityLevelOptions,
   genderOptions,
   goalTypeOptions,
   trainingLevelOptions
@@ -26,6 +27,9 @@ export function BasicProfileSummaryCard({
   const trainingLabel = trainingLevelOptions.find(
     (option) => option.value === basicProfile?.trainingLevel
   )?.label;
+  const activityLabel = activityLevelOptions.find(
+    (option) => option.value === basicProfile?.activityLevel
+  )?.label;
 
   const items = [
     { label: "性别", value: formatNullableText(genderLabel) },
@@ -36,6 +40,10 @@ export function BasicProfileSummaryCard({
     },
     { label: "训练目标", value: formatNullableText(goalLabel) },
     { label: "训练经验", value: formatNullableText(trainingLabel) },
+    {
+      label: "活动量",
+      value: basicProfile?.activityLevel ? formatNullableText(activityLabel) : "--"
+    },
     {
       label: "当前体重",
       value: formatNullableNumber(basicProfile?.currentWeightKg, { unit: "kg" })
