@@ -45,6 +45,7 @@ CREATE TABLE user_profiles (
     height_cm DECIMAL(5, 2) NULL,
     training_level VARCHAR(32) NULL,
     goal_type VARCHAR(32) NULL,
+    activity_level VARCHAR(32) NULL,
     injury_notes VARCHAR(1000) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -410,3 +411,61 @@ ALTER TABLE cycle_templates
 ALTER TABLE user_active_cycles
     ADD CONSTRAINT fk_user_active_cycles_last_session_id
     FOREIGN KEY (last_session_id) REFERENCES training_sessions(id);
+
+CREATE TABLE foods (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    category VARCHAR(32) NULL,
+    calories_kcal DECIMAL(8, 2) NOT NULL DEFAULT 0,
+    protein_g DECIMAL(8, 2) NOT NULL DEFAULT 0,
+    carbs_g DECIMAL(8, 2) NOT NULL DEFAULT 0,
+    fat_g DECIMAL(8, 2) NOT NULL DEFAULT 0,
+    source VARCHAR(16) NOT NULL DEFAULT 'system',
+    owner_user_id BIGINT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_foods_name ON foods(name);
+CREATE INDEX idx_foods_source_active ON foods(source, is_active);
+
+CREATE TABLE user_food_favorites (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    food_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_food UNIQUE (user_id, food_id)
+);
+
+CREATE INDEX idx_user_food_favorites_user ON user_food_favorites(user_id);
+
+CREATE TABLE diet_food_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    food_id BIGINT NOT NULL,
+    food_name_snapshot VARCHAR(64) NOT NULL,
+    meal_type VARCHAR(16) NOT NULL,
+    record_date DATE NOT NULL,
+    quantity_grams DECIMAL(10, 2) NOT NULL,
+    calories_kcal DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    protein_g DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    carbs_g DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    fat_g DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_diet_logs_user_date ON diet_food_logs(user_id, record_date);
+CREATE INDEX idx_diet_logs_user_food ON diet_food_logs(user_id, food_id);
+CREATE INDEX idx_diet_logs_user_meal_date ON diet_food_logs(user_id, meal_type, record_date);
+
+CREATE TABLE user_diet_targets (
+    user_id BIGINT PRIMARY KEY,
+    calories_kcal DECIMAL(10, 2) NOT NULL,
+    protein_g DECIMAL(10, 2) NOT NULL,
+    carbs_g DECIMAL(10, 2) NOT NULL,
+    fat_g DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

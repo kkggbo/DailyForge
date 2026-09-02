@@ -16,6 +16,7 @@ public class UserProfileEntity {
     private BigDecimal heightCm;
     private String trainingLevel;
     private String goalType;
+    private String activityLevel;
     private String injuryNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -66,6 +67,14 @@ public class UserProfileEntity {
 
     public void setGoalType(String goalType) {
         this.goalType = goalType;
+    }
+
+    public String getActivityLevel() {
+        return activityLevel;
+    }
+
+    public void setActivityLevel(String activityLevel) {
+        this.activityLevel = activityLevel;
     }
 
     public String getInjuryNotes() {

@@ -31,6 +31,11 @@ public record UpdateProfileBasicRequest(
         @Pattern(regexp = "beginner|experienced", message = "must be one of: beginner, experienced")
         String trainingLevel,
 
+        @Schema(description = "Activity level", example = "moderate")
+        @Pattern(regexp = "sedentary|light|moderate|high|very_high",
+                message = "must be one of: sedentary, light, moderate, high, very_high")
+        String activityLevel,
+
         @Schema(description = "Injury notes", example = "Old left knee injury, keep squat load conservative")
         @Size(max = 1000, message = "size must be less than or equal to 1000")
         String injuryNotes) {

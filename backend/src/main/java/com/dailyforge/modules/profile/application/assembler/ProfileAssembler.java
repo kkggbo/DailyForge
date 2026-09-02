@@ -24,6 +24,7 @@ public interface ProfileAssembler {
                 profile.getHeightCm(),
                 profile.getGoalType(),
                 profile.getTrainingLevel(),
+                profile.getActivityLevel(),
                 profile.getInjuryNotes(),
                 snapshot == null ? null : snapshot.getCurrentWeightKg(),
                 latestBodyMetricRecordDate);
@@ -39,6 +40,7 @@ public interface ProfileAssembler {
                 profile.getHeightCm(),
                 profile.getGoalType(),
                 profile.getTrainingLevel(),
+                profile.getActivityLevel(),
                 profile.getInjuryNotes(),
                 snapshot == null ? null : snapshot.getCurrentWeightKg(),
                 latestBodyMetricRecordDate);

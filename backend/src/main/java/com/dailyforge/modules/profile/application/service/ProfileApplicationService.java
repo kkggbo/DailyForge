@@ -96,6 +96,10 @@ public class ProfileApplicationService {
             profile.setTrainingLevel(request.trainingLevel());
             updatedFields.add("trainingLevel");
         }
+        if (request.activityLevel() != null) {
+            profile.setActivityLevel(request.activityLevel());
+            updatedFields.add("activityLevel");
+        }
         if (request.injuryNotes() != null) {
             profile.setInjuryNotes(request.injuryNotes());
             updatedFields.add("injuryNotes");
