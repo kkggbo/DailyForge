@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import org.springframework.validation.annotation.Validated;
@@ -122,8 +123,10 @@ public class DietController {
     })
     public ApiResponse<FoodSearchVO> searchFoods(
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "all") String filter) {
-        return ApiResponse.success(dietFoodService.searchFoods(keyword, filter));
+            @RequestParam(defaultValue = "all") String filter,
+            @RequestParam(defaultValue = "1") @Min(1) Integer page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer pageSize) {
+        return ApiResponse.success(dietFoodService.searchFoods(keyword, filter, page, pageSize));
     }
 
     @GetMapping("/foods/{foodId}")

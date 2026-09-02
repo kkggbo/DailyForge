@@ -98,10 +98,12 @@
 
 ### 3.3 D5 食物搜索 / D6 详情 / D7 上传 / D8 收藏
 
-**D5 `GET /api/diet/foods?keyword=&filter=`**
+**D5 `GET /api/diet/foods?keyword=&filter=&page=&pageSize=`**（分页搜索）
 
 - `keyword`：可选，名称模糊匹配。
 - `filter`：`all`（默认）/ `recent`（最近使用，按当前用户记录时间）/ `frequent`（最常食用，按记录次数）/ `favorite`（我的收藏）。
+- `page`：可选，从 1 开始，默认 1，最小 1。
+- `pageSize`：可选，默认 20，范围 1~50。
 - 响应 `data`：
 
 ```json
@@ -113,15 +115,19 @@
     { "foodId": 301, "name": "自制鸡胸", "category": "meat_egg", "source": "user",
       "sourceLabel": "用户", "ownerNickname": "张**",
       "caloriesKcal": 160, "proteinG": 30, "carbsG": 1, "fatG": 3, "favorited": false }
-  ]
+  ],
+  "hasMore": true
 }
 ```
 
 字段说明：
 
+- `foods`：**当前页**食物列表（该页最多 `pageSize` 条）。
+- `hasMore`：是否还有下一页，供前端无限滚动（向下滚动加载 `page+1`）。
 - `source`：`system`（官方）/ `user`（用户上传）。
 - `sourceLabel`：展示用中文标签（`官方` / `用户`）。
 - `ownerNickname`：`source=user` 时为上传者**脱敏昵称**（如 `张**`），`system` 为 null。
+- 分页语义：`page` 从 1 开始；`foods` 为 `[(page-1)*pageSize, page*pageSize)` 的数据；`hasMore = page*pageSize < 总数`。
 - `recent` / `frequent` / `favorite` 基于当前用户数据；无记录时回退为空（或全量按名称排序）。
 
 **D6 `GET /api/diet/foods/{foodId}`**：单条食物详情（含每 100g 营养与 `favorited`）。

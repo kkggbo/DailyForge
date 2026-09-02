@@ -15,7 +15,8 @@ import com.dailyforge.modules.diet.interfaces.dto.UploadFoodRequest;
 import com.dailyforge.modules.diet.interfaces.vo.FoodItemVO;
 import com.dailyforge.modules.diet.interfaces.vo.FoodSearchVO;
 import java.math.BigDecimal;
-import java.util.ArrayList;import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class DietFoodService {
 
-    private static final int FILTER_LIMIT = 50;
+    /** Candidate cap for recent/frequent ordering before in-memory pagination (supports multi-page scroll). */
+    private static final int FILTER_LIMIT = 500;
 
     private final FoodMapper foodMapper;
     private final UserFoodFavoriteMapper favoriteMapper;
@@ -47,39 +49,46 @@ public class DietFoodService {
         this.userMapper = userMapper;
     }
 
-    public FoodSearchVO searchFoods(String keyword, String filter) {
+    public FoodSearchVO searchFoods(String keyword, String filter, int page, int pageSize) {
         Long userId = AuthSecurityUtils.getCurrentUserId();
         String kw = normalize(keyword);
         List<FoodEntity> foods = foodMapper.searchActive(kw);
 
-        List<FoodEntity> result;
+        List<FoodEntity> ordered;
         if ("favorite".equals(filter)) {
             Set<Long> fav = new LinkedHashSet<>(favoriteMapper.selectFoodIdsByUserId(userId));
-            result = new ArrayList<>();
+            ordered = new ArrayList<>();
             for (FoodEntity f : foods) {
                 if (fav.contains(f.getId())) {
-                    result.add(f);
+                    ordered.add(f);
                 }
             }
         } else if ("recent".equals(filter)) {
-            List<Long> ordered = logMapper.selectRecentFoodIds(userId, FILTER_LIMIT);
-            result = preserveOrder(foods, ordered);
+            List<Long> orderedIds = logMapper.selectRecentFoodIds(userId, FILTER_LIMIT);
+            ordered = preserveOrder(foods, orderedIds);
         } else if ("frequent".equals(filter)) {
             List<Long> ids = foods.stream().map(FoodEntity::getId).toList();
-            List<Long> ordered = ids.isEmpty()
+            List<Long> orderedIds = ids.isEmpty()
                     ? List.of()
                     : logMapper.selectMostFrequentFoodIds(userId, ids, FILTER_LIMIT);
-            result = preserveOrder(foods, ordered);
+            ordered = preserveOrder(foods, orderedIds);
         } else {
-            result = foods;
+            ordered = foods;
         }
 
+        // In-memory pagination over the ordered candidate list.
+        int fromIndex = (page - 1) * pageSize;
+        boolean hasMore = fromIndex + pageSize < ordered.size();
+        List<FoodEntity> pageFoods = fromIndex >= ordered.size()
+                ? List.of()
+                : ordered.subList(fromIndex, Math.min(fromIndex + pageSize, ordered.size()));
+
         Set<Long> favoritedIds = new LinkedHashSet<>(favoriteMapper.selectFoodIdsByUserId(userId));
-        Map<Long, String> nicknames = resolveOwnerNicknames(result);
-        List<FoodItemVO> items = result.stream()
+        Map<Long, String> nicknames = resolveOwnerNicknames(pageFoods);
+        List<FoodItemVO> items = pageFoods.stream()
                 .map(f -> toFoodItem(f, favoritedIds.contains(f.getId()), ownerNickname(nicknames, f.getOwnerUserId())))
                 .toList();
-        return new FoodSearchVO(items);
+        return new FoodSearchVO(items, hasMore);
     }
 
     public FoodItemVO getFoodDetail(Long foodId) {

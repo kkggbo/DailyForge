@@ -69,11 +69,72 @@ class DietFoodServiceTest {
         when(foodMapper.searchActive(null)).thenReturn(List.of(f1, f2));
         when(favoriteMapper.selectFoodIdsByUserId(USER_ID)).thenReturn(List.of(2L));
 
-        var result = service.searchFoods(null, "favorite");
+        var result = service.searchFoods(null, "favorite", 1, 20);
 
         assertThat(result.foods()).hasSize(1);
         assertThat(result.foods().getFirst().foodId()).isEqualTo(2L);
         assertThat(result.foods().getFirst().favorited()).isTrue();
+        assertThat(result.hasMore()).isFalse();
+    }
+
+    @Test
+    void searchAllPageOneShouldReturnFirstPageAndHasMore() {
+        // more than 20 foods
+        List<FoodEntity> many = new java.util.ArrayList<>();
+        for (long i = 1; i <= 25; i++) {
+            many.add(food(i, "食物" + i, "system", null));
+        }
+        when(foodMapper.searchActive(null)).thenReturn(many);
+        when(favoriteMapper.selectFoodIdsByUserId(USER_ID)).thenReturn(List.of());
+
+        var result = service.searchFoods(null, "all", 1, 20);
+
+        assertThat(result.foods()).hasSize(20);
+        assertThat(result.hasMore()).isTrue();
+        // first page food ids 1..20
+        assertThat(result.foods().getFirst().foodId()).isEqualTo(1L);
+        assertThat(result.foods().get(19).foodId()).isEqualTo(20L);
+    }
+
+    @Test
+    void searchAllLastPageShouldReturnNoMore() {
+        List<FoodEntity> many = new java.util.ArrayList<>();
+        for (long i = 1; i <= 25; i++) {
+            many.add(food(i, "食物" + i, "system", null));
+        }
+        when(foodMapper.searchActive(null)).thenReturn(many);
+        when(favoriteMapper.selectFoodIdsByUserId(USER_ID)).thenReturn(List.of());
+
+        var result = service.searchFoods(null, "all", 2, 20);
+
+        assertThat(result.foods()).hasSize(5);
+        assertThat(result.hasMore()).isFalse();
+        assertThat(result.foods().getFirst().foodId()).isEqualTo(21L);
+    }
+
+    @Test
+    void searchFavoriteShouldPaginateCorrectly() {
+        List<FoodEntity> all = new java.util.ArrayList<>();
+        for (long i = 1; i <= 30; i++) {
+            all.add(food(i, "食物" + i, "system", null));
+        }
+        when(foodMapper.searchActive(null)).thenReturn(all);
+        // user favorited food ids 2..30 (29 items)
+        java.util.List<Long> favIds = new java.util.ArrayList<>();
+        for (long i = 2; i <= 30; i++) {
+            favIds.add(i);
+        }
+        when(favoriteMapper.selectFoodIdsByUserId(USER_ID)).thenReturn(favIds);
+
+        var page1 = service.searchFoods(null, "favorite", 1, 20);
+        assertThat(page1.foods()).hasSize(20);
+        assertThat(page1.hasMore()).isTrue();
+        assertThat(page1.foods().getFirst().foodId()).isEqualTo(2L);
+
+        var page2 = service.searchFoods(null, "favorite", 2, 20);
+        assertThat(page2.foods()).hasSize(9);
+        assertThat(page2.hasMore()).isFalse();
+        assertThat(page2.foods().getFirst().foodId()).isEqualTo(22L);
     }
 
     @Test
