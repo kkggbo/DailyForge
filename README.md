@@ -1,6 +1,8 @@
 # DailyForge
 
-DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训练模板管理、训练打卡、身体指标记录，以及 AI 辅助训练模板生成和周期总结。
+> 🌐 线上地址：<https://dailyforge.cn/>
+
+DailyForge 是一个面向健身训练场景的 Web 应用，覆盖训练模板管理、训练打卡、身体指标记录、**饮食日记与每日目标**，以及 AI 辅助训练模板生成和周期总结。
 
 ## 当前进度
 
@@ -15,11 +17,11 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - `workout`：训练工作台、Day 导航、训练打卡、历史详情、周期结束后的后续选择
 - `ai_coach`：AI 训练模板草稿生成、下一周期模板生成、AI 周期总结、任务历史、工具调用记录、结构化结果回写
 - `stats`：训练统计（按时间/动作汇总、单动作进阶曲线、趣味文案）、身体指标趋势（多指标折线图）
+- `diet`：饮食日记（四餐记录与合计）、每日目标（Mifflin-St Jeor 自动计算 / 自定义覆盖）、食物库（官方种子 + 用户上传、收藏/最近/最常）、摄入统计（每日热量 / 宏量占比 / 周均值 / 目标符合度）
 
 当前仍在后续规划中的方向：
 
-- 饮食建议与饮食计划
-- AI 输出质量持续优化
+- AI 输出质量持续优化（含饮食建议的进一步深化）
 
 ## 关键设计说明
 
@@ -27,6 +29,7 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - `workout` 会在创建训练会话时复制模板快照，训练记录独立保存，不直接依赖后续模板编辑状态。
 - `ai_coach` 通过 Spring AI + OpenAI 兼容客户端接入 DeepSeek，支持 tool calling、多轮补数、结果格式校验与任务历史追踪。
 - AI 任务历史、最近工具调用中文名、模板来源标识等信息已经同步到后端接口和前端展示层。
+- `diet` 目标自动计算基于资料（性别 / 生日 / 身高 / 体重 / 训练目标 / 活动量），缺失时返回 `null` 并在前端引导补齐；用户可随时自定义覆盖。饮食记录保存食物营养快照，食物搜索按 `page/pageSize` 分页以支撑无限滚动。
 
 ## Agent 协作与 Skill
 
@@ -78,6 +81,8 @@ DailyForge 是一个面向健身训练场景的 Web 应用，当前聚焦于训�
 - `backend/src/main/resources/db/migration/V8__ai_next_cycle_schema_upgrade.sql`
 - `backend/src/main/resources/db/migration/V9__account_tier_expiry.sql`
 - `backend/src/main/resources/db/migration/V10__user_name_unique.sql`
+- `backend/src/main/resources/db/migration/V11__diet_activity_level.sql`
+- `backend/src/main/resources/db/migration/V12__seed_foods.sql`
 
 说明：
 
@@ -124,6 +129,7 @@ pnpm dev
 - 统计：`/stats`
 - 训练模板：`/cycle-templates`（含 AI 生成模板入口）
 - 训练工作台：`/workout`（含 AI 周期总结与历史入口）
+- 饮食：`/diet`（饮食日记）、`/diet/stats`（摄入统计；食物库已并入日记页添加流程）
 - 个人资料：`/profile`（含编辑与身体指标历史）
 - 账号设置：`/account`（修改用户名 / 修改密码）
 - 忘记密码：`/forgot-password`
