@@ -8,14 +8,21 @@ import {
   setDietTarget,
   updateMealLog
 } from "../api/diet";
-import { AddMealLogDialog } from "../components/AddMealLogDialog";
-import { DietMissingFieldsNotice } from "../components/DietMissingFieldsNotice";
-import { DietTargetCard } from "../components/DietTargetCard";
-import { MealSection } from "../components/MealSection";
-import { NutrientProgressBar } from "../components/NutrientProgressBar";
+import { AddMealFlowDialog } from "../components/AddMealFlowDialog";
+import { IntakeSummaryCard } from "../components/IntakeSummaryCard";
+import { MealDetailPanel } from "../components/MealDetailPanel";
+import { UploadFoodDialog } from "../components/UploadFoodDialog";
 import { getDietErrorMessage } from "../lib/diet-formatters";
-import { mealTypeOrder } from "../lib/diet-enums";
-import type { DaySummary, MealType } from "../types/diet";
+import { getMealTypeLabel, mealTypeOrder } from "../lib/diet-enums";
+import type {
+  CustomTargetValues
+} from "../components/IntakeSummaryCard";
+import type {
+  DaySummary,
+  MealLogItem,
+  MealType,
+  NutrientValues
+} from "../types/diet";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,14 +39,29 @@ function addDays(dateStr: string, delta: number): string {
   return toDateStr(date);
 }
 
+function sumMeal(items: MealLogItem[]): NutrientValues {
+  return items.reduce(
+    (acc, item) => ({
+      caloriesKcal: acc.caloriesKcal + item.caloriesKcal,
+      proteinG: acc.proteinG + item.proteinG,
+      carbsG: acc.carbsG + item.carbsG,
+      fatG: acc.fatG + item.fatG
+    }),
+    { caloriesKcal: 0, proteinG: 0, carbsG: 0, fatG: 0 }
+  );
+}
+
 export function DietDiaryPage() {
   const { accessToken } = useAuth();
-  const [date, setDate] = useState<string>(() => toDateStr(new Date()));
+  const today = toDateStr(new Date());
+  const [date, setDate] = useState<string>(today);
   const [summary, setSummary] = useState<DaySummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeAdd, setActiveAdd] = useState<MealType | null>(null);
   const [targetMissing, setTargetMissing] = useState<string[]>([]);
+  const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
+  const [addMeal, setAddMeal] = useState<MealType | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => {
     if (!accessToken) {
@@ -86,7 +108,11 @@ export function DietDiaryPage() {
     await reload();
   }
 
-  async function handleUpdateGrams(mealType: MealType, logId: number, grams: number) {
+  async function handleUpdateGrams(
+    mealType: MealType,
+    logId: number,
+    grams: number
+  ) {
     if (!accessToken) {
       return;
     }
@@ -94,12 +120,7 @@ export function DietDiaryPage() {
     await reload();
   }
 
-  async function handleSaveTarget(payload: {
-    caloriesKcal: number;
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-  }) {
+  async function handleSaveTarget(payload: CustomTargetValues) {
     if (!accessToken) {
       return;
     }
@@ -115,11 +136,22 @@ export function DietDiaryPage() {
     await reload();
   }
 
-  // 只有 basis 有效（auto/custom）才算有可用目标；basis=null 视为无目标（显示补齐提示）
+  // 只有 basis 有效（auto/custom）才算有可用目标；basis=null 视为无目标
   const target = summary?.target?.basis ? summary.target : null;
+  const isToday = date === today;
+
+  function handleMealCardClick(mealType: MealType) {
+    setExpandedMeal((previous) =>
+      previous === mealType ? null : mealType
+    );
+  }
+
+  function openAdd(mealType: MealType) {
+    setAddMeal(mealType);
+  }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6">
       <header className="rounded-[36px] border border-white/10 bg-white/6 p-6 backdrop-blur">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -141,16 +173,18 @@ export function DietDiaryPage() {
             <span className="min-w-[7rem] text-center text-sm font-medium text-white">
               {date}
             </span>
+            {!isToday ? (
+              <button
+                type="button"
+                onClick={() => setDate(addDays(date, 1))}
+                className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 hover:bg-white/12"
+              >
+                后一天 ›
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => setDate(addDays(date, 1))}
-              className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 hover:bg-white/12"
-            >
-              后一天 ›
-            </button>
-            <button
-              type="button"
-              onClick={() => setDate(toDateStr(new Date()))}
+              onClick={() => setDate(today)}
               className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 hover:bg-amber-300"
             >
               回到今天
@@ -158,20 +192,21 @@ export function DietDiaryPage() {
           </div>
         </div>
 
-        <nav className="mt-5 flex flex-wrap gap-2">
-          <Link
-            to="/diet/foods"
-            className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 hover:bg-white/12"
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setUploadOpen(true)}
+            className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 hover:bg-amber-300"
           >
-            食物库
-          </Link>
+            上传食物
+          </button>
           <Link
             to="/diet/stats"
             className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-stone-100 hover:bg-white/12"
           >
             摄入统计
           </Link>
-        </nav>
+        </div>
       </header>
 
       {error ? (
@@ -188,83 +223,108 @@ export function DietDiaryPage() {
         </div>
       ) : summary ? (
         <>
-          {target ? (
-            <DietTargetCard
-              target={target}
-              onSave={handleSaveTarget}
-              onClear={handleClearTarget}
+          <IntakeSummaryCard
+            totals={summary.totals}
+            target={target}
+            progress={summary.progress}
+            missingFields={targetMissing}
+            onSaveTarget={handleSaveTarget}
+            onClearTarget={handleClearTarget}
+          />
+
+          {/* 四餐卡片均分一行 */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {mealTypeOrder.map((mealType) => {
+              const items = summary.meals[mealType] ?? [];
+              const mealTotals = sumMeal(items);
+              return (
+                <MealCard
+                  key={mealType}
+                  mealType={mealType}
+                  totals={mealTotals}
+                  active={expandedMeal === mealType}
+                  onCardClick={() => handleMealCardClick(mealType)}
+                  onAdd={() => openAdd(mealType)}
+                />
+              );
+            })}
+          </div>
+
+          {expandedMeal ? (
+            <MealDetailPanel
+              mealType={expandedMeal}
+              items={summary.meals[expandedMeal] ?? []}
+              onUpdate={handleUpdateGrams}
+              onDelete={handleDelete}
             />
           ) : null}
-
-          <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
-            <p className="text-sm uppercase tracking-[0.24em] text-amber-300">
-              Today Progress
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-white">今日摄入</h2>
-
-            {!target ? (
-              <div className="mt-4">
-                <DietMissingFieldsNotice missingFields={targetMissing} />
-              </div>
-            ) : (
-              <div className="mt-4 grid gap-5 lg:grid-cols-2">
-                <NutrientProgressBar
-                  label="总热量"
-                  current={summary.totals.caloriesKcal}
-                  target={target.caloriesKcal}
-                  pct={summary.progress?.caloriesPct ?? null}
-                />
-                <NutrientProgressBar
-                  label="蛋白质"
-                  current={summary.totals.proteinG}
-                  target={target.proteinG}
-                  pct={summary.progress?.proteinPct ?? null}
-                  colorClass="bg-sky-400"
-                />
-                <NutrientProgressBar
-                  label="碳水"
-                  current={summary.totals.carbsG}
-                  target={target.carbsG}
-                  pct={summary.progress?.carbsPct ?? null}
-                  colorClass="bg-lime-400"
-                />
-                <NutrientProgressBar
-                  label="脂肪"
-                  current={summary.totals.fatG}
-                  target={target.fatG}
-                  pct={summary.progress?.fatPct ?? null}
-                  colorClass="bg-rose-400"
-                />
-              </div>
-            )}
-          </section>
-
-          <div className="space-y-6">
-            {mealTypeOrder.map((mealType) => (
-              <MealSection
-                key={mealType}
-                mealType={mealType}
-                items={summary.meals[mealType] ?? []}
-                onAdd={(type) => setActiveAdd(type)}
-                onUpdate={(logId, grams) => handleUpdateGrams(mealType, logId, grams)}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
         </>
       ) : null}
 
-      <AddMealLogDialog
-        open={activeAdd !== null}
+      <AddMealFlowDialog
+        open={addMeal !== null}
         date={date}
-        defaultMealType={activeAdd ?? "breakfast"}
-        onClose={() => setActiveAdd(null)}
-        onSaved={async () => {
-          if (accessToken) {
-            await load(accessToken, date);
-          }
-        }}
+        mealType={addMeal ?? "breakfast"}
+        onClose={() => setAddMeal(null)}
+        onSaved={reload}
+      />
+
+      <UploadFoodDialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onSaved={reload}
       />
     </section>
+  );
+}
+
+function MealCard({
+  mealType,
+  totals,
+  active,
+  onCardClick,
+  onAdd
+}: {
+  mealType: MealType;
+  totals: NutrientValues;
+  active: boolean;
+  onCardClick: () => void;
+  onAdd: () => void;
+}) {
+  return (
+    <div
+      onClick={onCardClick}
+      className={[
+        "relative cursor-pointer rounded-3xl border p-5 transition",
+        active
+          ? "border-amber-300/40 bg-white/10"
+          : "border-white/10 bg-white/6 hover:bg-white/10"
+      ].join(" ")}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base font-semibold text-white">
+          {getMealTypeLabel(mealType)}
+        </h3>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAdd();
+          }}
+          aria-label={`向${getMealTypeLabel(mealType)}添加食物`}
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-base font-bold text-stone-950 transition hover:bg-amber-300"
+        >
+          +
+        </button>
+      </div>
+      <p className="mt-3 text-2xl font-bold text-white">
+        {Math.round(totals.caloriesKcal)}
+        <span className="ml-1 text-xs font-normal text-stone-400">千卡</span>
+      </p>
+      <p className="mt-2 text-xs text-stone-400">
+        蛋白 {Math.round(totals.proteinG)}g · 碳水 {Math.round(totals.carbsG)}g
+        · 脂肪 {Math.round(totals.fatG)}g
+      </p>
+    </div>
   );
 }

@@ -55,7 +55,9 @@ export function searchFoods(accessToken: string, query: FoodQuery = {}) {
     accessToken,
     query: {
       ...(query.keyword ? { keyword: query.keyword } : {}),
-      filter: query.filter ?? "all"
+      filter: query.filter ?? "all",
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20
     }
   });
 }

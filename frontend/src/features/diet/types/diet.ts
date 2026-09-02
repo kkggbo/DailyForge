@@ -71,6 +71,7 @@ export type FoodItem = {
 
 export type FoodListResponse = {
   foods: FoodItem[];
+  hasMore: boolean;
 };
 
 export type FoodFilter = "all" | "recent" | "frequent" | "favorite";
@@ -78,6 +79,8 @@ export type FoodFilter = "all" | "recent" | "frequent" | "favorite";
 export type FoodQuery = {
   keyword?: string;
   filter?: FoodFilter;
+  page?: number;
+  pageSize?: number;
 };
 
 export type CreateMealLogPayload = {
