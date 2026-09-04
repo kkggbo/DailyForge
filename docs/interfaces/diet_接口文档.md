@@ -28,7 +28,7 @@
 | D2 | POST | `/api/diet/logs` | 添加饮食记录 |
 | D3 | PUT | `/api/diet/logs/{logId}` | 修改记录（克数/餐次/日期） |
 | D4 | DELETE | `/api/diet/logs/{logId}` | 删除记录 |
-| D5 | GET | `/api/diet/foods?keyword=&filter=` | 食物搜索（最常/最近/收藏/全部） |
+| D5 | GET | `/api/diet/foods?keyword=&filter=&page=&pageSize=` | 食物搜索（分页；最常/最近/收藏/全部） |
 | D6 | GET | `/api/diet/foods/{foodId}` | 食物详情 |
 | D7 | POST | `/api/diet/foods` | 上传食物（全局共享） |
 | D8 | POST/DELETE | `/api/diet/favorites/{foodId}` | 收藏 / 取消收藏 |
@@ -202,12 +202,12 @@
 
 ## 5. 前端调用顺序建议
 
-1. 日记页：`GET /diet/summary?date=` 渲染目标/进度/各餐；资料不足时按 `target.missingFields` 提示补齐。
-2. 添加：打开食物选择 → `GET /diet/foods?keyword&filter` → 选食物 → 填克数 → `POST /diet/logs` → 刷新 summary。
-3. 修改/删除记录 → 刷新 summary。
-4. 食物库页：搜索/上传（`POST /diet/foods`）/收藏。
-5. 统计页：`GET /diet/stats?from&to`。
-6. 目标页（个人资料或日记入口）：`GET /diet/targets`、`PUT /diet/targets`。
+1. 日记页 `/diet`：`GET /diet/summary?date=` 渲染今日摄入卡（目标/进度或补齐提示）与四餐卡片；点餐卡 `+` 进入添加，点餐卡在本行下方展开该餐明细。
+2. 添加记录（单层弹窗两步）：点某餐「+」自动绑定该餐次 → 第一步 `GET /diet/foods?keyword&filter&page&pageSize`（分页滚动）选食物（含上传 `POST /diet/foods`、收藏 `POST/DELETE /diet/favorites/{id}`）→ 第二步填克数 → `POST /diet/logs` → 刷新 summary。
+3. 修改（`PUT /diet/logs/{id}`）/删除（`DELETE /diet/logs/{id}`）记录 → 刷新 summary。
+4. 无独立食物库页；食物浏览/上传/收藏均在添加流程的「选择食物」步骤内。日记页头部「上传食物」按钮可直接 `POST /diet/foods`。
+5. 统计页 `/diet/stats`：`GET /diet/stats?from&to`；资料不足时另 `GET /diet/targets` 取缺失项用于「目标符合度」补齐提示。
+6. 目标操作（日记页今日摄入卡内）：`GET /diet/targets` 查缺失字段、`PUT /diet/targets` 自定义/清除目标。
 
 ---
 
