@@ -57,11 +57,11 @@ export function BodyMetricSummaryCard({
         </p>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 max-[299px]:grid-cols-1 sm:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => (
           <article
             key={item.label}
-            className="rounded-3xl border border-white/10 bg-black/20 p-4"
+            className="rounded-3xl border border-white/10 bg-black/20 p-3 sm:p-4"
           >
             <p className="text-sm text-stone-400">{item.label}</p>
             <p className="mt-2 text-lg font-semibold text-white">{item.value}</p>

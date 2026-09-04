@@ -71,7 +71,7 @@ export function BodyMetricHistoryList({
                   ) : null}
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-5 grid grid-cols-2 gap-3 max-[299px]:grid-cols-1 sm:grid-cols-3 xl:grid-cols-4">
                   <HistoryMetric label="体重" value={formatNullableNumber(record.weightKg, { unit: "kg" })} />
                   <HistoryMetric label="体脂率" value={formatNullableNumber(record.bodyFatPercent, { unit: "%" })} />
                   <HistoryMetric label="BMI" value={formatNullableNumber(record.bmi)} />

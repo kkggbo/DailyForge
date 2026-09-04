@@ -232,8 +232,8 @@ export function DietDiaryPage() {
             onClearTarget={handleClearTarget}
           />
 
-          {/* 四餐卡片均分一行 */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* 四餐卡片：任意屏幕宽度都保持一行均分（手机也同行），窄屏压缩内边距与字号 */}
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
             {mealTypeOrder.map((mealType) => {
               const items = summary.meals[mealType] ?? [];
               const mealTotals = sumMeal(items);
@@ -295,14 +295,14 @@ function MealCard({
     <div
       onClick={onCardClick}
       className={[
-        "relative cursor-pointer rounded-3xl border p-5 transition",
+        "relative cursor-pointer overflow-hidden rounded-3xl border p-2 transition sm:p-5",
         active
           ? "border-amber-300/40 bg-white/10"
           : "border-white/10 bg-white/6 hover:bg-white/10"
       ].join(" ")}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-base font-semibold text-white">
+      <div className="flex items-center justify-between gap-1 sm:gap-2">
+        <h3 className="min-w-0 truncate text-xs font-semibold text-white sm:text-base">
           {getMealTypeLabel(mealType)}
         </h3>
         <button
@@ -312,19 +312,25 @@ function MealCard({
             onAdd();
           }}
           aria-label={`向${getMealTypeLabel(mealType)}添加食物`}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-base font-bold text-stone-950 transition hover:bg-amber-300"
+          className="flex aspect-square h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400 p-0 text-base font-bold leading-none text-stone-950 transition hover:bg-amber-300 sm:h-7 sm:w-7"
         >
-          +
+          <span aria-hidden="true" className="block leading-none">
+            +
+          </span>
         </button>
       </div>
-      <p className="mt-3 text-2xl font-bold text-white">
+      <p className="mt-1.5 whitespace-nowrap text-sm font-bold text-white sm:mt-3 sm:text-2xl">
         {Math.round(totals.caloriesKcal)}
-        <span className="ml-1 text-xs font-normal text-stone-400">千卡</span>
+        <span className="ml-0.5 text-[10px] font-normal text-stone-400 sm:ml-1 sm:text-xs">
+          千卡
+        </span>
       </p>
-      <p className="mt-2 text-xs text-stone-400">
-        蛋白 {Math.round(totals.proteinG)}g · 碳水 {Math.round(totals.carbsG)}g
-        · 脂肪 {Math.round(totals.fatG)}g
-      </p>
+      {/* 窄屏（四卡一行）下宏量改为纵向小字；宽屏单行展示 */}
+      <div className="mt-1 flex flex-col gap-0.5 text-[10px] leading-4 text-stone-400 sm:mt-2 sm:flex-row sm:flex-wrap sm:gap-x-2 sm:text-xs sm:leading-5">
+        <span className="truncate">蛋白 {Math.round(totals.proteinG)}g</span>
+        <span className="truncate">碳水 {Math.round(totals.carbsG)}g</span>
+        <span className="truncate">脂肪 {Math.round(totals.fatG)}g</span>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { ApiRequestError } from "../../../shared/api/http";
@@ -17,6 +17,8 @@ import type {
   UpdateProfileBasicPayload
 } from "../types/profile";
 
+const TOAST_DURATION_MS = 2500;
+
 export function ProfileEditPage() {
   const { accessToken } = useAuth();
   const [basicProfile, setBasicProfile] = useState<ProfileBasicResponse | null>(null);
@@ -25,6 +27,8 @@ export function ProfileEditPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [isSavingBasic, setIsSavingBasic] = useState(false);
   const [isSubmittingMetric, setIsSubmittingMetric] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!accessToken) {
@@ -33,6 +37,14 @@ export function ProfileEditPage() {
 
     void load(accessToken);
   }, [accessToken]);
+
+  function showToast(text: string) {
+    setToast(text);
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+  }
 
   async function load(token: string) {
     setIsLoading(true);
@@ -60,6 +72,7 @@ export function ProfileEditPage() {
       await updateBasicProfile(token, payload);
       const nextBasic = await getBasicProfile(token);
       setBasicProfile(nextBasic);
+      showToast("基础档案已保存");
     } finally {
       setIsSavingBasic(false);
     }
@@ -73,6 +86,7 @@ export function ProfileEditPage() {
       await createBodyMetric(token, payload);
       const nextSnapshot = await getCurrentBodyMetricSnapshot(token);
       setSnapshot(nextSnapshot);
+      showToast("身体指标记录已保存");
     } finally {
       setIsSubmittingMetric(false);
     }
@@ -90,6 +104,15 @@ export function ProfileEditPage() {
 
   return (
     <section className="space-y-8">
+      {toast ? (
+        <div
+          role="status"
+          className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-stone-950 shadow-xl"
+        >
+          ✓ {toast}
+        </div>
+      ) : null}
+
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.28em] text-amber-300">Profile</p>

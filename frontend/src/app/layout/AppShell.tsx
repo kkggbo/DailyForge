@@ -40,7 +40,7 @@ export function AppShell() {
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <nav className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap">
+            <nav className="flex flex-wrap items-center gap-2">
               {isAuthenticated ? (
                 <>
                   <NavLink to="/app" className={navLinkClass}>
@@ -53,7 +53,7 @@ export function AppShell() {
                     训练工作台
                   </NavLink>
                   <NavLink to="/stats" className={navLinkClass}>
-                    统计
+                    训练统计
                   </NavLink>
                   <NavLink to="/diet" className={navLinkClass}>
                     饮食

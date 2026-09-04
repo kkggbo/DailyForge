@@ -104,20 +104,20 @@ export function IntakeSummaryCard({
 
       {!editing ? (
         <>
-          {/* 总热量大值突出 */}
-          <div className="mt-6">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm text-stone-300">总热量</span>
-              <span className="text-3xl font-bold text-white">
-                {Math.round(totals.caloriesKcal)}
-                {target?.caloriesKcal != null ? (
-                  <span className="ml-2 text-base font-medium text-stone-400">
-                    / {Math.round(target.caloriesKcal)} 千卡
-                  </span>
-                ) : null}
-              </span>
-            </div>
-            {hasTarget ? (
+          {/* 总热量：有目标时大值+进度条一行突出；无目标时名称与数值分行、数值带单位 */}
+          {hasTarget ? (
+            <div className="mt-6">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm text-stone-300">总热量</span>
+                <span className="text-3xl font-bold text-white">
+                  {Math.round(totals.caloriesKcal)}
+                  {target?.caloriesKcal != null ? (
+                    <span className="ml-2 text-base font-medium text-stone-400">
+                      / {Math.round(target.caloriesKcal)} 千卡
+                    </span>
+                  ) : null}
+                </span>
+              </div>
               <div className="mt-2">
                 <div className="h-4 w-full overflow-hidden rounded-full bg-white/8">
                   <div
@@ -136,10 +136,20 @@ export function IntakeSummaryCard({
                   </p>
                 ) : null}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : (
+            <div className="mt-6">
+              <p className="text-sm text-stone-400">总热量</p>
+              <p className="mt-1 text-3xl font-bold text-white">
+                {Math.round(totals.caloriesKcal)}
+                <span className="ml-1 text-sm font-normal text-stone-400">
+                  千卡
+                </span>
+              </p>
+            </div>
+          )}
 
-          {/* 蛋白 / 碳水 / 脂肪均分一行 */}
+          {/* 蛋白 / 碳水 / 脂肪均分一行；无目标时各格名称与数值分行、数值带 g */}
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <NutrientProgressBar
               label="蛋白质"
@@ -147,6 +157,7 @@ export function IntakeSummaryCard({
               target={target?.proteinG ?? null}
               pct={progress?.proteinPct ?? null}
               colorClass="bg-sky-400"
+              unit="g"
             />
             <NutrientProgressBar
               label="碳水"
@@ -154,6 +165,7 @@ export function IntakeSummaryCard({
               target={target?.carbsG ?? null}
               pct={progress?.carbsPct ?? null}
               colorClass="bg-lime-400"
+              unit="g"
             />
             <NutrientProgressBar
               label="脂肪"
@@ -161,6 +173,7 @@ export function IntakeSummaryCard({
               target={target?.fatG ?? null}
               pct={progress?.fatPct ?? null}
               colorClass="bg-rose-400"
+              unit="g"
             />
           </div>
 
