@@ -312,7 +312,7 @@ function MealCard({
             onAdd();
           }}
           aria-label={`向${getMealTypeLabel(mealType)}添加食物`}
-          className="flex aspect-square h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400 p-0 text-base font-bold leading-none text-stone-950 transition hover:bg-amber-300 sm:h-7 sm:w-7"
+          className="df-round-btn flex aspect-square h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400 p-0 text-base font-bold leading-none text-stone-950 transition hover:bg-amber-300 sm:h-7 sm:w-7"
         >
           <span aria-hidden="true" className="block leading-none">
             +

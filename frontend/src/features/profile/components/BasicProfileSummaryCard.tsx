@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   activityLevelOptions,
   genderOptions,
@@ -113,7 +114,7 @@ export function BasicProfileSummaryCard({
                   type="button"
                   onClick={() => setShowActivityHelp(true)}
                   aria-label="查看活动量说明"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 text-xs text-stone-400 transition hover:bg-white/10 hover:text-white"
+                  className="df-round-btn flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 text-xs text-stone-400 transition hover:bg-white/10 hover:text-white"
                 >
                   ?
                 </button>
@@ -131,9 +132,12 @@ export function BasicProfileSummaryCard({
         </p>
       </div>
 
-      {showActivityHelp ? (
-        <ActivityLevelHelpDialog onClose={() => setShowActivityHelp(false)} />
-      ) : null}
+      {showActivityHelp
+        ? createPortal(
+            <ActivityLevelHelpDialog onClose={() => setShowActivityHelp(false)} />,
+            document.body
+          )
+        : null}
     </section>
   );
 }

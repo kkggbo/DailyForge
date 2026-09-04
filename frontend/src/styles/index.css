@@ -78,4 +78,9 @@ select {
   button {
     min-height: 40px;
   }
+
+  /* Round icon buttons opt out of the touch min-height so they stay circular. */
+  button.df-round-btn {
+    min-height: 0;
+  }
 }
