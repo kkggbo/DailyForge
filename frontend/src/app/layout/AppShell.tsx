@@ -21,7 +21,7 @@ export function AppShell() {
       <div className="pointer-events-none fixed left-1/2 top-[-3rem] z-0 h-[24rem] w-[56rem] -translate-x-1/2 rounded-full bg-amber-300/12 blur-[160px]" />
       <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-25" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 pb-10 pt-6 sm:px-8 lg:px-10">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-[1600px] flex-col px-3 pb-10 pt-6 sm:px-4 lg:px-5">
         <header className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-black/20 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
             <Link to={isAuthenticated ? "/app" : "/"} className="inline-flex items-center gap-3">
