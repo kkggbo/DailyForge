@@ -295,6 +295,9 @@ export function DietStatsPage() {
           {stats.goalAdherence ? (
             <section className="rounded-[32px] border border-white/10 bg-white/6 p-6 backdrop-blur">
               <h2 className="text-xl font-semibold text-white">目标符合度</h2>
+              <p className="mt-1 text-xs text-stone-500">
+                每天总热量落在当日目标 ±10% 内即算达标；只统计有饮食记录的天数，符合率 = 目标内天数 ÷ 有记录天数。
+              </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Stat label="目标内天数" value={`${stats.goalAdherence.daysWithinTarget}`} />
                 <Stat label="有记录天数" value={`${stats.goalAdherence.daysLogged}`} />

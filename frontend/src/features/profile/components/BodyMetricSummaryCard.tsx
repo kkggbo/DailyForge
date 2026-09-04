@@ -48,9 +48,6 @@ export function BodyMetricSummaryCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-2xl font-semibold text-white">当前身体状态</h3>
-          <p className="mt-2 text-sm leading-6 text-stone-300">
-            这里展示的是当前已知快照，不要求所有字段都来自同一次测量。
-          </p>
         </div>
         <p className="text-sm text-stone-400">
           最近更新：{formatDateTime(snapshot?.updatedAt)}
